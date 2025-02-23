@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -16,11 +17,10 @@ export default function Home() {
           <span className="font-semibold text-[#725A44]">shadowed.me</span>
         </div>
         <div className="flex gap-4">
-          <a href="#" className="text-[#725A44] hover:text-[#8B6D54]">Home</a>
-          <a href="#" className="text-[#725A44] hover:text-[#8B6D54]">School Clubs</a>
-          <a href="#" className="text-[#725A44] hover:text-[#8B6D54]">Volunteering</a>
-          <a href="#" className="text-[#725A44] hover:text-[#8B6D54]">Shadowing</a>
-          <a href="#" className="text-[#725A44] hover:text-[#8B6D54]">About</a>
+          <Link href="/" className="text-[#725A44] hover:text-[#8B6D54]">Home</Link>
+          <Link href="/school-clubs" className="text-[#725A44] hover:text-[#8B6D54]">School Clubs</Link>
+          <Link href="/volunteering" className="text-[#725A44] hover:text-[#8B6D54]">Volunteering</Link>
+          <Link href="/about" className="text-[#725A44] hover:text-[#8B6D54]">About</Link>
         </div>
         <div className="flex gap-4">
           <button className="px-4 py-2 text-[#725A44] border border-[#725A44] rounded-md hover:bg-[#725A44] hover:text-white transition-colors">
