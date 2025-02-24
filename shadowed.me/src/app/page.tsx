@@ -1,40 +1,8 @@
 'use client';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Link from 'next/link';
 
-
 export default function Home() {
-  const { user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkUserRole = async () => {
-      if (!user) {
-        return; // Stay on home page if not logged in
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        
-        if (userData?.role === 'captain') {
-          router.push('/captain-dashboard');
-        } else {
-          router.push('/my-visits'); // Regular user view
-        }
-      } catch (err) {
-        console.error('Error checking user role:', err);
-      }
-    };
-
-    checkUserRole();
-  }, [user, router]);
-
   return (
     <div className="pt-[100px] min-h-screen bg-[#FAFAFA]" suppressHydrationWarning>
       {/* Hero Section */}

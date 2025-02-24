@@ -304,6 +304,26 @@ export default function Header() {
     }
   };
 
+  const handleDashboardClick = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      if (userData?.role === 'captain') {
+        router.push('/captain-dashboard');
+      } else {
+        router.push('/my-visits');
+      }
+    } catch (err) {
+      console.error('Error checking user role:', err);
+    }
+  };
+
   return (
     <>
       <div className="h-[73px]" />
@@ -342,12 +362,12 @@ export default function Header() {
                   </Link>
                 </li>
                 <li>
-                  <Link 
-                    href={user ? (isCaptain ? "/captain-dashboard" : "/my-visits") : "/login"}
+                  <button 
+                    onClick={handleDashboardClick}
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
                     Dashboard
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </nav>
