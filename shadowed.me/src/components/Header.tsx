@@ -279,16 +279,14 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-[1400px] mx-auto px-16 py-5 flex items-center justify-between">
           <div className="flex items-center gap-12">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center">
               <Image 
                 src="/logo.png" 
-                alt="Shadowed.me logo" 
-                width={32} 
-                height={32}
+                alt="Shadowed.me" 
+                width={180} 
+                height={40}
+                className="h-8 w-auto"
               />
-              <span className="text-black font-medium">
-                shadowed.me
-              </span>
             </Link>
             
             <nav>
