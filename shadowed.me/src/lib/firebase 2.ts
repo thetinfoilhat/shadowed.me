@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 interface FirebaseConfig {
   apiKey: string;
@@ -25,21 +25,4 @@ const firebaseConfig: FirebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
-
-export async function createUserDocument(user: { uid: string; email: string | null }, role: string = 'student') {
-  if (!user.email) return;
-  
-  try {
-    await setDoc(doc(db, 'users', user.uid), {
-      email: user.email,
-      role,
-      createdAt: new Date(),
-      displayName: user.displayName || null,
-      photoURL: user.photoURL || null,
-    });
-  } catch (error) {
-    console.error('Error creating user document:', error);
-    throw error;
-  }
-} 
+export const googleProvider = new GoogleAuthProvider(); 
