@@ -1,4 +1,5 @@
 'use client';
+import { ReactElement } from 'react';
 import { Dialog } from '@headlessui/react';
 
 type Applicant = {
@@ -16,7 +17,7 @@ export default function ApplicantsDialog({
   isOpen: boolean;
   onClose: () => void;
   applicants: Applicant[];
-}): JSX.Element {
+}): ReactElement {
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />

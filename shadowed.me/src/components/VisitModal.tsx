@@ -4,6 +4,19 @@ import { Dialog } from '@headlessui/react';
 import { Club } from '@/types/club';
 
 const CATEGORIES = ['STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
+type Category = typeof CATEGORIES[number];
+
+interface FormData {
+  name: string;
+  school: string;
+  category: Category;
+  contactEmail: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  slots: number;
+  description: string;
+}
 
 export default function VisitModal({ 
   isOpen, 
@@ -13,10 +26,10 @@ export default function VisitModal({
 }: { 
   isOpen: boolean; 
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: FormData & { id?: string; categories: Category[] }) => Promise<void>;
   initialData?: Club | null;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     school: '',
     category: CATEGORIES[0],
@@ -24,7 +37,7 @@ export default function VisitModal({
     date: '',
     startTime: '',
     endTime: '',
-    slots: '',
+    slots: 0,
     description: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,12 +48,12 @@ export default function VisitModal({
       setFormData({
         name: initialData.name || '',
         school: initialData.school || '',
-        category: initialData.category || CATEGORIES[0],
+        category: (initialData.category as Category) || CATEGORIES[0],
         contactEmail: initialData.contactEmail || '',
         date: initialData.date || '',
         startTime: initialData.startTime || '',
         endTime: initialData.endTime || '',
-        slots: initialData.slots?.toString() || '',
+        slots: parseInt(initialData.slots?.toString() || '0'),
         description: initialData.description || '',
       });
     }
@@ -56,7 +69,6 @@ export default function VisitModal({
         ...formData,
         id: initialData?.id,
         categories: [formData.category],
-        slots: parseInt(formData.slots),
       });
       setFormData({
         name: '',
@@ -66,11 +78,12 @@ export default function VisitModal({
         date: '',
         startTime: '',
         endTime: '',
-        slots: '',
+        slots: 0,
         description: '',
       });
       onClose();
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error(error);
       setError('Failed to save visit opportunity. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -121,7 +134,7 @@ export default function VisitModal({
                 </label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as Category }))}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 >
                   {CATEGORIES.map((category) => (
@@ -167,7 +180,7 @@ export default function VisitModal({
                   required
                   min="1"
                   value={formData.slots}
-                  onChange={(e) => setFormData(prev => ({ ...prev, slots: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, slots: Number(e.target.value) }))}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>

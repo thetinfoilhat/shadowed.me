@@ -27,7 +27,14 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export async function createUserDocument(user: { uid: string; email: string | null }, role: string = 'student') {
+interface UserWithProfile {
+  uid: string;
+  email: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
+
+export async function createUserDocument(user: UserWithProfile, role: string = 'student') {
   if (!user.email) return;
   
   try {

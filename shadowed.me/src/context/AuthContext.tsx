@@ -2,19 +2,17 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   User,
-  UserCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createUserDocument } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, role?: string) => Promise<UserCredential>;
+  signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -34,15 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, role: string = 'student') => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await createUserDocument(userCredential.user, role);
-      return userCredential;
-    } catch (error) {
-      console.error('Error in signup:', error);
-      throw error;
-    }
+  const signUp = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -51,20 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await signOut(auth);
-    window.location.reload();
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[#725A44]">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider value={{ user, loading, signUp, signIn, logout }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
