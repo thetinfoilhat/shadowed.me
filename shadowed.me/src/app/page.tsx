@@ -390,7 +390,7 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-[#0A2540] mt-48">
+      <div className="bg-[#102C4C] mt-48">
         <div className="max-w-[1400px] mx-auto px-8 py-24">
           <div className="flex justify-between items-center">
             <div>
@@ -403,7 +403,7 @@ export default function Home() {
                 Ready to start exploring?
               </motion.h2>
               <motion.p 
-                className="text-xl text-gray-400"
+                className="text-xl text-white/70"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -413,7 +413,7 @@ export default function Home() {
               </motion.p>
             </div>
             <motion.button 
-              className="bg-[#38BFA1] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#2DA891] transition-all"
+              className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
