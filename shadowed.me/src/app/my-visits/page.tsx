@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -7,12 +7,19 @@ import { format } from 'date-fns';
 import { Club } from '@/types/club';
 import Link from 'next/link';
 
+interface Applicant {
+  email: string;
+  name: string;
+  grade: string;
+  school: string;
+}
+
 export default function MyVisits() {
   const { user } = useAuth();
   const [visits, setVisits] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchVisits = async () => {
+  const fetchVisits = useCallback(async () => {
     if (!user?.email) return;
 
     try {
@@ -33,7 +40,7 @@ export default function MyVisits() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const handleUnregister = async (visitId: string) => {
     if (!user?.email) return;
@@ -48,7 +55,7 @@ export default function MyVisits() {
 
       // Find the user's application with all fields
       const userApplication = visitData.applicants?.find(
-        (applicant: any) => applicant.email === user.email
+        (applicant: Applicant) => applicant.email === user.email
       );
 
       if (!userApplication) return;
@@ -70,7 +77,7 @@ export default function MyVisits() {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchVisits]);
 
   if (loading) {
     return (
