@@ -44,25 +44,14 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
-                  Get Started →
-                </button>
+                <Link href="/school-clubs">
+                  <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+                    Get Started →
+                  </button>
+                </Link>
                 <span className="text-[#180D39]/40">Join 500+ students</span>
               </motion.div>
             </div>
-
-            <motion.div 
-              className="mt-16"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-            >
-              <div className="flex gap-12">
-                <img src="/neuqua.png" alt="Neuqua" className="h-6 grayscale opacity-50" />
-                <img src="/naperville-central.png" alt="NCHS" className="h-6 grayscale opacity-50" />
-                <img src="/naperville-north.png" alt="NNHS" className="h-6 grayscale opacity-50" />
-              </div>
-            </motion.div>
           </div>
 
           {/* Right Column */}
@@ -226,11 +215,11 @@ export default function Home() {
                 transition={{ duration: 0.3, delay: 0.1 }}
                 viewport={{ once: true }}
               >
-                <div className="bg-[#E6F7F4] w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-                  <span className="text-2xl">📱</span>
+                <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+                  <span className="text-2xl">⚡</span>
                 </div>
                 <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Quick Registration</h3>
-                <p className="text-gray-600">
+                <p className="text-[#180D39]/70">
                   One-click signup for clubs and volunteer work
                 </p>
               </motion.div>
@@ -252,6 +241,7 @@ export default function Home() {
                   Automatically log your hours and experiences
                 </p>
               </motion.div>
+
             </div>
           </div>
         </div>
@@ -273,17 +263,17 @@ export default function Home() {
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
           >
-            <div className="text-5xl font-bold text-[#38BFA1] mb-4">3k+</div>
-            <h3 className="text-2xl font-semibold mb-2">Students already using</h3>
-            <p className="text-gray-600">our platform to find opportunities</p>
+            <div className="text-5xl font-bold text-[#2A8E9E] mb-4">500+</div>
+            <h3 className="text-2xl font-semibold text-[#0A2540] mb-2">Active Students</h3>
+            <p className="text-[#180D39]/80">discovering opportunities daily</p>
           </motion.div>
 
           <motion.div 
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
           >
-            <h3 className="text-2xl font-semibold mb-4">Instant Registration</h3>
-            <p className="text-gray-600 mb-8">Sign up for opportunities with one click</p>
+            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Quick Registration</h3>
+            <p className="text-[#180D39]/80 mb-8">One-click signup for all opportunities</p>
             <div className="flex gap-4">
               <span className="text-3xl">📱</span>
               <span className="text-3xl">✨</span>
@@ -294,16 +284,50 @@ export default function Home() {
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
           >
-            <h3 className="text-2xl font-semibold mb-4">No Schedule Conflicts</h3>
-            <p className="text-gray-600">Smart filtering ensures opportunities match your availability</p>
+            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Smart Scheduling</h3>
+            <p className="text-[#180D39]/80 mb-6">AI-powered conflict detection ensures you never double-book</p>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-lg bg-[#2A8E9E]/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[#2A8E9E]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={1.5} 
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                    />
+                  </svg>
+                </div>
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#2A8E9E] text-white flex items-center justify-center text-xs">
+                  ✓
+                </div>
+              </div>
+              <div className="text-[#2A8E9E] font-medium">
+                Conflict-free scheduling
+              </div>
+            </div>
           </motion.div>
 
           <motion.div 
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
           >
-            <div className="h-32 bg-[#F7FAFC] rounded-xl mb-4"></div>
-            <p className="text-gray-600">Track your volunteer hours over time</p>
+            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Growth Tracking</h3>
+            <div className="flex items-center gap-6 mb-6">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center">
+                  <div className="text-[#2A8E9E] font-bold text-xl">12</div>
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#2A8E9E] text-white flex items-center justify-center text-sm">
+                  +
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[#0A2540] font-semibold">Hours This Week</span>
+                <span className="text-[#2A8E9E] text-sm">+3 from last week</span>
+              </div>
+            </div>
+            <p className="text-[#180D39]/80">Track your hours and impact</p>
           </motion.div>
         </div>
       </div>
@@ -361,8 +385,8 @@ export default function Home() {
             transition={{ delay: 0.1 }}
             className="text-center"
           >
-            <div className="text-7xl font-bold text-[#38BFA1] mb-4">500+</div>
-            <div className="text-xl text-gray-600">Active Students</div>
+            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">500+</div>
+            <div className="text-xl text-[#0A2540]">Active Students</div>
           </motion.div>
 
           <motion.div
@@ -372,8 +396,8 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="text-center"
           >
-            <div className="text-7xl font-bold text-[#38BFA1] mb-4">50+</div>
-            <div className="text-xl text-gray-600">School Clubs</div>
+            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">50+</div>
+            <div className="text-xl text-[#0A2540]">School Clubs</div>
           </motion.div>
 
           <motion.div
@@ -383,8 +407,8 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             className="text-center"
           >
-            <div className="text-7xl font-bold text-[#38BFA1] mb-4">1k+</div>
-            <div className="text-xl text-gray-600">Hours Logged</div>
+            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">1k+</div>
+            <div className="text-xl text-[#0A2540]">Hours Logged</div>
           </motion.div>
         </div>
       </div>
@@ -412,15 +436,17 @@ export default function Home() {
                 Join hundreds of students discovering opportunities.
               </motion.p>
             </div>
-            <motion.button 
-              className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.02 }}
-            >
-              Get Started →
-            </motion.button>
+            <Link href="/school-clubs">
+              <motion.button 
+                className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.02 }}
+              >
+                Get Started →
+              </motion.button>
+            </Link>
           </div>
         </div>
       </div>

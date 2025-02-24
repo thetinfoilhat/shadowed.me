@@ -9,13 +9,19 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
-export const AuthContext = createContext<{
+interface AuthContextType {
   user: User | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   showProfileModal: boolean;
   setShowProfileModal: (show: boolean) => void;
-}>({
+}
+
+export const AuthContext = createContext<AuthContextType>({
   user: null,
+  signIn: async () => {},
+  signUp: async () => {},
   logout: async () => {},
   showProfileModal: false,
   setShowProfileModal: () => {},
@@ -50,6 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ 
       user, 
+      signIn,
+      signUp,
       logout,
       showProfileModal,
       setShowProfileModal,
