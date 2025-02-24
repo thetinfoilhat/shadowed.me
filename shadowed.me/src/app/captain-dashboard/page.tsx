@@ -9,6 +9,7 @@ import { Dialog } from '@headlessui/react';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
 import { Club } from '@/types/club';
+import Link from 'next/link';
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -36,31 +37,13 @@ export default function CaptainDashboard() {
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
   const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
 
-  // Check if user is captain
   useEffect(() => {
-    const checkCaptainStatus = async () => {
-      if (!user?.uid) {
-        router.push('/');
-        return;
-      }
-      
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        if (userData?.role !== 'captain') {
-          router.push('/');
-          return;
-        }
-        setIsCaptain(true);
-        fetchCaptainVisits();
-      } catch (err) {
-        console.error('Error checking captain status:', err);
-        router.push('/');
-      }
-    };
-
-    checkCaptainStatus();
-  }, [user, router]);
+    if (user) {
+      fetchCaptainVisits();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const fetchCaptainVisits = async () => {
     try {
@@ -133,6 +116,40 @@ export default function CaptainDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-[#725A44]">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="max-w-md w-full px-6 text-center">
+          <div className="mb-8">
+            <div className="w-20 h-20 bg-[#38BFA1]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h1 className="text-3xl font-semibold text-[#0A2540] mb-4">
+              Please Sign In
+            </h1>
+            <p className="text-gray-600 mb-8">
+              Sign in to manage your club visits and view applicants
+            </p>
+            <button
+              onClick={() => document.querySelector<HTMLButtonElement>('[data-login-button]')?.click()}
+              className="bg-[#38BFA1] text-white px-8 py-3 rounded-lg hover:bg-[#2DA891] transition-colors inline-flex items-center gap-2"
+            >
+              <span>Sign In</span>
+              <span>→</span>
+            </button>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            Want to create opportunities?{' '}
+            <Link href="/about" className="text-[#38BFA1] hover:underline">
+              Learn more about becoming a captain
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

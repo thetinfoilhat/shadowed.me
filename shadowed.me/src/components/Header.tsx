@@ -306,7 +306,7 @@ export default function Header() {
 
   const handleDashboardClick = async () => {
     if (!user) {
-      router.push('/login');
+      router.push('/my-visits');
       return;
     }
 
@@ -354,20 +354,20 @@ export default function Header() {
                   </Link>
                 </li>
                 <li>
-                  <Link 
-                    href="/about" 
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    About
-                  </Link>
-                </li>
-                <li>
                   <button 
                     onClick={handleDashboardClick}
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
                     Dashboard
                   </button>
+                </li>
+                <li>
+                  <Link 
+                    href="/about" 
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    About
+                  </Link>
                 </li>
               </ul>
             </nav>
@@ -431,6 +431,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => setShowLoginModal(true)}
+                data-login-button
                 className="px-4 py-2 bg-[#2A8E9E] text-white font-medium rounded-lg hover:bg-[#247A87] transition-colors"
               >
                 Login
