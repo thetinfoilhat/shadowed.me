@@ -51,42 +51,69 @@ export default function Header() {
   };
 
   return (
-    <>
-      <nav className="flex justify-between items-center px-8 py-4">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.svg"
-            alt="Shadowed.me logo"
-            width={32}
-            height={32}
-            priority
-          />
-          <span className="font-semibold text-[#725A44]">shadowed.me</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+      <div className="max-w-[1400px] mx-auto px-16 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-12">
+          <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/logo.png" 
+              alt="Shadowed.me logo" 
+              width={32} 
+              height={32}
+            />
+            <span className="text-[#180D39] font-medium">
+              shadowed.me
+            </span>
+          </Link>
+          
+          <nav>
+            <ul className="flex gap-8">
+              <li>
+                <Link 
+                  href="/school-clubs" 
+                  className="text-gray-600 hover:text-[#180D39] font-medium transition-colors"
+                >
+                  School Clubs
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/volunteering" 
+                  className="text-gray-600 hover:text-[#180D39] font-medium transition-colors"
+                >
+                  Volunteering
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/about" 
+                  className="text-gray-600 hover:text-[#180D39] font-medium transition-colors"
+                >
+                  About
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
-        <div className="flex gap-4">
-          <Link href="/" className="text-[#725A44] hover:text-[#8B6D54]">Home</Link>
-          <Link href="/school-clubs" className="text-[#725A44] hover:text-[#8B6D54]">School Clubs</Link>
-          <Link href="/volunteering" className="text-[#725A44] hover:text-[#8B6D54]">Volunteering</Link>
-          <Link href="/about" className="text-[#725A44] hover:text-[#8B6D54]">About</Link>
-        </div>
-        <div className="flex gap-4">
+
+        <div className="flex items-center gap-4">
           {user ? (
             <button
               onClick={() => logout()}
-              className="px-4 py-2 text-[#725A44] border border-[#725A44] rounded-md hover:bg-[#725A44] hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-600 font-medium hover:text-[#180D39] transition-colors"
             >
               Logout
             </button>
           ) : (
             <button
               onClick={() => setShowLoginModal(true)}
-              className="px-4 py-2 text-[#725A44] border border-[#725A44] rounded-md hover:bg-[#725A44] hover:text-white transition-colors"
+              className="px-4 py-2 bg-[#2A8E9E] text-white font-medium rounded-lg hover:bg-[#247A87] transition-colors"
             >
               Login
             </button>
           )}
         </div>
-      </nav>
+      </div>
 
       {/* Login Modal */}
       {showLoginModal && (
@@ -94,14 +121,14 @@ export default function Header() {
           <div className="bg-white rounded-xl p-8 max-w-md w-full relative">
             <button
               onClick={() => setShowLoginModal(false)}
-              className="absolute top-4 right-4 text-[#725A44] hover:text-[#8B6D54]"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold text-[#4A3C2D] mb-6">Login</h2>
+            <h2 className="text-2xl font-bold text-[#0A2540] mb-6">Login</h2>
             <button
               onClick={handleGoogleLogin}
-              className="w-full px-4 py-3 flex items-center justify-center gap-2 border border-[#E2D9D0] rounded-lg hover:bg-[#F3EDE7] transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-center gap-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Image
                 src="/google-logo.svg"
@@ -122,6 +149,6 @@ export default function Header() {
           onCloseAction={() => setShowRoleModal(false)}
         />
       )}
-    </>
+    </header>
   );
 } 
