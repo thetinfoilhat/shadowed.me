@@ -3,6 +3,20 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { Club } from '@/types/club';
 
+interface VisitData {
+  id?: string;
+  name: string;
+  school: string;
+  categories: string[];
+  category: string;
+  contactEmail: string;
+  slots: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+}
+
 const CATEGORIES = ['STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
 type Category = typeof CATEGORIES[number];
 
@@ -20,13 +34,13 @@ interface FormData {
 
 export default function VisitModal({ 
   isOpen, 
-  onClose, 
-  onSubmit, 
+  onCloseAction,
+  onSubmitAction,
   initialData = null 
 }: { 
-  isOpen: boolean; 
-  onClose: () => void;
-  onSubmit: (data: FormData & { id?: string; categories: Category[] }) => Promise<void>;
+  isOpen: boolean;
+  onCloseAction: () => void;
+  onSubmitAction: (data: VisitData) => Promise<void>;
   initialData?: Club | null;
 }) {
   const [formData, setFormData] = useState<FormData>({
@@ -65,7 +79,7 @@ export default function VisitModal({
     setIsSubmitting(true);
 
     try {
-      await onSubmit({
+      await onSubmitAction({
         ...formData,
         id: initialData?.id,
         categories: [formData.category],
@@ -81,7 +95,7 @@ export default function VisitModal({
         slots: 0,
         description: '',
       });
-      onClose();
+      onCloseAction();
     } catch (error: unknown) {
       console.error(error);
       setError('Failed to save visit opportunity. Please try again.');
@@ -91,7 +105,7 @@ export default function VisitModal({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+    <Dialog open={isOpen} onClose={onCloseAction} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -232,7 +246,7 @@ export default function VisitModal({
             <div className="flex justify-end gap-4">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={onCloseAction}
                 className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
               >
                 Cancel

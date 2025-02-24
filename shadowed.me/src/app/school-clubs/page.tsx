@@ -1,13 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
 import { Dialog } from '@headlessui/react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import VisitModal from '@/components/VisitModal';
-import ApplicantsDialog from '@/components/ApplicantsDialog';
+import { format} from 'date-fns';
 import { Club } from '@/types/club';
 
 const CATEGORIES = ['All', 'STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
@@ -72,7 +69,7 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, visitName }: {
           </Dialog.Title>
           
           <p className="text-gray-600 mb-6">
-            Are you sure you want to register for "{visitName}"?
+            Are you sure you want to register for &quot;{visitName}&quot;?
           </p>
           
           <div className="flex justify-end gap-3">

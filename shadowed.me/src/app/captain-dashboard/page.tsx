@@ -1,15 +1,44 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
-import { Dialog } from '@headlessui/react';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
 import { Club } from '@/types/club';
 import Link from 'next/link';
+
+interface Applicant {
+  name: string;
+  email: string;
+  grade: string;
+  school: string;
+}
+
+interface FirestoreData {
+  applicants?: {
+    name?: string;
+    email?: string;
+    grade?: string;
+    school?: string;
+  }[];
+  createdAt?: { toDate(): Date };
+}
+
+interface VisitData {
+  id?: string;
+  name: string;
+  school: string;
+  categories: string[];
+  category: string;
+  contactEmail: string;
+  slots: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+}
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -29,34 +58,24 @@ function formatTime(timeStr: string) {
 
 export default function CaptainDashboard() {
   const { user } = useAuth();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isCaptain, setIsCaptain] = useState(false);
   const [captainVisits, setCaptainVisits] = useState<Club[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
   const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchCaptainVisits();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchCaptainVisits = async () => {
+  const fetchCaptainVisits = useCallback(async () => {
     try {
       const clubsRef = collection(db, 'opportunities');
       const querySnapshot = await getDocs(clubsRef);
       
       const visits = querySnapshot.docs
         .map(doc => {
-          const data = doc.data();
+          const data = doc.data() as FirestoreData;
           return {
             id: doc.id,
             ...data,
-            applicants: (data.applicants || []).map((applicant: any) => ({
+            applicants: (data.applicants || []).map((applicant): Applicant => ({
               name: applicant.name || '',
               email: applicant.email || '',
               grade: applicant.grade || '',
@@ -74,9 +93,17 @@ export default function CaptainDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleSaveVisit = async (data: any) => {
+  useEffect(() => {
+    if (user) {
+      fetchCaptainVisits();
+    } else {
+      setLoading(false);
+    }
+  }, [user, fetchCaptainVisits]);
+
+  const handleSaveVisit = async (data: VisitData) => {
     try {
       const visitData = {
         name: data.name,
@@ -167,7 +194,7 @@ export default function CaptainDashboard() {
               Club Captain Dashboard
             </h1>
             <p className="text-lg text-gray-600">
-              Schedule and manage your club's visit opportunities
+              Schedule and manage your club&apos;s visit opportunities
             </p>
           </div>
 
@@ -277,17 +304,17 @@ export default function CaptainDashboard() {
 
         <VisitModal
           isOpen={isCreateModalOpen}
-          onClose={() => {
+          onCloseAction={() => {
             setIsCreateModalOpen(false);
             setEditingVisit(null);
           }}
-          onSubmit={handleSaveVisit}
+          onSubmitAction={handleSaveVisit}
           initialData={editingVisit}
         />
 
         <ApplicantsDialog
           isOpen={!!viewingApplicants}
-          onClose={() => setViewingApplicants(null)}
+          onCloseAction={() => setViewingApplicants(null)}
           applicants={viewingApplicants?.applicants || []}
         />
       </div>

@@ -19,12 +19,10 @@ type UserProfile = {
 };
 
 function ProfileModal({ 
-  isOpen, 
   onClose, 
   initialData,
   onSave 
 }: { 
-  isOpen: boolean;
   onClose: () => void;
   initialData: Partial<UserProfile>;
   onSave: (data: UserProfile) => Promise<void>;
@@ -41,13 +39,13 @@ function ProfileModal({
     try {
       await onSave({
         name: formData.get('name') as string,
-        email: initialData.email || '', // Use email from initialData
+        email: initialData.email || '',
         age: parseInt(formData.get('age') as string),
         school: formData.get('school') as string,
         grade: parseInt(formData.get('grade') as string),
       });
       onClose();
-    } catch (error) {
+    } catch {
       setError('Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
@@ -153,8 +151,6 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout, showProfileModal, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
-  const [userRole, setUserRole] = useState<'student' | 'captain' | null>(null);
-  const [isCaptain, setIsCaptain] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -238,46 +234,6 @@ export default function Header() {
     };
 
     fetchUserProfile();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.uid) {
-        setUserRole(null);
-        return;
-      }
-      
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      }
-    };
-
-    fetchUserRole();
-  }, [user]);
-
-  useEffect(() => {
-    const checkCaptainStatus = async () => {
-      if (!user?.uid) {
-        setIsCaptain(false);
-        return;
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        setIsCaptain(userData?.role === 'captain');
-      } catch (err) {
-        console.error('Error checking captain status:', err);
-        setIsCaptain(false);
-      }
-    };
-
-    checkCaptainStatus();
   }, [user]);
 
   const handleProfileSave = async (data: UserProfile) => {
@@ -372,24 +328,23 @@ export default function Header() {
                   className="flex items-center gap-2 p-1 rounded-full hover:ring-2 hover:ring-[#2A8E9E]/20 transition-all"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                 >
-                  {user.photoURL ? (
-                    <div className="w-8 h-8 rounded-full overflow-hidden">
-                      <img 
-                        src={user.photoURL}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement?.classList.add('bg-[#2A8E9E]', 'flex', 'items-center', 'justify-center', 'text-white');
-                          e.currentTarget.parentElement!.innerHTML = user.displayName?.[0] || user.email?.[0] || '?';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-[#2A8E9E] text-white flex items-center justify-center">
-                      {user.displayName?.[0] || user.email?.[0] || '?'}
-                    </div>
-                  )}
+                  <div className="w-8 h-8 rounded-full overflow-hidden">
+                    <Image 
+                      src={user.photoURL || ''}
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('bg-[#2A8E9E]', 'flex', 'items-center', 'justify-center', 'text-white');
+                        if (target.parentElement) {
+                          target.parentElement.innerHTML = user.displayName?.[0] || user.email?.[0] || '?';
+                        }
+                      }}
+                    />
+                  </div>
                 </button>
 
                 {showUserMenu && (
@@ -469,7 +424,6 @@ export default function Header() {
 
       {showProfileModal && (
         <ProfileModal
-          isOpen={showProfileModal}
           onClose={() => setShowProfileModal(false)}
           initialData={userProfile}
           onSave={handleProfileSave}

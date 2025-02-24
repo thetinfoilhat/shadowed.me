@@ -11,15 +11,15 @@ type Applicant = {
 
 export default function ApplicantsDialog({ 
   isOpen, 
-  onClose, 
+  onCloseAction,
   applicants 
 }: { 
   isOpen: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   applicants: Applicant[];
 }): ReactElement {
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+    <Dialog open={isOpen} onClose={onCloseAction} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -76,7 +76,7 @@ export default function ApplicantsDialog({
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={onCloseAction}
               className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
             >
               Close
