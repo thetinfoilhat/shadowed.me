@@ -10,7 +10,7 @@ export default function Home() {
           {/* Left Column */}
           <div>
             <motion.h1 
-              className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[1.15] mb-6"
+              className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[1.15] mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -18,7 +18,13 @@ export default function Home() {
               <span className="text-[#180D39]">
                 Helping<br />
                 students<br />
-                <span className="font-bold">find their<br />light.</span>
+                <span className="font-bold relative">
+                  find their<br />
+                  <span className="relative">
+                    light.
+                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30" />
+                  </span>
+                </span>
               </span>
             </motion.h1>
             
@@ -28,26 +34,19 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
             >
-              Supporting students with simple searching, instant club 
-              <span className="relative inline-block group">
-                registration, and easy outreach tracking.
-                <span 
-                  className="absolute bottom-0 left-0 w-full h-[2px] origin-left transform scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
-                  style={{
-                    background: 'linear-gradient(90deg, #38BFA1 0%, rgba(56, 191, 161, 0.4) 100%)'
-                  }}
-                />
-              </span>
+              Supporting students with simple searching, instant club registration, and easy outreach tracking.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
+              className="flex items-center gap-6"
             >
-              <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+              <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-all hover:shadow-lg hover:shadow-[#2A8E9E]/20">
                 Get Started →
               </button>
+              <span className="text-[#180D39]/40 text-sm">Join 500+ students</span>
             </motion.div>
 
             <motion.div 
@@ -66,127 +65,104 @@ export default function Home() {
 
           {/* Right Column */}
           <div className="relative mt-8 lg:mt-0">
-            <div className="absolute w-full">
-              {/* Vertical Cards Container */}
-              <div className="relative h-full">
-                {/* First Card */}
-                <motion.div 
-                  className="absolute right-0 bg-white rounded-3xl p-8 w-[450px] shadow-[0_20px_50px_rgba(8,112,184,0.07)] hover:shadow-[0_24px_60px_rgba(8,112,184,0.1)]"
-                  initial={{ y: 100, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.7 }}
-                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  style={{ 
-                    background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.9))',
-                    backdropFilter: 'blur(20px)'
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-2xl font-bold tracking-tight text-[#0A2540]">Neuqua Valley High School</h4>
-                    <span className="text-[#38BFA1] bg-[#E6F7F4] px-4 py-2 rounded-full text-sm font-medium">Mar 15</span>
-                  </div>
-                  <h3 className="text-[#38BFA1] text-xl font-semibold tracking-wide mb-4">Physics Club Visit</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6 font-light text-lg">
-                    Join us for an interactive session exploring practical physics applications. 
-                    Perfect for students interested in STEM fields.
-                  </p>
-                  <div className="border-t border-gray-100 pt-6 flex items-center justify-between">
-                    <div className="flex gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">⏱</span>
-                        <span className="text-sm font-medium text-gray-600">45 min</span>
+            <div className="space-y-6">
+              {/* First Card */}
+              <motion.div 
+                className="bg-gradient-to-br from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  transform: ["translateY(0px)", "translateY(-10px)", "translateY(0px)"]
+                }}
+                transition={{
+                  duration: 0.5,
+                  transform: {
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }
+                }}
+              >
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#2A8E9E]/5 rounded-full blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#2A8E9E]/10 rounded-full blur-xl" />
+                
+                <div className="relative"> {/* Content wrapper to stay above blurred elements */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-[#180D39] font-semibold text-lg mb-1">Neuqua Valley High School</h3>
+                      <div className="inline-block bg-white/50 backdrop-blur-sm text-[#2A8E9E] text-sm font-medium px-3 py-1 rounded-full mb-3">
+                        Mar 15
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">👥</span>
-                        <span className="text-sm font-medium text-gray-600">15 spots</span>
-                      </div>
+                      <h4 className="text-[#2A8E9E] font-medium mb-2">Physics Club Visit</h4>
+                      <p className="text-[#180D39]/70 text-sm">
+                        Join us for an interactive session exploring practical physics applications.
+                      </p>
                     </div>
-                    <button className="text-[#38BFA1] font-semibold text-sm tracking-wide hover:underline">
-                      Learn more →
+                    <button className="text-[#2A8E9E]">
+                      →
                     </button>
                   </div>
-                </motion.div>
-
-                {/* Second Card */}
-                <motion.div 
-                  className="absolute right-12 top-[180px] bg-white rounded-3xl p-8 w-[450px] shadow-[0_20px_50px_rgba(8,112,184,0.07)] hover:shadow-[0_24px_60px_rgba(8,112,184,0.1)]"
-                  initial={{ y: 100, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.7, delay: 0.1 }}
-                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  style={{ 
-                    background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.9))',
-                    backdropFilter: 'blur(20px)'
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-2xl font-semibold text-[#0A2540]">Loaves & Fishes</h4>
-                    <span className="text-[#38BFA1] bg-[#E6F7F4] px-4 py-2 rounded-full text-sm font-medium">Mar 18</span>
-                  </div>
-                  <h3 className="text-[#38BFA1] text-lg font-medium mb-4">Food Bank Volunteering</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6">
-                    Help sort and distribute food to local families in need. 
-                    Great opportunity to make a direct impact in your community.
-                  </p>
-                  <div className="border-t border-gray-100 pt-6 flex items-center justify-between">
-                    <div className="flex gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">⏱</span>
-                        <span className="text-sm text-gray-600">2 hours</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">👥</span>
-                        <span className="text-sm text-gray-600">8 spots</span>
-                      </div>
+                  
+                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#2A8E9E]/10">
+                    <div className="flex items-center gap-2 text-sm text-[#180D39]/60">
+                      <span>🕒</span> 3 hours
                     </div>
-                    <button className="text-[#38BFA1] font-medium text-sm hover:underline">
-                      Learn more →
-                    </button>
-                  </div>
-                </motion.div>
-
-                {/* Third Card */}
-                <motion.div 
-                  className="absolute right-24 top-[360px] bg-white rounded-3xl p-8 w-[450px] shadow-[0_20px_50px_rgba(8,112,184,0.07)] hover:shadow-[0_24px_60px_rgba(8,112,184,0.1)]"
-                  initial={{ y: 100, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.7, delay: 0.2 }}
-                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  style={{ 
-                    background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.9))',
-                    backdropFilter: 'blur(20px)'
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-2xl font-semibold text-[#0A2540]">NCHS Robotics Team</h4>
-                    <span className="text-[#38BFA1] bg-[#E6F7F4] px-4 py-2 rounded-full text-sm font-medium">Mar 20</span>
-                  </div>
-                  <h3 className="text-[#38BFA1] text-lg font-medium mb-4">Competition Prep</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6">
-                    Join the robotics team as they prepare for upcoming competitions. 
-                    Learn about robotics, programming, and teamwork.
-                  </p>
-                  <div className="border-t border-gray-100 pt-6 flex items-center justify-between">
-                    <div className="flex gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">⏱</span>
-                        <span className="text-sm text-gray-600">3 hours</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#38BFA1]">👥</span>
-                        <span className="text-sm text-gray-600">5 spots</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-[#180D39]/60">
+                      <span>👥</span> 5 spots
                     </div>
-                    <button className="text-[#38BFA1] font-medium text-sm hover:underline">
-                      Learn more →
-                    </button>
                   </div>
-                </motion.div>
+                </div>
+              </motion.div>
 
-                {/* Background Decorative Elements */}
-                <div className="absolute -z-10 top-[20%] right-[25%] w-[500px] h-[500px] bg-[#E6F7F4] rounded-full opacity-20 blur-[100px]"></div>
-                <div className="absolute -z-10 top-[50%] right-[45%] w-[400px] h-[400px] bg-[#38BFA1] rounded-full opacity-10 blur-[100px]"></div>
-              </div>
+              {/* Second Card - with different animation phase */}
+              <motion.div 
+                className="bg-gradient-to-bl from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  transform: ["translateY(-10px)", "translateY(0px)", "translateY(-10px)"]
+                }}
+                transition={{
+                  duration: 0.5,
+                  transform: {
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }
+                }}
+              >
+                {/* Similar structure with different gradient direction and animation phase */}
+              </motion.div>
+
+              {/* Third Card - with another animation phase */}
+              <motion.div 
+                className="bg-gradient-to-tr from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  transform: ["translateY(0px)", "translateY(-10px)", "translateY(0px)"]
+                }}
+                transition={{
+                  duration: 0.5,
+                  transform: {
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5 // Slight delay for more organic feel
+                  }
+                }}
+              >
+                {/* Similar structure with different gradient direction and animation phase */}
+              </motion.div>
+            </div>
+
+            {/* Decorative elements */}
+            <div className="absolute -z-10 top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
+              <div className="w-96 h-96 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl" />
             </div>
           </div>
         </div>
