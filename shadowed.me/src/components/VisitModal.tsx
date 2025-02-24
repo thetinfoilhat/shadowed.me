@@ -98,7 +98,7 @@ export default function VisitModal({
                   required
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -111,7 +111,7 @@ export default function VisitModal({
                   required
                   value={formData.school}
                   onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -122,10 +122,10 @@ export default function VisitModal({
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 >
                   {CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
+                    <option key={category} value={category} className="text-black">
                       {category}
                     </option>
                   ))}
@@ -141,7 +141,7 @@ export default function VisitModal({
                   required
                   value={formData.contactEmail}
                   onChange={(e) => setFormData(prev => ({ ...prev, contactEmail: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -154,7 +154,7 @@ export default function VisitModal({
                   required
                   value={formData.date}
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -168,7 +168,7 @@ export default function VisitModal({
                   min="1"
                   value={formData.slots}
                   onChange={(e) => setFormData(prev => ({ ...prev, slots: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -181,7 +181,7 @@ export default function VisitModal({
                   required
                   value={formData.startTime}
                   onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export default function VisitModal({
                   required
                   value={formData.endTime}
                   onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
                 />
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function VisitModal({
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 rows={4}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black"
               />
             </div>
 

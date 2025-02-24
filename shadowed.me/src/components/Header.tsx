@@ -325,22 +325,12 @@ export default function Header() {
             
             <nav>
               <ul className="flex gap-8">
-                {user && (
-                  <li>
-                    <Link 
-                      href="/school-clubs"
-                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                    >
-                      School Clubs
-                    </Link>
-                  </li>
-                )}
                 <li>
                   <Link 
-                    href="/volunteering" 
+                    href="/school-clubs"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
-                    Volunteering
+                    School Clubs
                   </Link>
                 </li>
                 <li>
@@ -351,16 +341,14 @@ export default function Header() {
                     About
                   </Link>
                 </li>
-                {user && (
-                  <li>
-                    <Link 
-                      href={isCaptain ? "/captain-dashboard" : "/my-visits"}
-                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                  </li>
-                )}
+                <li>
+                  <Link 
+                    href={user ? (isCaptain ? "/captain-dashboard" : "/my-visits") : "/login"}
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>
@@ -441,10 +429,10 @@ export default function Header() {
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold text-[#0A2540] mb-6">Login</h2>
+            <h2 className="text-2xl font-bold text-black mb-6">Login</h2>
             <button
               onClick={handleGoogleLogin}
-              className="w-full px-4 py-3 flex items-center justify-center gap-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-center gap-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-black"
             >
               <Image
                 src="/google-logo.svg"
