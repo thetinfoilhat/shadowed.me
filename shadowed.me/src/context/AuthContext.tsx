@@ -9,19 +9,22 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
-interface AuthContextType {
+export const AuthContext = createContext<{
   user: User | null;
-  loading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+  showProfileModal: boolean;
+  setShowProfileModal: (show: boolean) => void;
+}>({
+  user: null,
+  logout: async () => {},
+  showProfileModal: false,
+  setShowProfileModal: () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -45,7 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      logout,
+      showProfileModal,
+      setShowProfileModal,
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

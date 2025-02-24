@@ -29,30 +29,26 @@ function ProfileModal({
   initialData: Partial<UserProfile>;
   onSave: (data: UserProfile) => Promise<void>;
 }) {
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setError(null);
 
+    const formData = new FormData(e.currentTarget);
     try {
-      const form = e.currentTarget;
-      const formData = new FormData(form);
-      
       await onSave({
         name: formData.get('name') as string,
-        email: formData.get('email') as string,
-        age: Number(formData.get('age')),
+        email: initialData.email || '', // Use email from initialData
+        age: parseInt(formData.get('age') as string),
         school: formData.get('school') as string,
-        grade: Number(formData.get('grade')),
+        grade: parseInt(formData.get('grade') as string),
       });
-      
       onClose();
-    } catch (err) {
-      console.error('Error saving profile:', err);
-      setError('Failed to save profile');
+    } catch (error) {
+      setError('Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,10 +83,9 @@ function ProfileModal({
             <input
               type="email"
               name="email"
-              defaultValue={initialData.email}
-              required
+              value={initialData.email}
               disabled
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 text-black"
+              className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
             />
           </div>
 
@@ -101,8 +96,6 @@ function ProfileModal({
               name="age"
               defaultValue={initialData.age}
               required
-              min="11"
-              max="19"
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#2A8E9E] text-black"
             />
           </div>
@@ -158,8 +151,7 @@ export default function Header() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, logout } = useAuth();
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const { user, logout, showProfileModal, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [userRole, setUserRole] = useState<'student' | 'captain' | null>(null);
   const [isCaptain, setIsCaptain] = useState(false);
@@ -415,6 +407,7 @@ export default function Header() {
                         setShowProfileModal(true);
                         setShowUserMenu(false);
                       }}
+                      data-edit-profile
                       className="w-full px-4 py-2 text-left text-sm text-black hover:bg-gray-50 transition-colors"
                     >
                       Edit Profile

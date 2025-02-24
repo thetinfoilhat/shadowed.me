@@ -8,28 +8,16 @@ import { Dialog } from '@headlessui/react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
+import { Club } from '@/types/club';
 
 const CATEGORIES = ['All', 'STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
 
-type Club = {
-  id: string;
-  captain: string;
-  category: string;
-  createdAt: Date;
-  date: string;
-  description: string;
-  endTime: string;
+type UserProfile = {
   name: string;
+  email: string;
+  age: number;
   school: string;
-  startTime: string;
-  time: string;
-  slots: number;
-  contactEmail: string;
-  applicants?: Array<{
-    name: string;
-    email: string;
-  }>;
-  categories?: string[];
+  grade: number;
 };
 
 function formatDate(dateStr: string) {
@@ -109,8 +97,9 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, visitName }: {
 }
 
 export default function SchoolClubs() {
-  const { user } = useAuth();
-  
+  const { user, setShowProfileModal } = useAuth();
+  const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number]>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -160,6 +149,32 @@ export default function SchoolClubs() {
     fetchClubs();
   }, []);
 
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserProfile({
+            name: data.displayName || user.displayName || '',
+            email: user.email || '',
+            age: data.age,
+            school: data.school,
+            grade: data.grade,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -178,14 +193,25 @@ export default function SchoolClubs() {
   });
 
   const handleRegister = async (club: Club) => {
-    if (!user) return; // Handle not logged in case
+    if (!user) {
+      document.querySelector<HTMLButtonElement>('button[data-login-button]')?.click();
+      return;
+    }
+
+    // Check if profile is complete
+    if (!userProfile.grade || !userProfile.school) {
+      setShowProfilePrompt(true);
+      return;
+    }
 
     try {
       const visitRef = doc(db, 'opportunities', club.id);
       await updateDoc(visitRef, {
         applicants: arrayUnion({
           name: user.displayName || 'Anonymous',
-          email: user.email
+          email: user.email,
+          grade: userProfile.grade,
+          school: userProfile.school
         })
       });
       await fetchClubs();
@@ -193,6 +219,13 @@ export default function SchoolClubs() {
       console.error('Error registering:', error);
       throw error;
     }
+  };
+
+  const handleEditProfile = () => {
+    setShowProfilePrompt(false);
+    setTimeout(() => {
+      setShowProfileModal(true);
+    }, 100);
   };
 
   return (
@@ -328,6 +361,45 @@ export default function SchoolClubs() {
           onConfirm={() => handleRegister(registeringVisit)}
           visitName={registeringVisit.name}
         />
+      )}
+
+      {/* Profile Prompt Modal */}
+      {showProfilePrompt && (
+        <Dialog
+          open={showProfilePrompt}
+          onClose={() => setShowProfilePrompt(false)}
+          className="relative z-50"
+        >
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-8">
+              <Dialog.Title className="text-2xl font-semibold text-[#0A2540] mb-4">
+                Complete Your Profile
+              </Dialog.Title>
+              
+              <p className="text-gray-600 mb-8">
+                Please complete your profile information before registering for opportunities. 
+                This helps club captains better understand their visitors.
+              </p>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setShowProfilePrompt(false)}
+                  className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditProfile}
+                  className="px-6 py-2 rounded-lg bg-[#38BFA1] text-white hover:bg-[#2DA891] transition-colors"
+                >
+                  Edit Profile
+                </button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
       )}
     </div>
   );
