@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "framer-motion": "^12.4.7",
+    "@headlessui/react": "^2.2.0",
+    "date-fns": "^4.1.0",
     "firebase": "^11.3.1",
+    "framer-motion": "^12.4.7",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
