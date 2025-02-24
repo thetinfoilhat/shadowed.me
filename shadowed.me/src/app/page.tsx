@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Link from 'next/link';
+
 
 export default function Home() {
   const { user } = useAuth();
@@ -34,9 +36,9 @@ export default function Home() {
   }, [user, router]);
 
   return (
-    <div className="pt-[80px] min-h-screen bg-[#FAFAFA]">
+    <div className="pt-[100px] min-h-screen bg-[#FAFAFA]" suppressHydrationWarning>
       {/* Hero Section */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 pt-12 pb-48 md:pb-64">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 pt-24 pb-48 md:pb-64">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24">
           {/* Left Column */}
           <div>
@@ -47,11 +49,10 @@ export default function Home() {
               transition={{ duration: 0.8 }}
             >
               <span className="text-[#180D39]">
-                Helping<br />
-                students<br />
-                <span className="font-bold relative">
+                Helping students<br />
+                <span className="font-bold">
                   find their<br />
-                  <span className="relative">
+                  <span className="relative inline-block">
                     light.
                     <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30" />
                   </span>
@@ -59,26 +60,28 @@ export default function Home() {
               </span>
             </motion.h1>
             
-            <motion.p 
-              className="text-lg md:text-xl text-[#180D39]/70 mb-12 max-w-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-            >
-              Supporting students with simple searching, instant club registration, and easy outreach tracking.
-            </motion.p>
+            <div className="mt-8">
+              <motion.p 
+                className="text-lg md:text-xl text-[#180D39]/70 mb-12 max-w-xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
+              >
+                Supporting students with simple searching, instant club registration, and easy outreach tracking.
+              </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="flex items-center gap-6"
-            >
-              <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-all hover:shadow-lg hover:shadow-[#2A8E9E]/20">
-                Get Started →
-              </button>
-              <span className="text-[#180D39]/40 text-sm">Join 500+ students</span>
-            </motion.div>
+              <motion.div
+                className="flex items-center gap-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+                  Get Started →
+                </button>
+                <span className="text-[#180D39]/40">Join 500+ students</span>
+              </motion.div>
+            </div>
 
             <motion.div 
               className="mt-16"
@@ -95,103 +98,86 @@ export default function Home() {
           </div>
 
           {/* Right Column */}
-          <div className="relative mt-8 lg:mt-0">
-            <div className="space-y-6">
-              {/* First Card */}
-              <motion.div 
-                className="bg-gradient-to-br from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0,
-                  transform: ["translateY(0px)", "translateY(-10px)", "translateY(0px)"]
-                }}
-                transition={{
-                  duration: 0.5,
-                  transform: {
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }
-                }}
-              >
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#2A8E9E]/5 rounded-full blur-2xl" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#2A8E9E]/10 rounded-full blur-xl" />
-                
-                <div className="relative"> {/* Content wrapper to stay above blurred elements */}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-[#180D39] font-semibold text-lg mb-1">Neuqua Valley High School</h3>
-                      <div className="inline-block bg-white/50 backdrop-blur-sm text-[#2A8E9E] text-sm font-medium px-3 py-1 rounded-full mb-3">
-                        Mar 15
-                      </div>
-                      <h4 className="text-[#2A8E9E] font-medium mb-2">Physics Club Visit</h4>
-                      <p className="text-[#180D39]/70 text-sm">
-                        Join us for an interactive session exploring practical physics applications.
-                      </p>
-                    </div>
-                    <button className="text-[#2A8E9E]">
-                      →
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#2A8E9E]/10">
-                    <div className="flex items-center gap-2 text-sm text-[#180D39]/60">
-                      <span>🕒</span> 3 hours
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[#180D39]/60">
-                      <span>👥</span> 5 spots
+          <div className="relative pt-24">
+            {/* Main Feature Card */}
+            <motion.div 
+              className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-8 shadow-xl w-[95%]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex items-start gap-6">
+                <div className="bg-white/10 rounded-xl p-4">
+                  <div className="relative w-16 h-16">
+                    {/* Animated calendar illustration */}
+                    <motion.div 
+                      className="absolute inset-0 bg-[#2A8E9E]/20 rounded-lg"
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        opacity: [0.5, 0.8, 0.5]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    <div className="relative h-full flex items-center justify-center">
+                      <span className="text-3xl">📅</span>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+                
+                <div className="flex-1">
+                  <h3 className="text-white text-xl font-semibold mb-3">
+                    Upcoming Opportunities
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div>
+                        <div className="text-[#2A8E9E] font-medium">Physics Club Visit</div>
+                        <div className="text-white/70 text-sm mt-1">Neuqua Valley High School</div>
+                      </div>
+                      <div className="text-white/50 text-sm">Mar 15</div>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div>
+                        <div className="text-[#2A8E9E] font-medium">Food Bank Volunteering</div>
+                        <div className="text-white/70 text-sm mt-1">Loaves & Fishes</div>
+                      </div>
+                      <div className="text-white/50 text-sm">Mar 18</div>
+                    </div>
+                  </div>
 
-              {/* Second Card - with different animation phase */}
-              <motion.div 
-                className="bg-gradient-to-bl from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0,
-                  transform: ["translateY(-10px)", "translateY(0px)", "translateY(-10px)"]
-                }}
-                transition={{
-                  duration: 0.5,
-                  transform: {
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }
-                }}
-              >
-                {/* Similar structure with different gradient direction and animation phase */}
-              </motion.div>
+                  <Link 
+                    href="/school-clubs"
+                    className="mt-6 text-[#2A8E9E] text-sm font-medium flex items-center gap-2 group w-fit"
+                  >
+                    <motion.span
+                      className="flex items-center gap-2"
+                      whileHover={{ x: 5 }}
+                    >
+                      View all opportunities
+                      <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </motion.span>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
 
-              {/* Third Card - with another animation phase */}
-              <motion.div 
-                className="bg-gradient-to-tr from-white to-[#2A8E9E]/5 rounded-2xl p-6 shadow-lg relative overflow-hidden"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0,
-                  transform: ["translateY(0px)", "translateY(-10px)", "translateY(0px)"]
-                }}
-                transition={{
-                  duration: 0.5,
-                  transform: {
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 0.5 // Slight delay for more organic feel
-                  }
-                }}
-              >
-                {/* Similar structure with different gradient direction and animation phase */}
-              </motion.div>
-            </div>
+            {/* Stats Card - Repositioned to overlap purple card */}
+            <motion.div 
+              className="absolute top-4 right-4 bg-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
+              initial={{ opacity: 0, y: 20, x: 20 }}
+              animate={{ opacity: 1, y: 0, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="text-white/90 text-sm font-medium">Active Students</div>
+              <div className="text-white text-2xl font-bold mt-1">500+</div>
+              <div className="text-white/70 text-xs mt-1">across 12 schools</div>
+            </motion.div>
 
-            {/* Decorative elements */}
+            {/* Decorative Elements */}
             <div className="absolute -z-10 top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
               <div className="w-96 h-96 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl" />
             </div>
