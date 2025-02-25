@@ -20,7 +20,7 @@ const AnimatedHeadline = () => {
     }, 2500); // Slightly faster transitions
     
     return () => clearInterval(interval);
-  }, []);
+  }, [phrases.length]);
   
   return (
     <motion.div 
