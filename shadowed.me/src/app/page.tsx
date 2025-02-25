@@ -1,6 +1,184 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import CountUp from 'react-countup';
+import { useState, useEffect } from 'react';
+
+// Custom synchronized counter component
+const SyncedCounters = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setIsVisible(true);
+          setHasAnimated(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    const element = document.getElementById('stats-section');
+    if (element) observer.observe(element);
+    
+    return () => {
+      if (element) observer.unobserve(element);
+    };
+  }, [hasAnimated]);
+  
+  return (
+    <div className="flex flex-wrap justify-center gap-20 md:gap-40 relative z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.1 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          👨‍🎓
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={500}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          Active Students
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.2 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          🏫
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={50}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          School Clubs
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.3 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          ⏱️
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={1000}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          Hours Logged
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
 
 export default function Home() {
   return (
@@ -367,7 +545,11 @@ export default function Home() {
       </div>
 
       {/* Stats Section */}
-      <div className="max-w-[1400px] mx-auto px-8 pt-48">
+      <div id="stats-section" className="max-w-[1400px] mx-auto px-8 pt-48 relative">
+        {/* Decorative elements */}
+        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
+        <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
+        
         <motion.h2 
           className="text-4xl font-bold text-center text-[#0A2540] mb-32"
           initial={{ opacity: 0, y: 20 }}
@@ -377,40 +559,7 @@ export default function Home() {
           We&apos;ve helped students discover opportunities
         </motion.h2>
         
-        <div className="flex justify-center gap-40">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">500+</div>
-            <div className="text-xl text-[#0A2540]">Active Students</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">50+</div>
-            <div className="text-xl text-[#0A2540]">School Clubs</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">1k+</div>
-            <div className="text-xl text-[#0A2540]">Hours Logged</div>
-          </motion.div>
-        </div>
+        <SyncedCounters />
       </div>
 
       {/* CTA Section */}
