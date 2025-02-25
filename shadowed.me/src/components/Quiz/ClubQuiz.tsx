@@ -49,161 +49,171 @@ const clubs: Club[] = [
   // 🎨 Art Clubs
   {
     name: "Art Club",
-    attributes: ["creativity", "painting", "drawing", "self-expression", "collaboration"],
+    attributes: ["creativity", "painting", "drawing", "self-expression", "collaboration", "design", "visual storytelling", "artistic"],
     description: "A club for students interested in exploring different forms of visual art and creative expression."
   },
   {
     name: "Ceramics Society",
-    attributes: ["pottery", "hands-on", "sculpting", "creativity", "design"],
+    attributes: ["pottery", "hands-on", "sculpting", "creativity", "design", "craftsmanship", "tactile", "DIY"],
     description: "A club dedicated to ceramics and sculpting for those who love working with clay."
   },
   {
     name: "Photography Club",
-    attributes: ["photography", "editing", "visual storytelling", "composition", "technology"],
+    attributes: ["photography", "editing", "visual storytelling", "composition", "technology", "media", "graphic design", "creativity"],
     description: "A club focused on learning photography techniques, photo editing, and composition."
   },
 
   // 🌎 Language & Culture Clubs
   {
     name: "ASL (American Sign Language & Culture) Club",
-    attributes: ["language", "cultural awareness", "sign language", "communication", "accessibility"],
+    attributes: ["language", "cultural awareness", "sign language", "communication", "accessibility", "global awareness", "inclusivity"],
     description: "A club for students interested in learning ASL and engaging with Deaf culture."
   },
   {
     name: "French Club",
-    attributes: ["language", "cultural awareness", "travel", "conversation", "community"],
+    attributes: ["language", "cultural awareness", "travel", "conversation", "community", "history", "global issues", "social"],
     description: "A club for students interested in French language, culture, and traditions."
   },
   {
     name: "Spanish Club",
-    attributes: ["language", "cultural awareness", "communication", "travel", "conversation"],
+    attributes: ["language", "cultural awareness", "communication", "travel", "conversation", "global awareness", "public speaking"],
     description: "A club for students interested in Spanish language and Hispanic cultures."
   },
   {
+    name: "German Club",
+    attributes: ["language", "cultural awareness", "communication", "global awareness", "history"],
+    description: "A club dedicated to learning German language and culture through activities and discussions."
+  },
+  {
     name: "Korean Club",
-    attributes: ["language", "cultural awareness", "community", "tradition", "communication"],
+    attributes: ["language", "cultural awareness", "community", "tradition", "communication", "global awareness"],
     description: "A club for students interested in Korean language, culture, and traditions."
   },
   {
     name: "Henna Club",
-    attributes: ["art", "cultural awareness", "self-expression", "design", "creativity"],
+    attributes: ["art", "cultural awareness", "self-expression", "design", "creativity", "tradition", "history", "hands-on"],
     description: "A club that explores the cultural significance and art of henna designs."
   },
 
   // 🔬 STEM Clubs
   {
     name: "Astronomy Club",
-    attributes: ["space", "science", "experiments", "exploration", "critical thinking"],
+    attributes: ["space", "science", "experiments", "exploration", "critical thinking", "problem-solving", "innovation", "research"],
     description: "A club for students fascinated by the universe, space exploration, and astronomy."
   },
   {
     name: "Biochemistry Club",
-    attributes: ["science", "experiments", "healthcare", "research", "lab work"],
+    attributes: ["science", "experiments", "healthcare", "research", "lab work", "medicine", "problem-solving", "critical thinking"],
     description: "A club focused on the intersection of biology and chemistry through experiments and discussions."
   },
   {
     name: "Computer Science Club",
-    attributes: ["coding", "technology", "problem-solving", "teamwork", "algorithms"],
+    attributes: ["coding", "technology", "problem-solving", "teamwork", "algorithms", "engineering", "AI", "automation"],
     description: "A club for students interested in software development, algorithms, and coding competitions."
   },
   {
     name: "Math Team",
-    attributes: ["math", "competitive", "problem-solving", "logical thinking", "strategy"],
+    attributes: ["math", "competitive", "problem-solving", "logical thinking", "strategy", "teamwork", "analysis", "precision"],
     description: "A competitive team for students who love challenging math problems and competitions."
   },
   {
     name: "Robotics Team (FIRST Robotics)",
-    attributes: ["engineering", "teamwork", "problem-solving", "coding", "hands-on", "competitive"],
+    attributes: ["engineering", "teamwork", "problem-solving", "coding", "hands-on", "competitive", "technology", "innovation"],
     description: "A hands-on club where students design, build, and program robots for competitions."
+  },
+  {
+    name: "Science Olympiad",
+    attributes: ["science", "experiments", "competitive", "teamwork", "innovation", "critical thinking", "problem-solving"],
+    description: "A team-based competition club for students passionate about science and engineering."
   },
 
   // 🎭 Performing Arts Clubs
   {
     name: "Drama Club",
-    attributes: ["acting", "performance", "public speaking", "creativity", "teamwork"],
+    attributes: ["acting", "performance", "public speaking", "creativity", "teamwork", "improvisation", "confidence", "stage presence"],
     description: "A club for students passionate about theater, performing plays, and improving public speaking skills."
   },
   {
     name: "Marching Band",
-    attributes: ["music", "performance", "teamwork", "discipline", "coordination"],
+    attributes: ["music", "performance", "teamwork", "discipline", "coordination", "musicality", "rhythm"],
     description: "A club for students interested in performing music in a marching band setting."
   },
   {
     name: "Show Choir",
-    attributes: ["singing", "performance", "teamwork", "dance", "stage presence"],
+    attributes: ["singing", "performance", "teamwork", "dance", "stage presence", "expression", "musicality", "discipline"],
     description: "A competitive choir that combines singing with choreographed dance routines."
   },
   {
     name: "Orchesis",
-    attributes: ["dance", "performance", "creativity", "expression", "fitness"],
+    attributes: ["dance", "performance", "creativity", "expression", "fitness", "choreography", "movement", "artistic"],
     description: "A dance-focused club that explores different styles and puts on performances."
   },
 
   // 💼 Business Clubs
   {
     name: "DECA",
-    attributes: ["business", "competitive", "teamwork", "public speaking", "leadership"],
+    attributes: ["business", "competitive", "teamwork", "public speaking", "leadership", "marketing", "entrepreneurship", "networking"],
     description: "A club focused on business, marketing, and entrepreneurship through competitions."
   },
   {
     name: "BPA (Business Professionals of America)",
-    attributes: ["business", "leadership", "networking", "public speaking", "finance", "competitive"],
+    attributes: ["business", "leadership", "networking", "public speaking", "finance", "competitive", "professional development"],
     description: "A club that prepares students for business careers through competitions and networking."
   },
   {
     name: "Investment Club",
-    attributes: ["finance", "business", "economics", "investing", "strategy"],
+    attributes: ["finance", "business", "economics", "investing", "strategy", "critical thinking", "wealth management", "decision making"],
     description: "A club for students interested in learning about the stock market and financial literacy."
   },
 
   // ❤️ Community Service Clubs
   {
     name: "Girl Up",
-    attributes: ["volunteering", "advocacy", "leadership", "community", "global awareness"],
+    attributes: ["volunteering", "advocacy", "leadership", "community", "global awareness", "gender equality", "social impact"],
     description: "A club dedicated to empowering young women and advocating for gender equality."
   },
   {
     name: "Interact Club",
-    attributes: ["volunteering", "community service", "leadership", "fundraising", "teamwork"],
+    attributes: ["volunteering", "community service", "leadership", "fundraising", "teamwork", "event planning", "outreach", "collaboration"],
     description: "A Rotary-sponsored club focused on service projects and leadership development."
   },
   {
     name: "UNICEF Club",
-    attributes: ["volunteering", "global awareness", "advocacy", "fundraising", "teamwork"],
+    attributes: ["volunteering", "global awareness", "advocacy", "fundraising", "teamwork", "policy change", "public health", "education"],
     description: "A club dedicated to helping children around the world through advocacy and fundraising."
   },
 
   // 📚 Academic & Humanities Clubs
   {
     name: "Debate",
-    attributes: ["public speaking", "debate", "critical thinking", "argumentation", "competition"],
+    attributes: ["public speaking", "debate", "critical thinking", "argumentation", "competition", "logic", "persuasion", "research"],
     description: "A club for students who enjoy structured arguments, competitions, and discussing important issues."
   },
   {
     name: "Model UN",
-    attributes: ["public speaking", "debate", "global issues", "teamwork", "policy analysis"],
+    attributes: ["public speaking", "debate", "global issues", "teamwork", "policy analysis", "diplomacy", "critical thinking", "advocacy"],
     description: "A club where students simulate United Nations conferences, debating global policies and current events."
   },
   {
     name: "Huskie Book Club",
-    attributes: ["reading", "literature", "discussion", "analysis", "critical thinking"],
+    attributes: ["reading", "literature", "discussion", "analysis", "critical thinking", "storytelling"],
     description: "A club for students who love reading and discussing books with peers."
   },
 
   // 🏆 Miscellaneous Clubs
   {
     name: "Chess Club & Team",
-    attributes: ["strategy", "problem-solving", "competition", "critical thinking", "gameplay"],
+    attributes: ["strategy", "problem-solving", "competition", "critical thinking", "gameplay", "logic", "concentration", "patience"],
     description: "A club for students who enjoy chess and want to improve their strategic thinking."
   },
   {
     name: "Esports Club",
-    attributes: ["gaming", "strategy", "teamwork", "competitive", "tournament play"],
+    attributes: ["gaming", "strategy", "teamwork", "competitive", "tournament play", "technology", "coordination", "communication"],
     description: "A club for students interested in competitive gaming and team-based esports tournaments."
   },
   {
     name: "Yearbook",
-    attributes: ["photography", "writing", "design", "teamwork", "publishing"],
+    attributes: ["photography", "writing", "design", "teamwork", "publishing", "journalism", "editing", "creativity"],
     description: "A club where students work together to create and design the school's yearbook."
   }
 ];
