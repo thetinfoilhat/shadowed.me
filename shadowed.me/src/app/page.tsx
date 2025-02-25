@@ -487,6 +487,54 @@ export default function Home() {
 
       {/* Why They Prefer Section */}
       <div className="max-w-[1400px] mx-auto px-8 pt-48">
+        {/* Stats Section - Moved here */}
+        <div id="stats-section" className="relative">
+          {/* Decorative elements */}
+          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
+          <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
+          
+          <AnimatedHeadline />
+          
+          <SyncedCounters />
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="bg-[#0A2540] mt-48 py-24 text-white">
+        <div className="max-w-[1400px] mx-auto px-8">
+          <motion.h2 
+            className="text-4xl font-bold mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            Maximize your experience with a
+            <br />
+            platform that connects.
+          </motion.h2>
+
+          <div className="grid grid-cols-3 gap-16">
+            <div>
+              <div className="text-8xl font-light text-[#38BFA1] mb-8">1</div>
+              <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
+              <p className="text-gray-400">Set your interests, availability, and preferences</p>
+            </div>
+            <div>
+              <div className="text-8xl font-light text-[#38BFA1] mb-8">2</div>
+              <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
+              <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
+            </div>
+            <div>
+              <div className="text-8xl font-light text-[#38BFA1] mb-8">3</div>
+              <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
+              <p className="text-gray-400">Build your portfolio as you participate</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Why students choose section - Moved here */}
+      <div className="max-w-[1400px] mx-auto px-8 pt-48">
         <motion.h2 
           className="text-4xl font-bold text-[#0A2540] mb-24 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -568,51 +616,6 @@ export default function Home() {
             <p className="text-[#180D39]/80">Track your hours and impact</p>
           </motion.div>
         </div>
-      </div>
-
-      {/* How It Works Section */}
-      <div className="bg-[#0A2540] mt-48 py-24 text-white">
-        <div className="max-w-[1400px] mx-auto px-8">
-          <motion.h2 
-            className="text-4xl font-bold mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            Maximize your experience with a
-            <br />
-            platform that connects.
-          </motion.h2>
-
-          <div className="grid grid-cols-3 gap-16">
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">1</div>
-              <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
-              <p className="text-gray-400">Set your interests, availability, and preferences</p>
-            </div>
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">2</div>
-              <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
-              <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
-            </div>
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">3</div>
-              <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
-              <p className="text-gray-400">Build your portfolio as you participate</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div id="stats-section" className="max-w-[1400px] mx-auto px-8 pt-48 relative">
-        {/* Decorative elements */}
-        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
-        <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
-        
-        <AnimatedHeadline />
-        
-        <SyncedCounters />
       </div>
 
       {/* CTA Section */}
