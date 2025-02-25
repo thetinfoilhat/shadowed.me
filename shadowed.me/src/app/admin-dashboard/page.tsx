@@ -57,11 +57,22 @@ export default function AdminDashboard() {
       const q = query(usersRef, where('role', 'in', ['captain', 'admin']));
       const querySnapshot = await getDocs(q);
       
-      const usersList = querySnapshot.docs.map(doc => ({
-        email: doc.data().email,
-        role: doc.data().role as UserRole
-      }));
+      const usersList = querySnapshot.docs
+        .map(doc => ({
+          email: doc.data().email,
+          role: doc.data().role as UserRole
+        }))
+        .filter(user => user.email)
+        // Explicit sorting to ensure admins are at the top
+        .sort((a, b) => {
+          // First sort by role (admins first)
+          if (a.role === 'admin' && b.role !== 'admin') return -1;
+          if (a.role !== 'admin' && b.role === 'admin') return 1;
+          // Then sort by email within each role group
+          return a.email.localeCompare(b.email);
+        });
 
+      console.log('Sorted users:', usersList); // Add this to debug
       setUsers(usersList);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -170,14 +181,21 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Current Captains and Admins</h2>
           
           <div className="space-y-4">
-            {users.map((user, index) => (
+            {users.map((user) => (
               <div 
-                key={index}
-                className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50"
+                key={user.email}
+                className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
+                  ${user.role === 'admin' ? 'bg-red-50' : ''}`}
               >
                 <div>
-                  <p className="text-[#0A2540]">{user.email}</p>
-                  <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                  <p className="text-[#0A2540] font-medium">{user.email}</p>
+                  <p className={`text-sm capitalize ${
+                    user.role === 'admin' 
+                      ? 'text-red-600 font-medium' 
+                      : 'text-gray-500'
+                  }`}>
+                    {user.role}
+                  </p>
                 </div>
               </div>
             ))}
