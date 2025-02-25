@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { signInWithPopup, AuthError } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
-import UserRoleModal from './UserRoleModal';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
@@ -147,7 +146,6 @@ function ProfileModal({
 export default function Header() {
   const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout, showProfileModal, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
@@ -259,26 +257,6 @@ export default function Header() {
     } catch (error) {
       console.error('Error saving profile:', error);
       throw error;
-    }
-  };
-
-  const handleDashboardClick = async () => {
-    if (!user) {
-      router.push('/my-visits');
-      return;
-    }
-
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-      
-      if (userData?.role === 'captain') {
-        router.push('/captain-dashboard');
-      } else {
-        router.push('/my-visits');
-      }
-    } catch (err) {
-      console.error('Error checking user role:', err);
     }
   };
 
