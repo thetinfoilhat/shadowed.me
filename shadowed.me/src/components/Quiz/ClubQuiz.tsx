@@ -39,6 +39,9 @@ type ClubMatch = {
   score: number;
   matchedAttributes: string[];
   matchPercentage?: number;
+  negativeAttributes?: string[];
+  confidenceScore?: number;
+  categoryMatch?: string | null;
 };
 
 // Sample club data (you can replace this later)
@@ -513,43 +516,160 @@ const ClubQuiz: React.FC = () => {
 
   // Calculate matches based on user responses
   const calculateMatches = () => {
+    // Define question weights (higher number = more important)
+    const questionWeights: Record<number, number> = {
+      1: 1.2,  // Public speaking
+      2: 1.5,  // Team vs independent
+      3: 1.3,  // Competitiveness
+      4: 1.2,  // Problem solving
+      5: 1.4,  // Business interest
+      6: 1.4,  // Volunteering
+      7: 1.5,  // Structure vs creativity
+      8: 1.3,  // Technology interest
+      9: 2.0,  // Areas of interest (high weight as it's a key indicator)
+      10: 1.5, // Creative expression
+      11: 1.8, // Subject preferences (high weight as it's a key indicator)
+      12: 1.2, // Writing interest
+      13: 1.5, // Performance comfort
+      14: 1.3, // Global issues
+      15: 1.4, // Hands-on activities
+    };
+
+    // Define club categories for better grouping
+    const clubCategories: Record<string, string[]> = {
+      "Art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club"],
+      "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "Korean Club"],
+      "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)"],
+      "Performing Arts": ["Drama Club", "Marching Band", "Show Choir", "Orchesis"],
+      "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
+      "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
+      "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
+      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)"]
+    };
+
     // Create a map to track attribute matches for each club
     const clubMatches = new Map<Club, { 
       matchedAttributes: string[], 
+      negativeAttributes: string[],
       matchScore: number,
-      totalPossibleScore: number 
+      weightedScore: number,
+      totalPossibleScore: number,
+      categoryMatch: string | null,
+      confidenceScore: number
     }>();
 
     // Initialize club matches
     clubs.forEach(club => {
+      // Find which category this club belongs to
+      let category = null;
+      for (const [cat, clubNames] of Object.entries(clubCategories)) {
+        if (clubNames.includes(club.name)) {
+          category = cat;
+          break;
+        }
+      }
+
       clubMatches.set(club, { 
         matchedAttributes: [], 
+        negativeAttributes: [],
         matchScore: 0,
-        totalPossibleScore: club.attributes.length 
+        weightedScore: 0,
+        totalPossibleScore: club.attributes.length,
+        categoryMatch: category,
+        confidenceScore: 0
       });
     });
+
+    // Track user's preferred categories based on answers
+    const categoryScores: Record<string, number> = {
+      "Art": 0,
+      "Language & Culture": 0,
+      "STEM": 0,
+      "Performing Arts": 0,
+      "Business": 0,
+      "Community Service": 0,
+      "Academic & Humanities": 0,
+      "Competitive": 0
+    };
 
     // Process each user response
     answers.forEach(response => {
       const question = questions.find(q => q.id === response.questionId);
       if (!question) return;
 
+      // Get the weight for this question
+      const questionWeight = questionWeights[question.id] || 1.0;
+      
       let responseAttributes: string[] = [];
+      let negativeAttributes: string[] = [];
+      const categoryBoosts: string[] = [];
 
       // Extract attributes based on question type
       if (question.type === 'yes-no' || question.type === 'multiple-choice') {
-        if (question.options) {
-          const selectedOption = question.options.find(opt => opt.value === response.selectedOptions?.[0]);
-          if (selectedOption) {
-            responseAttributes = selectedOption.attributes;
+        if (question.options && response.selectedOptions) {
+          // Handle multiple selected options for multiple-choice questions
+          response.selectedOptions.forEach(selectedValue => {
+            const selectedOption = question.options?.find(opt => opt.value === selectedValue);
+            if (selectedOption) {
+              responseAttributes = [...responseAttributes, ...selectedOption.attributes];
+              
+              // Add category boosts based on specific answers
+              if (question.id === 9) { // Areas of interest question
+                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts");
+                if (selectedValue === 'science') categoryBoosts.push("STEM");
+                if (selectedValue === 'leadership') categoryBoosts.push("Business", "Community Service");
+                if (selectedValue === 'culture') categoryBoosts.push("Language & Culture");
+              }
+              
+              if (question.id === 11) { // Subject preferences
+                if (selectedValue === 'math') categoryBoosts.push("STEM");
+                if (selectedValue === 'science') categoryBoosts.push("STEM");
+                if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
+                if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
+                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts");
+              }
+              
+              if (question.id === 3 && parseInt(selectedValue) >= 4) { // Competitiveness
+                categoryBoosts.push("Competitive");
+              }
+            }
+          });
+          
+          // For "No" answers in yes-no questions, add negative attributes
+          if (question.type === 'yes-no' && response.selectedOptions.includes('no')) {
+            // Find the "yes" option to get attributes to avoid
+            const yesOption = question.options.find(opt => opt.value === 'yes');
+            if (yesOption) {
+              negativeAttributes = yesOption.attributes;
+            }
           }
         }
       } else if (question.type === 'slider') {
         const sliderValue = response.sliderValue;
         if (question.attributes && sliderValue !== undefined && question.attributes[sliderValue]) {
           responseAttributes = question.attributes[sliderValue];
+          
+          // Add category boosts based on slider values
+          if (question.id === 3 && sliderValue >= 4) { // Competitiveness
+            categoryBoosts.push("Competitive");
+          }
+          
+          if (question.id === 8 && sliderValue >= 4) { // Technology interest
+            categoryBoosts.push("STEM");
+          }
+          
+          if (question.id === 10 && sliderValue >= 4) { // Creative expression
+            categoryBoosts.push("Art", "Performing Arts");
+          }
         }
       }
+
+      // Boost category scores based on answers
+      categoryBoosts.forEach(category => {
+        if (categoryScores[category] !== undefined) {
+          categoryScores[category] += questionWeight;
+        }
+      });
 
       // Update club matches based on response attributes
       clubs.forEach(club => {
@@ -561,34 +681,83 @@ const ClubQuiz: React.FC = () => {
           if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
             clubMatch.matchedAttributes.push(attr);
             clubMatch.matchScore += 1;
+            clubMatch.weightedScore += questionWeight;
+          }
+        });
+        
+        // Check for negative attribute matches (attributes to avoid)
+        negativeAttributes.forEach(attr => {
+          if (club.attributes.includes(attr) && !clubMatch.negativeAttributes.includes(attr)) {
+            clubMatch.negativeAttributes.push(attr);
+            // We don't reduce the score here, but we'll use this for confidence calculation
           }
         });
       });
     });
 
-    // Calculate match percentages and sort by match score
+    // Find the top categories
+    const sortedCategories = Object.entries(categoryScores)
+      .sort((a, b) => b[1] - a[1])
+      .filter(([, score]) => score > 0)
+      .map(([category]) => category);
+    
+    const topCategories = sortedCategories.slice(0, 3);
+
+    // Calculate match percentages, confidence scores, and sort by weighted score
     const results = Array.from(clubMatches.entries())
       .map(([club, match]) => {
-        // Calculate match percentage (with a minimum of 5% to avoid zero matches)
-        const matchPercentage = Math.max(
-          5,
-          Math.round((match.matchScore / Math.max(1, match.totalPossibleScore)) * 100)
-        );
+        // Calculate match percentage with a more nuanced approach
+        const rawPercentage = Math.round((match.matchScore / Math.max(1, match.totalPossibleScore)) * 100);
+        
+        // Adjust percentage based on weighted score
+        const weightedPercentage = Math.round((match.weightedScore / (match.totalPossibleScore * 1.5)) * 100);
+        
+        // Use the better of the two percentages, with a minimum of 5%
+        const matchPercentage = Math.max(5, Math.max(rawPercentage, weightedPercentage));
+        
+        // Calculate confidence score (0-100)
+        let confidence = 50; // Start at neutral
+        
+        // Boost confidence if the club is in a top category
+        if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
+          confidence += 15;
+        }
+        
+        // Boost confidence based on number of matched attributes
+        confidence += Math.min(20, match.matchedAttributes.length * 2);
+        
+        // Reduce confidence based on negative attributes
+        confidence -= Math.min(30, match.negativeAttributes.length * 10);
+        
+        // Ensure confidence is between 0-100
+        confidence = Math.max(0, Math.min(100, confidence));
         
         return {
           club,
           matchedAttributes: match.matchedAttributes,
-          score: match.matchScore, // Add score for compatibility with ClubMatch type
-          matchPercentage
+          negativeAttributes: match.negativeAttributes,
+          score: match.weightedScore, // Use weighted score
+          matchPercentage,
+          confidenceScore: confidence,
+          categoryMatch: match.categoryMatch
         };
       })
-      .sort((a, b) => b.matchPercentage - a.matchPercentage);
+      .sort((a, b) => {
+        // Sort by match percentage first
+        if (b.matchPercentage !== a.matchPercentage) {
+          return b.matchPercentage - a.matchPercentage;
+        }
+        // If percentages are equal, sort by confidence score
+        return b.confidenceScore - a.confidenceScore;
+      });
 
     // Return top matches (clubs with at least 20% match)
     const topMatches = results.filter(result => result.matchPercentage >= 20);
     
-    // If no good matches, return top 3 anyway
-    return topMatches.length > 0 ? topMatches : results.slice(0, 3);
+    // Group matches by category for better organization
+    const categorizedMatches = topMatches.length > 0 ? topMatches : results.slice(0, 5);
+    
+    return categorizedMatches;
   };
 
   // Calculate quiz results
@@ -770,18 +939,41 @@ const ClubQuiz: React.FC = () => {
                 {clubMatches.map((match, index) => (
                   <div 
                     key={index} 
-                    className="p-5 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className={`p-5 border rounded-lg hover:shadow-md transition-shadow ${
+                      (match.confidenceScore ?? 0) >= 70 ? 'border-green-200 bg-green-50' : 
+                      (match.confidenceScore ?? 0) >= 40 ? 'border-gray-200' : 'border-gray-200 bg-gray-50'
+                    }`}
                   >
                     <div className="flex justify-between items-start">
-                      <h3 className="text-xl font-semibold text-[#0A2540]">{match.club.name}</h3>
+                      <div>
+                        <h3 className="text-xl font-semibold text-[#0A2540]">{match.club.name}</h3>
+                        {match.categoryMatch && (
+                          <span className="text-xs font-medium text-gray-500">{match.categoryMatch}</span>
+                        )}
+                      </div>
                       <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold ${
+                          (match.matchPercentage ?? 0) >= 70 ? 'bg-gradient-to-r from-green-500 to-teal-500' :
+                          (match.matchPercentage ?? 0) >= 50 ? 'bg-gradient-to-r from-blue-500 to-purple-500' :
+                          'bg-gradient-to-r from-blue-400 to-indigo-400'
+                        }`}>
                           {match.matchPercentage}%
                         </div>
                       </div>
                     </div>
                     
                     <p className="text-gray-700 my-3">{match.club.description}</p>
+                    
+                    <div className="flex items-center mb-2">
+                      <div className={`h-1.5 rounded-full ${
+                        (match.confidenceScore ?? 0) >= 70 ? 'bg-green-500' :
+                        (match.confidenceScore ?? 0) >= 40 ? 'bg-blue-500' : 'bg-gray-400'
+                      }`} style={{ width: `${match.confidenceScore ?? 50}%` }}></div>
+                      <span className="text-xs font-medium ml-2 text-gray-500">
+                        {(match.confidenceScore ?? 0) >= 70 ? 'Strong match' :
+                         (match.confidenceScore ?? 0) >= 40 ? 'Good match' : 'Possible match'}
+                      </span>
+                    </div>
                     
                     {match.matchedAttributes.length > 0 && (
                       <div className="mt-4">
