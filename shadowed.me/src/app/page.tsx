@@ -31,7 +31,7 @@ const AnimatedHeadline = () => {
     >
       <div className="flex justify-center items-center">
         <h2 className="flex flex-wrap justify-center items-center">
-          <span className="text-[#0A2540] mr-2">We help students</span>
+          <span className="text-[#0A2540]">We help students</span>
           <span className="relative inline-block text-[#2A8E9E] overflow-hidden" style={{ minWidth: '450px', height: '70px', display: 'flex', alignItems: 'center' }}>
             <AnimatePresence mode="wait">
               <motion.span
@@ -52,9 +52,9 @@ const AnimatedHeadline = () => {
         </h2>
       </div>
       
-      {/* Animated underline */}
+      {/* Animated underline with blue-orange gradient */}
       <motion.div 
-        className="h-1 bg-gradient-to-r from-[#2A8E9E] to-[#38BFA1] rounded-full mx-auto mt-6"
+        className="h-1 bg-gradient-to-r from-[#1E40AF] via-[#2A8E9E] to-[#F97316] rounded-full mx-auto mt-6"
         initial={{ width: 0 }}
         whileInView={{ width: "240px" }}
         transition={{ duration: 0.8, delay: 0.2 }}
@@ -260,7 +260,7 @@ export default function Home() {
                   find their<br />
                   <span className="relative inline-block">
                     light.
-                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30" />
+                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#1E40AF] via-[#2A8E9E] to-[#F97316]" />
                   </span>
                 </span>
               </span>
@@ -283,7 +283,7 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <Link href="/school-clubs">
-                  <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+                  <button className="bg-gradient-to-r from-[#1E40AF] to-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:shadow-lg hover:shadow-[#2A8E9E]/20 transition-all">
                     Get Started →
                   </button>
                 </Link>
@@ -337,7 +337,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-between border-b border-white/10 pb-3">
                       <div>
-                        <div className="text-[#2A8E9E] font-medium">Food Bank Volunteering</div>
+                        <div className="text-[#F97316] font-medium">Food Bank Volunteering</div>
                         <div className="text-white/70 text-sm mt-1">Loaves & Fishes</div>
                       </div>
                       <div className="text-white/50 text-sm">Mar 18</div>
@@ -362,7 +362,7 @@ export default function Home() {
 
             {/* Stats Card - Repositioned to overlap purple card */}
             <motion.div 
-              className="absolute top-4 right-4 bg-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
+              className="absolute top-4 right-4 bg-gradient-to-r from-[#1E40AF] to-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
               initial={{ opacity: 0, y: 20, x: 20 }}
               animate={{ opacity: 1, y: 0, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -510,22 +510,22 @@ export default function Home() {
           >
             Maximize your experience with a
             <br />
-            platform that connects.
+            platform that <span className="text-[#F97316]">connects</span>.
           </motion.h2>
 
           <div className="grid grid-cols-3 gap-16">
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">1</div>
+              <div className="text-8xl font-light text-[#1E40AF] mb-8">1</div>
               <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
               <p className="text-gray-400">Set your interests, availability, and preferences</p>
             </div>
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">2</div>
+              <div className="text-8xl font-light text-[#2A8E9E] mb-8">2</div>
               <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
               <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
             </div>
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">3</div>
+              <div className="text-8xl font-light text-[#F97316] mb-8">3</div>
               <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
               <p className="text-gray-400">Build your portfolio as you participate</p>
             </div>
@@ -619,7 +619,7 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-[#102C4C] mt-48">
+      <div className="bg-gradient-to-r from-[#0A2540] via-[#102C4C] to-[#0A2540] mt-48">
         <div className="max-w-[1400px] mx-auto px-8 py-24">
           <div className="flex justify-between items-center">
             <div>
@@ -629,7 +629,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                Ready to start exploring?
+                Ready to start <span className="text-[#F97316]">exploring</span>?
               </motion.h2>
               <motion.p 
                 className="text-xl text-white/70"
@@ -643,7 +643,7 @@ export default function Home() {
             </div>
             <Link href="/school-clubs">
               <motion.button 
-                className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
+                className="bg-gradient-to-r from-[#1E40AF] to-[#F97316] text-white px-10 py-5 text-xl rounded-2xl hover:shadow-lg hover:shadow-[#F97316]/20 transition-all"
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
