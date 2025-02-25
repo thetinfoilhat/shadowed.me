@@ -17,11 +17,8 @@ interface Applicant {
 
 export default function MyVisits() {
   const { user } = useAuth();
-  const [visits, setVisits] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingVisit, setEditingVisit] = useState<Club | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
+  const [visits, setVisits] = useState<Club[]>([]);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     visitId: string;
@@ -208,29 +205,19 @@ export default function MyVisits() {
                           className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditingVisit(visit);
-                            setIsCreateModalOpen(true);
+                            handleDeleteClick(visit.id, true);
                           }}
                         >
-                          <span className="text-sm">Edit</span>
-                        </button>
-                        <button 
-                          className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewingApplicants(visit);
-                          }}
-                        >
-                          <span className="text-sm">View Applicants</span>
+                          <span className="text-sm">Delete Visit</span>
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteClick(visit.id, true);
+                            handleDeleteClick(visit.id, false);
                           }}
                           className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md transition-colors"
                         >
-                          Delete Visit
+                          Unregister from club visit
                         </button>
                       </>
                     ) : (
