@@ -1,8 +1,68 @@
 'use client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CountUp from 'react-countup';
 import { useState, useEffect } from 'react';
+
+// Animated text component that cycles between phrases
+const AnimatedHeadline = () => {
+  const phrases = [
+    "find free opportunities",
+    "discover their interests",
+    "chase their passions"
+  ];
+  
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % phrases.length);
+    }, 2500); // Slightly faster transitions
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <motion.div 
+      className="text-4xl font-bold text-center mb-32"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      <div className="flex justify-center items-center">
+        <h2 className="flex flex-wrap justify-center items-center">
+          <span className="text-[#0A2540] mr-2">We help students</span>
+          <span className="relative inline-block text-[#2A8E9E] overflow-hidden" style={{ minWidth: '450px', height: '70px', display: 'flex', alignItems: 'center' }}>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentIndex}
+                className="absolute left-0 whitespace-nowrap"
+                initial={{ opacity: 0, filter: "blur(8px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(8px)" }}
+                transition={{ 
+                  opacity: { duration: 0.7, ease: "easeInOut" },
+                  filter: { duration: 0.7, ease: "easeInOut" }
+                }}
+              >
+                {phrases[currentIndex]}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+        </h2>
+      </div>
+      
+      {/* Animated underline */}
+      <motion.div 
+        className="h-1 bg-gradient-to-r from-[#2A8E9E] to-[#38BFA1] rounded-full mx-auto mt-6"
+        initial={{ width: 0 }}
+        whileInView={{ width: "240px" }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true }}
+      />
+    </motion.div>
+  );
+};
 
 // Custom synchronized counter component
 const SyncedCounters = () => {
@@ -550,14 +610,7 @@ export default function Home() {
         <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
         <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
         
-        <motion.h2 
-          className="text-4xl font-bold text-center text-[#0A2540] mb-32"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          We&apos;ve helped students discover opportunities
-        </motion.h2>
+        <AnimatedHeadline />
         
         <SyncedCounters />
       </div>
