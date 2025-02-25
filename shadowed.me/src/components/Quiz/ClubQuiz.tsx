@@ -483,7 +483,7 @@ const ClubQuiz: React.FC = () => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [clubMatches, setClubMatches] = useState<ClubMatch[]>([]);
   const [isStarted, setIsStarted] = useState(false);
-  const [skipsRemaining, setSkipsRemaining] = useState(10); // Allow 10 skips
+  const [skipsRemaining, setSkipsRemaining] = useState(20); // Allow 20 skips
   const [showResults, setShowResults] = useState(false);
 
   // Calculate progress percentage
@@ -913,7 +913,7 @@ const ClubQuiz: React.FC = () => {
     setCurrentQuestionIndex(null);
     setAnswers([]);
     setClubMatches([]);
-    setSkipsRemaining(10); // Reset skips to 10
+    setSkipsRemaining(20); // Reset skips to 20
     setShowResults(false);
     setIsStarted(false); // Return to intro screen
   };

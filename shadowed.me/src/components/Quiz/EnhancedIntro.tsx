@@ -55,7 +55,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
         
         <div className="bg-[#F0F7FF] p-4 rounded-lg mb-8 max-w-md mx-auto">
           <p className="text-sm text-gray-600">
-            <span className="font-medium text-[#0A2540]">Pro tip:</span> You can skip up to 10 questions if you&apos;re not sure about an answer.
+            <span className="font-medium text-[#0A2540]">Pro tip:</span> You can skip up to 20 questions if you&apos;re not sure about an answer.
           </p>
         </div>
         
