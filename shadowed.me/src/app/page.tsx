@@ -29,27 +29,25 @@ const AnimatedHeadline = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
-      <div className="flex justify-center items-center">
-        <h2 className="flex flex-wrap justify-center items-center">
-          <span className="text-[#0A2540]">We help students</span>
-          <span className="relative inline-block text-[#2A8E9E] overflow-hidden" style={{ minWidth: '450px', height: '70px', display: 'flex', alignItems: 'center' }}>
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={currentIndex}
-                className="absolute left-0 whitespace-nowrap"
-                initial={{ opacity: 0, filter: "blur(8px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, filter: "blur(8px)" }}
-                transition={{ 
-                  opacity: { duration: 0.7, ease: "easeInOut" },
-                  filter: { duration: 0.7, ease: "easeInOut" }
-                }}
-              >
-                {phrases[currentIndex]}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        </h2>
+      <div className="flex flex-wrap justify-center items-center">
+        <h2 className="text-[#0A2540] whitespace-nowrap mr-4">We help students</h2>
+        <div className="relative text-[#2A8E9E] overflow-hidden" style={{ minWidth: 'min(450px, 90vw)', height: '70px', display: 'flex', alignItems: 'center' }}>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={currentIndex}
+              className="absolute left-0 whitespace-nowrap"
+              initial={{ opacity: 0, filter: "blur(8px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, filter: "blur(8px)" }}
+              transition={{ 
+                opacity: { duration: 0.7, ease: "easeInOut" },
+                filter: { duration: 0.7, ease: "easeInOut" }
+              }}
+            >
+              {phrases[currentIndex]}
+            </motion.span>
+          </AnimatePresence>
+        </div>
       </div>
       
       {/* Animated underline with blue-orange gradient */}
