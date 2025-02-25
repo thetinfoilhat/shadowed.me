@@ -22,8 +22,17 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} overflow-x-hidden`}>
         <AuthProvider>
+          {/* Subtle blue and orange accent elements */}
+          <div className="fixed top-0 left-0 w-1 h-screen bg-gradient-to-b from-[#1E40AF] via-[#2A8E9E] to-transparent opacity-30 z-0"></div>
+          <div className="fixed top-0 right-0 w-1 h-screen bg-gradient-to-b from-[#F97316] via-[#FB923C] to-transparent opacity-30 z-0"></div>
+          <div className="fixed bottom-0 left-0 w-screen h-1 bg-gradient-to-r from-[#1E40AF] via-[#2A8E9E] to-[#F97316] opacity-30 z-0"></div>
+          
+          {/* Subtle accent orbs */}
+          <div className="fixed -top-20 -left-20 w-40 h-40 rounded-full bg-[#1E40AF]/5 blur-3xl z-0"></div>
+          <div className="fixed -bottom-20 -right-20 w-40 h-40 rounded-full bg-[#F97316]/5 blur-3xl z-0"></div>
+          
           <Header />
-          <main className={outfit.className}>
+          <main className={`${outfit.className} relative z-10`}>
             {children}
           </main>
           <Footer />

@@ -1,6 +1,242 @@
 'use client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import CountUp from 'react-countup';
+import { useState, useEffect } from 'react';
+
+// Animated text component that cycles between phrases
+const AnimatedHeadline = () => {
+  const phrases = [
+    "find free opportunities",
+    "discover their interests",
+    "chase their passions"
+  ];
+  
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % phrases.length);
+    }, 2500); // Slightly faster transitions
+    
+    return () => clearInterval(interval);
+  }, [phrases.length]);
+  
+  return (
+    <motion.div 
+      className="text-4xl font-bold text-center mb-32"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      <div className="flex flex-wrap justify-center items-center">
+        <h2 className="text-[#0A2540] whitespace-nowrap mr-4">We help students</h2>
+        <div className="relative text-[#2A8E9E] overflow-hidden" style={{ minWidth: 'min(450px, 90vw)', height: '70px', display: 'flex', alignItems: 'center' }}>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={currentIndex}
+              className="absolute left-0 whitespace-nowrap"
+              initial={{ opacity: 0, filter: "blur(8px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, filter: "blur(8px)" }}
+              transition={{ 
+                opacity: { duration: 0.7, ease: "easeInOut" },
+                filter: { duration: 0.7, ease: "easeInOut" }
+              }}
+            >
+              {phrases[currentIndex]}
+            </motion.span>
+          </AnimatePresence>
+        </div>
+      </div>
+      
+      {/* Animated underline with blue-orange gradient */}
+      <motion.div 
+        className="h-1 bg-gradient-to-r from-[#1E40AF] via-[#2A8E9E] to-[#F97316] rounded-full mx-auto mt-6"
+        initial={{ width: 0 }}
+        whileInView={{ width: "240px" }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true }}
+      />
+    </motion.div>
+  );
+};
+
+// Custom synchronized counter component
+const SyncedCounters = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setIsVisible(true);
+          setHasAnimated(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    const element = document.getElementById('stats-section');
+    if (element) observer.observe(element);
+    
+    return () => {
+      if (element) observer.unobserve(element);
+    };
+  }, [hasAnimated]);
+  
+  return (
+    <div className="flex flex-wrap justify-center gap-20 md:gap-40 relative z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.1 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          👨‍🎓
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={500}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          Active Students
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.2 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          🏫
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={50}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          School Clubs
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ delay: 0.3 }}
+        className="text-center relative group"
+      >
+        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
+          ⏱️
+        </div>
+        <motion.div 
+          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 60, 
+            duration: 0.8 
+          }}
+        >
+          {isVisible && (
+            <CountUp
+              start={0}
+              end={1000}
+              duration={2.5}
+              suffix="+"
+              useEasing={true}
+              decimals={0}
+              decimal=""
+              className="relative"
+            />
+          )}
+          <motion.div 
+            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
+            initial={{ width: 0 }}
+            animate={isVisible ? { width: "100%" } : { width: 0 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
+          />
+        </motion.div>
+        <motion.div 
+          className="text-xl text-[#0A2540]"
+          initial={{ opacity: 0 }}
+          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          Hours Logged
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
 
 export default function Home() {
   return (
@@ -22,7 +258,7 @@ export default function Home() {
                   find their<br />
                   <span className="relative inline-block">
                     light.
-                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30" />
+                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#1E40AF] via-[#2A8E9E] to-[#F97316]" />
                   </span>
                 </span>
               </span>
@@ -45,7 +281,7 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <Link href="/school-clubs">
-                  <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+                  <button className="bg-gradient-to-r from-[#1E40AF] to-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:shadow-lg hover:shadow-[#2A8E9E]/20 transition-all">
                     Get Started →
                   </button>
                 </Link>
@@ -99,7 +335,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-between border-b border-white/10 pb-3">
                       <div>
-                        <div className="text-[#2A8E9E] font-medium">Food Bank Volunteering</div>
+                        <div className="text-[#F97316] font-medium">Food Bank Volunteering</div>
                         <div className="text-white/70 text-sm mt-1">Loaves & Fishes</div>
                       </div>
                       <div className="text-white/50 text-sm">Mar 18</div>
@@ -124,7 +360,7 @@ export default function Home() {
 
             {/* Stats Card - Repositioned to overlap purple card */}
             <motion.div 
-              className="absolute top-4 right-4 bg-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
+              className="absolute top-4 right-4 bg-gradient-to-r from-[#1E40AF] to-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
               initial={{ opacity: 0, y: 20, x: 20 }}
               animate={{ opacity: 1, y: 0, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -249,6 +485,54 @@ export default function Home() {
 
       {/* Why They Prefer Section */}
       <div className="max-w-[1400px] mx-auto px-8 pt-48">
+        {/* Stats Section - Moved here */}
+        <div id="stats-section" className="relative">
+          {/* Decorative elements */}
+          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
+          <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
+          
+          <AnimatedHeadline />
+          
+          <SyncedCounters />
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="bg-[#0A2540] mt-48 py-24 text-white">
+        <div className="max-w-[1400px] mx-auto px-8">
+          <motion.h2 
+            className="text-4xl font-bold mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            Maximize your experience with a
+            <br />
+            platform that <span className="text-[#F97316]">connects</span>.
+          </motion.h2>
+
+          <div className="grid grid-cols-3 gap-16">
+            <div>
+              <div className="text-8xl font-light text-[#1E40AF] mb-8">1</div>
+              <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
+              <p className="text-gray-400">Set your interests, availability, and preferences</p>
+            </div>
+            <div>
+              <div className="text-8xl font-light text-[#2A8E9E] mb-8">2</div>
+              <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
+              <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
+            </div>
+            <div>
+              <div className="text-8xl font-light text-[#F97316] mb-8">3</div>
+              <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
+              <p className="text-gray-400">Build your portfolio as you participate</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Why students choose section - Moved here */}
+      <div className="max-w-[1400px] mx-auto px-8 pt-48">
         <motion.h2 
           className="text-4xl font-bold text-[#0A2540] mb-24 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -332,89 +616,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* How It Works Section */}
-      <div className="bg-[#0A2540] mt-48 py-24 text-white">
-        <div className="max-w-[1400px] mx-auto px-8">
-          <motion.h2 
-            className="text-4xl font-bold mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            Maximize your experience with a
-            <br />
-            platform that connects.
-          </motion.h2>
-
-          <div className="grid grid-cols-3 gap-16">
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">1</div>
-              <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
-              <p className="text-gray-400">Set your interests, availability, and preferences</p>
-            </div>
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">2</div>
-              <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
-              <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
-            </div>
-            <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">3</div>
-              <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
-              <p className="text-gray-400">Build your portfolio as you participate</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="max-w-[1400px] mx-auto px-8 pt-48">
-        <motion.h2 
-          className="text-4xl font-bold text-center text-[#0A2540] mb-32"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          We&apos;ve helped students discover opportunities
-        </motion.h2>
-        
-        <div className="flex justify-center gap-40">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">500+</div>
-            <div className="text-xl text-[#0A2540]">Active Students</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">50+</div>
-            <div className="text-xl text-[#0A2540]">School Clubs</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="text-center"
-          >
-            <div className="text-7xl font-bold text-[#2A8E9E] mb-4">1k+</div>
-            <div className="text-xl text-[#0A2540]">Hours Logged</div>
-          </motion.div>
-        </div>
-      </div>
-
       {/* CTA Section */}
-      <div className="bg-[#102C4C] mt-48">
+      <div className="bg-gradient-to-r from-[#0A2540] via-[#102C4C] to-[#0A2540] mt-48">
         <div className="max-w-[1400px] mx-auto px-8 py-24">
           <div className="flex justify-between items-center">
             <div>
@@ -424,7 +627,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                Ready to start exploring?
+                Ready to start <span className="text-[#F97316]">exploring</span>?
               </motion.h2>
               <motion.p 
                 className="text-xl text-white/70"
@@ -438,7 +641,7 @@ export default function Home() {
             </div>
             <Link href="/school-clubs">
               <motion.button 
-                className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
+                className="bg-gradient-to-r from-[#1E40AF] to-[#F97316] text-white px-10 py-5 text-xl rounded-2xl hover:shadow-lg hover:shadow-[#F97316]/20 transition-all"
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
