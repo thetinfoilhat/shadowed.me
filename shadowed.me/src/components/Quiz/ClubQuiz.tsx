@@ -210,12 +210,13 @@ const clubs: Club[] = [
 
 // Sample questions
 const questions: Question[] = [
+  // 🔹 General Interest & Personality
   {
     id: 1,
     text: "Do you enjoy public speaking or presenting to groups?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["public speaking", "performance", "communication"] },
+      { label: "Yes", value: "yes", attributes: ["public speaking", "performance", "communication", "leadership"] },
       { label: "No", value: "no", attributes: [] }
     ]
   },
@@ -224,9 +225,9 @@ const questions: Question[] = [
     text: "Do you prefer working in a team or independently?",
     type: "multiple-choice",
     options: [
-      { label: "Team", value: "team", attributes: ["teamwork", "collaboration"] },
-      { label: "Independently", value: "alone", attributes: ["independent", "self-directed"] },
-      { label: "Both", value: "both", attributes: ["teamwork", "independent", "adaptable"] }
+      { label: "Team", value: "team", attributes: ["teamwork", "collaboration", "leadership"] },
+      { label: "Independently", value: "alone", attributes: ["independent", "self-directed", "focus"] },
+      { label: "Both", value: "both", attributes: ["teamwork", "independent", "adaptable", "versatile"] }
     ]
   },
   {
@@ -238,52 +239,51 @@ const questions: Question[] = [
     minLabel: "Not at all",
     maxLabel: "Extremely",
     attributes: {
-      1: ["non-competitive", "collaborative"],
-      2: ["casual"],
-      3: [],
-      4: ["competitive"],
-      5: ["competitive", "tournament play", "high-intensity"]
+      1: ["non-competitive", "collaborative", "casual"],
+      2: ["casual", "friendly competition"],
+      3: ["moderate competition"],
+      4: ["competitive", "ambitious"],
+      5: ["competitive", "tournament play", "high-intensity", "perfectionist"]
     }
   },
+
+  // 🔹 Academic Preferences
   {
     id: 4,
-    text: "Do you enjoy solving complex problems or puzzles?",
-    type: "yes-no",
+    text: "Which subjects do you enjoy most in school?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["problem-solving", "critical thinking", "analytical", "strategy"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Math", value: "math", attributes: ["math", "analytical", "logical thinking", "numbers"] },
+      { label: "Science", value: "science", attributes: ["science", "experiments", "research", "innovation", "technology"] },
+      { label: "English/Literature", value: "english", attributes: ["writing", "literature", "reading", "analysis", "storytelling"] },
+      { label: "History/Social Studies", value: "history", attributes: ["research", "analytical", "global issues", "debate", "policy analysis"] },
+      { label: "Arts", value: "arts", attributes: ["artistic", "creative", "design", "expression", "visual storytelling"] }
     ]
   },
   {
     id: 5,
+    text: "Do you enjoy solving complex problems or puzzles?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["problem-solving", "critical thinking", "analytical", "strategy", "logic"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+
+  // 🔹 Business & Finance
+  {
+    id: 6,
     text: "Are you interested in business, finance, or entrepreneurship?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["business", "finance", "economics", "investing"] },
+      { label: "Yes", value: "yes", attributes: ["business", "finance", "economics", "investing", "networking", "leadership"] },
       { label: "No", value: "no", attributes: [] }
     ]
   },
-  {
-    id: 6,
-    text: "Do you enjoy volunteering and community service?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["volunteering", "community service", "advocacy"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
-  },
+
+  // 🔹 STEM & Technology
   {
     id: 7,
-    text: "Do you prefer structured activities or creative freedom?",
-    type: "multiple-choice",
-    options: [
-      { label: "Structured", value: "structured", attributes: ["structured", "organized", "discipline"] },
-      { label: "Creative", value: "creative", attributes: ["creative", "artistic", "self-expression"] },
-      { label: "Both", value: "both", attributes: ["structured", "creative", "adaptable"] }
-    ]
-  },
-  {
-    id: 8,
     text: "How interested are you in technology and computing?",
     type: "slider",
     min: 1,
@@ -292,25 +292,116 @@ const questions: Question[] = [
     maxLabel: "Very interested",
     attributes: {
       1: [],
-      2: [],
-      3: ["technology"],
-      4: ["technology", "coding"],
-      5: ["technology", "coding", "engineering", "algorithms"]
+      2: ["casual interest"],
+      3: ["technology", "coding"],
+      4: ["technology", "coding", "engineering"],
+      5: ["technology", "coding", "engineering", "algorithms", "cybersecurity"]
     }
   },
   {
-    id: 9,
-    text: "Which of these areas interests you most?",
-    type: "multiple-choice",
+    id: 8,
+    text: "Would you enjoy competing in STEM-related competitions?",
+    type: "yes-no",
     options: [
-      { label: "Arts & Creativity", value: "arts", attributes: ["creativity", "artistic", "performance", "self-expression"] },
-      { label: "Science & Research", value: "science", attributes: ["science", "analytical", "experiments", "research", "lab work"] },
-      { label: "Leadership & Organization", value: "leadership", attributes: ["leadership", "management", "organized"] },
-      { label: "Languages & Culture", value: "culture", attributes: ["language", "cultural awareness", "travel", "tradition"] }
+      { label: "Yes", value: "yes", attributes: ["STEM", "competitions", "problem-solving", "engineering", "innovation"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+
+  // 🔹 Creative & Performing Arts
+  {
+    id: 9,
+    text: "Do you enjoy writing, journalism, or storytelling?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["writing", "communication", "publishing", "visual storytelling", "journalism"] },
+      { label: "No", value: "no", attributes: [] }
     ]
   },
   {
     id: 10,
+    text: "Do you like acting, singing, or dancing?",
+    type: "multiple-choice",
+    options: [
+      { label: "Acting", value: "acting", attributes: ["acting", "theater", "performance", "stage presence", "drama", "confidence"] },
+      { label: "Singing", value: "singing", attributes: ["music", "singing", "choir", "performance", "vocal training", "rhythm"] },
+      { label: "Dancing", value: "dancing", attributes: ["dance", "choreography", "performance", "rhythm", "movement", "teamwork"] },
+      { label: "None", value: "none", attributes: [] }
+    ]
+  },
+
+  // 🔹 Social & Global Awareness
+  {
+    id: 11,
+    text: "Are you interested in global issues or different cultures?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["global awareness", "cultural awareness", "language", "policy analysis", "advocacy", "international relations"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+
+  // 🔹 Volunteering & Leadership
+  {
+    id: 12,
+    text: "Do you enjoy volunteering and community service?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["volunteering", "community service", "advocacy", "social impact", "fundraising", "social responsibility"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  {
+    id: 13,
+    text: "Do you like planning and organizing events?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["event planning", "leadership", "teamwork", "organization", "networking", "logistics"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+
+  // 🔹 Hands-on Activities & Specialized Interests
+  {
+    id: 14,
+    text: "Do you enjoy hands-on activities or building things?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["hands-on", "engineering", "design", "pottery", "sculpting", "DIY", "mechanics", "creativity"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  {
+    id: 15,
+    text: "Do you enjoy photography, graphic design, or visual arts?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["photography", "graphic design", "visual storytelling", "editing", "digital media"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  {
+    id: 16,
+    text: "Would you be interested in working on a school newspaper or yearbook?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["publishing", "journalism", "writing", "photography", "design", "media", "editing"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  {
+    id: 17,
+    text: "Do you enjoy strategic thinking and games like chess or card games?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["strategy", "logic", "critical thinking", "competition", "game theory"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  
+  // 🔹 Additional Questions - Creative Expression
+  {
+    id: 18,
     text: "How important is creative expression to you?",
     type: "slider",
     min: 1,
@@ -319,58 +410,59 @@ const questions: Question[] = [
     maxLabel: "Very important",
     attributes: {
       1: [],
-      2: [],
-      3: ["creative"],
-      4: ["creative", "artistic", "self-expression"],
-      5: ["creative", "artistic", "self-expression", "performance"]
+      2: ["casual interest"],
+      3: ["creative", "self-expression"],
+      4: ["creative", "self-expression", "artistic"],
+      5: ["creative", "self-expression", "artistic", "innovation", "design"]
     }
   },
   {
-    id: 11,
-    text: "Which subjects do you enjoy most in school?",
+    id: 19,
+    text: "Do you prefer structured activities or creative freedom?",
     type: "multiple-choice",
     options: [
-      { label: "Math", value: "math", attributes: ["math", "analytical", "logical thinking"] },
-      { label: "Science", value: "science", attributes: ["science", "experiments", "research"] },
-      { label: "English/Literature", value: "english", attributes: ["writing", "literature", "reading", "analysis"] },
-      { label: "History/Social Studies", value: "history", attributes: ["research", "analytical", "global issues"] },
-      { label: "Arts", value: "arts", attributes: ["artistic", "creative", "design"] }
+      { label: "Structured", value: "structured", attributes: ["structured", "organized", "discipline", "rules", "logical thinking"] },
+      { label: "Creative", value: "creative", attributes: ["creative", "artistic", "self-expression", "innovation", "free thinking"] },
+      { label: "Both", value: "both", attributes: ["structured", "creative", "adaptable", "versatile"] }
     ]
   },
+  
+  // 🔹 Additional Questions - Languages & Culture
   {
-    id: 12,
-    text: "Do you enjoy writing, journalism, or storytelling?",
+    id: 20,
+    text: "Do you enjoy learning new languages?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["writing", "communication", "publishing", "visual storytelling"] },
+      { label: "Yes", value: "yes", attributes: ["language", "communication", "cultural awareness", "multilingualism", "travel"] },
       { label: "No", value: "no", attributes: [] }
     ]
   },
   {
-    id: 13,
-    text: "How do you feel about performing or being on stage?",
-    type: "multiple-choice",
-    options: [
-      { label: "Love it", value: "love", attributes: ["performance", "stage presence", "acting", "public speaking"] },
-      { label: "Sometimes enjoy it", value: "sometimes", attributes: ["performance"] },
-      { label: "Prefer to avoid it", value: "avoid", attributes: ["behind-the-scenes"] }
-    ]
-  },
-  {
-    id: 14,
-    text: "Are you interested in global issues or different cultures?",
+    id: 21,
+    text: "Would you enjoy being part of a club that promotes diversity and inclusion?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["global awareness", "cultural awareness", "language", "policy analysis"] },
+      { label: "Yes", value: "yes", attributes: ["advocacy", "social impact", "leadership", "community service", "human rights"] },
+      { label: "No", value: "no", attributes: [] }
+    ]
+  },
+  
+  // 🔹 Additional Questions - Specialized Interests
+  {
+    id: 22,
+    text: "Would you like to participate in a robotics or coding competition?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["robotics", "technology", "engineering", "problem-solving", "automation", "AI"] },
       { label: "No", value: "no", attributes: [] }
     ]
   },
   {
-    id: 15,
-    text: "Do you enjoy hands-on activities or building things?",
+    id: 23,
+    text: "Would you like to be involved in a medical or health-related club?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["hands-on", "engineering", "design", "pottery", "sculpting"] },
+      { label: "Yes", value: "yes", attributes: ["medicine", "healthcare", "science", "biology", "research", "patient care"] },
       { label: "No", value: "no", attributes: [] }
     ]
   }
@@ -381,7 +473,7 @@ const ClubQuiz: React.FC = () => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [clubMatches, setClubMatches] = useState<ClubMatch[]>([]);
   const [isStarted, setIsStarted] = useState(false);
-  const [skipsRemaining, setSkipsRemaining] = useState(3); // Allow 3 skips
+  const [skipsRemaining, setSkipsRemaining] = useState(10); // Allow 10 skips
   const [showResults, setShowResults] = useState(false);
 
   // Calculate progress percentage
@@ -521,18 +613,26 @@ const ClubQuiz: React.FC = () => {
       1: 1.2,  // Public speaking
       2: 1.5,  // Team vs independent
       3: 1.3,  // Competitiveness
-      4: 1.2,  // Problem solving
-      5: 1.4,  // Business interest
-      6: 1.4,  // Volunteering
-      7: 1.5,  // Structure vs creativity
-      8: 1.3,  // Technology interest
-      9: 2.0,  // Areas of interest (high weight as it's a key indicator)
-      10: 1.5, // Creative expression
-      11: 1.8, // Subject preferences (high weight as it's a key indicator)
-      12: 1.2, // Writing interest
-      13: 1.5, // Performance comfort
-      14: 1.3, // Global issues
-      15: 1.4, // Hands-on activities
+      4: 1.8,  // Subject preferences (high weight as it's a key indicator)
+      5: 1.2,  // Problem solving
+      6: 1.4,  // Business interest
+      7: 1.3,  // Technology interest
+      8: 1.4,  // STEM competitions
+      9: 1.2,  // Writing interest
+      10: 1.5, // Performing arts
+      11: 1.3, // Global issues
+      12: 1.4, // Volunteering
+      13: 1.3, // Event planning
+      14: 1.4, // Hands-on activities
+      15: 1.5, // Photography/visual arts
+      16: 1.5, // Newspaper/yearbook
+      17: 1.2,  // Strategic thinking
+      18: 1.3,  // Creative expression
+      19: 1.4,  // Structured vs creative
+      20: 1.2,  // Language learning
+      21: 1.3,  // Advocacy for diversity
+      22: 1.4,  // Robotics/coding
+      23: 1.3   // Medical/health
     };
 
     // Define club categories for better grouping
@@ -544,7 +644,10 @@ const ClubQuiz: React.FC = () => {
       "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
       "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
       "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
-      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)"]
+      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)"],
+      "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis"],
+      "Advocacy": ["Girl Up", "UNICEF Club"],
+      "Medical": ["Biochemistry Club"]
     };
 
     // Create a map to track attribute matches for each club
@@ -589,7 +692,10 @@ const ClubQuiz: React.FC = () => {
       "Business": 0,
       "Community Service": 0,
       "Academic & Humanities": 0,
-      "Competitive": 0
+      "Competitive": 0,
+      "Creative": 0,
+      "Advocacy": 0,
+      "Medical": 0
     };
 
     // Process each user response
@@ -614,23 +720,44 @@ const ClubQuiz: React.FC = () => {
               responseAttributes = [...responseAttributes, ...selectedOption.attributes];
               
               // Add category boosts based on specific answers
-              if (question.id === 9) { // Areas of interest question
-                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts");
-                if (selectedValue === 'science') categoryBoosts.push("STEM");
-                if (selectedValue === 'leadership') categoryBoosts.push("Business", "Community Service");
-                if (selectedValue === 'culture') categoryBoosts.push("Language & Culture");
-              }
-              
-              if (question.id === 11) { // Subject preferences
-                if (selectedValue === 'math') categoryBoosts.push("STEM");
+              if (question.id === 4) { // Subject preferences
+                if (selectedValue === 'math') categoryBoosts.push("STEM", "Academic & Humanities");
                 if (selectedValue === 'science') categoryBoosts.push("STEM");
                 if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
                 if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
                 if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts");
               }
               
+              if (question.id === 10) { // Performing arts preferences
+                if (selectedValue === 'acting') categoryBoosts.push("Performing Arts");
+                if (selectedValue === 'singing') categoryBoosts.push("Performing Arts");
+                if (selectedValue === 'dancing') categoryBoosts.push("Performing Arts");
+              }
+              
               if (question.id === 3 && parseInt(selectedValue) >= 4) { // Competitiveness
                 categoryBoosts.push("Competitive");
+              }
+              
+              // New questions category boosts
+              if (question.id === 19) { // Structured vs creative
+                if (selectedValue === 'creative') categoryBoosts.push("Creative", "Art");
+                if (selectedValue === 'structured') categoryBoosts.push("Academic & Humanities", "Business");
+              }
+              
+              if (question.id === 20) { // Language learning
+                if (selectedValue === 'yes') categoryBoosts.push("Language & Culture");
+              }
+              
+              if (question.id === 21) { // Diversity and inclusion
+                if (selectedValue === 'yes') categoryBoosts.push("Advocacy", "Community Service");
+              }
+              
+              if (question.id === 22) { // Robotics/coding
+                if (selectedValue === 'yes') categoryBoosts.push("STEM");
+              }
+              
+              if (question.id === 23) { // Medical/health
+                if (selectedValue === 'yes') categoryBoosts.push("Medical", "STEM");
               }
             }
           });
@@ -654,12 +781,12 @@ const ClubQuiz: React.FC = () => {
             categoryBoosts.push("Competitive");
           }
           
-          if (question.id === 8 && sliderValue >= 4) { // Technology interest
+          if (question.id === 7 && sliderValue >= 4) { // Technology interest
             categoryBoosts.push("STEM");
           }
           
-          if (question.id === 10 && sliderValue >= 4) { // Creative expression
-            categoryBoosts.push("Art", "Performing Arts");
+          if (question.id === 18 && sliderValue >= 4) { // Creative expression
+            categoryBoosts.push("Creative", "Art", "Performing Arts");
           }
         }
       }
@@ -776,8 +903,9 @@ const ClubQuiz: React.FC = () => {
     setCurrentQuestionIndex(null);
     setAnswers([]);
     setClubMatches([]);
-    setSkipsRemaining(3); // Reset skips
+    setSkipsRemaining(10); // Reset skips to 10
     setShowResults(false);
+    setIsStarted(false); // Return to intro screen
   };
 
   // Get the current question
