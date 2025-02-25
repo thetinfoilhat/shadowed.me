@@ -295,7 +295,7 @@ export default function Header() {
                     My Visits
                   </Link>
                 </li>
-                {userRole === 'captain' && (
+                {(userRole === 'captain' || userRole === 'admin') && (
                   <li>
                     <Link 
                       href="/captain-dashboard"
