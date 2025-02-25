@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club } from '@/types/club';
+import { Club, CompletedVisit } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -68,6 +68,11 @@ export default function CaptainDashboard() {
     isOpen: boolean;
     visitId: string;
   }>({ isOpen: false, visitId: '' });
+  const [confirmCompletion, setConfirmCompletion] = useState<{
+    isOpen: boolean;
+    visit: Club | null;
+    completing: boolean;
+  }>({ isOpen: false, visit: null, completing: false });
 
   const fetchCaptainVisits = useCallback(async () => {
     try {
@@ -154,6 +159,85 @@ export default function CaptainDashboard() {
       await fetchCaptainVisits();
     } catch (error) {
       console.error('Error deleting visit:', error);
+    }
+  };
+
+  const handleCompletionClick = (visit: Club, completing: boolean) => {
+    setConfirmCompletion({ 
+      isOpen: true, 
+      visit, 
+      completing 
+    });
+  };
+
+  const handleConfirmCompletion = async () => {
+    if (!confirmCompletion.visit) return;
+    
+    try {
+      await handleMarkCompleted(
+        confirmCompletion.visit, 
+        confirmCompletion.completing
+      );
+    } finally {
+      setConfirmCompletion({ isOpen: false, visit: null, completing: false });
+    }
+  };
+
+  const handleMarkCompleted = async (visit: Club, completed: boolean) => {
+    try {
+      const visitRef = doc(db, 'opportunities', visit.id);
+      await updateDoc(visitRef, {
+        completed: completed
+      });
+
+      const completedVisitData = {
+        id: visit.id,
+        name: visit.name,
+        school: visit.school,
+        category: visit.category,
+        date: visit.date,
+        time: visit.time,
+        description: visit.description,
+        completedAt: new Date().toISOString()
+      };
+
+      // Process each applicant
+      for (const applicant of visit.applicants) {
+        const userQuery = query(
+          collection(db, 'users'), 
+          where('email', '==', applicant.email)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          const userData = userDoc.data();
+          
+          if (completed) {
+            // Add to completedVisits if not already present
+            const existingVisit = (userData.completedVisits || [])
+              .find((v: CompletedVisit) => v.id === visit.id);
+            
+            if (!existingVisit) {
+              await updateDoc(doc(db, 'users', userDoc.id), {
+                completedVisits: arrayUnion(completedVisitData)
+              });
+            }
+          } else {
+            // Remove from completedVisits
+            const updatedCompletedVisits = (userData.completedVisits || [])
+              .filter((v: CompletedVisit) => v.id !== visit.id);
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              completedVisits: updatedCompletedVisits
+            });
+          }
+        }
+      }
+
+      await fetchCaptainVisits();
+    } catch (error) {
+      console.error('Error updating visit completion status:', error);
     }
   };
 
@@ -262,43 +346,69 @@ export default function CaptainDashboard() {
                     key={visit.id} 
                     className="group flex items-center gap-6 p-6 rounded-lg border border-gray-100 hover:border-[#38BFA1]/30 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 cursor-pointer bg-white relative"
                   >
-                    {/* Date Circle */}
-                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                      <div className="text-sm font-medium">{format(new Date(visit.date), 'MMM')}</div>
-                      <div className="text-xl font-bold">{format(new Date(visit.date), 'd')}</div>
-                    </div>
-                    
-                    {/* Visit Details */}
-                    <div className="flex-grow">
-                      <h3 className="text-lg font-semibold text-[#0A2540] mb-2">
-                        {visit.name}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">School:</span>
-                          <span className="text-[#0A2540]">{visit.school}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">Date:</span>
-                          <span className="text-[#0A2540]">{formatDate(visit.date)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">Time:</span>
-                          <span className="text-[#0A2540]">{formatTime(visit.time)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">Available Slots:</span>
-                          <span className="text-[#0A2540]">{visit.slots}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">Category:</span>
-                          <span className="text-[#38BFA1]">{visit.category}</span>
+                    {/* Content wrapper with conditional opacity */}
+                    <div className={`flex items-center gap-6 ${visit.completed ? 'opacity-50' : ''}`}>
+                      {/* Date Circle */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
+                        <div className="text-sm font-medium">{format(new Date(visit.date), 'MMM')}</div>
+                        <div className="text-xl font-bold">{format(new Date(visit.date), 'd')}</div>
+                      </div>
+                      
+                      {/* Visit Details */}
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold text-[#0A2540] mb-2">
+                          {visit.name}
+                        </h3>
+                        <div className="flex gap-8">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500">School:</span>
+                              <span className="text-[#0A2540]">{visit.school}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500">Time:</span>
+                              <span className="text-[#0A2540]">{formatTime(visit.time)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500">Category:</span>
+                              <span className="text-[#38BFA1]">{visit.category}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500">Date:</span>
+                              <span className="text-[#0A2540]">{formatDate(visit.date)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500">Available Slots:</span>
+                              <span className="text-[#0A2540]">{visit.slots}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Action Buttons */}
+                    {/* Completion tag - outside the opacity wrapper */}
+                    {visit.completed && (
+                      <div className="absolute top-4 left-4 px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+                        Completed
+                      </div>
+                    )}
+
+                    {/* Action Buttons - outside the opacity wrapper */}
                     <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompletionClick(visit, !visit.completed);
+                        }}
+                      >
+                        <span className="text-sm">
+                          {visit.completed ? 'Unmark as Completed' : 'Mark as Completed'}
+                        </span>
+                      </button>
                       <button 
                         className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
                         onClick={(e) => {
@@ -358,6 +468,18 @@ export default function CaptainDashboard() {
           title="Delete Visit"
           message="Are you sure you want to delete this visit opportunity? This action cannot be undone."
           confirmText="Delete"
+        />
+
+        <ConfirmDialog
+          isOpen={confirmCompletion.isOpen}
+          onClose={() => setConfirmCompletion({ isOpen: false, visit: null, completing: false })}
+          onConfirm={handleConfirmCompletion}
+          title={confirmCompletion.completing ? "Mark Visit as Completed" : "Unmark Visit as Completed"}
+          message={confirmCompletion.completing 
+            ? "Are you sure you want to mark this visit as completed? This will move it to students' completed visits."
+            : "Are you sure you want to unmark this visit as completed? This will remove it from students' completed visits."
+          }
+          confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
         />
       </div>
     </div>

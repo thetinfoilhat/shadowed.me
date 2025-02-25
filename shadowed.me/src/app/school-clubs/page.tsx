@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Dialog } from '@headlessui/react';
 import { format} from 'date-fns';
 import { Club } from '@/types/club';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const CATEGORIES = ['All', 'STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
 
@@ -38,61 +39,6 @@ function isUserRegistered(club: Club, userEmail?: string | null) {
   return club.applicants.some(applicant => applicant.email === userEmail);
 }
 
-function ConfirmDialog({ isOpen, onClose, onConfirm, visitName }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => Promise<void>;
-  visitName: string;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    try {
-      await onConfirm();
-      onClose();
-    } catch (error) {
-      console.error('Error registering:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-sm rounded-xl bg-white p-6">
-          <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-4">
-            Confirm Registration
-          </Dialog.Title>
-          
-          <p className="text-gray-600 mb-6">
-            Are you sure you want to register for &quot;{visitName}&quot;?
-          </p>
-          
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-[#0A2540] border border-[#0A2540] rounded-md hover:bg-gray-50 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={loading}
-              className="bg-[#38BFA1] text-white px-4 py-2 rounded-md hover:bg-[#2DA891] transition-all disabled:opacity-50"
-            >
-              {loading ? 'Registering...' : 'Confirm'}
-            </button>
-          </div>
-        </Dialog.Panel>
-      </div>
-    </Dialog>
-  );
-}
-
 export default function SchoolClubs() {
   const { user, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
@@ -103,6 +49,11 @@ export default function SchoolClubs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registeringVisit, setRegisteringVisit] = useState<Club | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
+    visitId: string;
+  }>({ isOpen: false, visitId: '' });
 
   const fetchClubs = async () => {
     try {
@@ -172,6 +123,26 @@ export default function SchoolClubs() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user?.uid) {
+        setUserRole(null);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -223,6 +194,19 @@ export default function SchoolClubs() {
     setTimeout(() => {
       setShowProfileModal(true);
     }, 100);
+  };
+
+  const handleDeleteClick = (visitId: string) => {
+    setConfirmDelete({ isOpen: true, visitId });
+  };
+
+  const handleDelete = async (visitId: string) => {
+    try {
+      await deleteDoc(doc(db, 'opportunities', visitId));
+      await fetchClubs(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting visit:', error);
+    }
   };
 
   return (
@@ -291,7 +275,7 @@ export default function SchoolClubs() {
             const isRegistered = isUserRegistered(club, user?.email);
             
             return (
-              <div key={club.id} className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all">
+              <div key={club.id} className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-xl font-semibold text-[#0A2540]">{club.name}</h3>
@@ -345,6 +329,18 @@ export default function SchoolClubs() {
                 >
                   {isRegistered ? 'Already Registered' : 'Register to Visit'}
                 </button>
+
+                {userRole === 'admin' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(club.id);
+                    }}
+                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md"
+                  >
+                    Delete Visit
+                  </button>
+                )}
               </div>
             );
           })}
@@ -356,7 +352,9 @@ export default function SchoolClubs() {
           isOpen={!!registeringVisit}
           onClose={() => setRegisteringVisit(null)}
           onConfirm={() => handleRegister(registeringVisit)}
-          visitName={registeringVisit.name}
+          title="Confirm Registration"
+          message={`Are you sure you want to register for "${registeringVisit.name}"?`}
+          confirmText="Register"
         />
       )}
 
@@ -398,6 +396,15 @@ export default function SchoolClubs() {
           </div>
         </Dialog>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, visitId: '' })}
+        onConfirm={() => handleDelete(confirmDelete.visitId)}
+        title="Delete Visit"
+        message="Are you sure you want to delete this visit opportunity? This action cannot be undone."
+        confirmText="Delete"
+      />
     </div>
   );
 } 

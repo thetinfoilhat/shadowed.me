@@ -37,7 +37,10 @@ export default function MyVisits() {
           id: doc.id,
           ...doc.data(),
         } as Club))
-        .filter(visit => visit.applicants?.some(applicant => applicant.email === user.email))
+        .filter(visit => 
+          visit.applicants?.some(applicant => applicant.email === user.email) && 
+          !visit.completed // Only show non-completed visits
+        )
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setVisits(userVisits);

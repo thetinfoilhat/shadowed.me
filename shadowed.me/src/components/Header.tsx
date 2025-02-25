@@ -315,6 +315,16 @@ export default function Header() {
                     </Link>
                   </li>
                 )}
+                {userRole === 'student' && (
+                  <li>
+                    <Link 
+                      href="/student-dashboard"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      Student Dashboard
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link 
                     href="/about" 
