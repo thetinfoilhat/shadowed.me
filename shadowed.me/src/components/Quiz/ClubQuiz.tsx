@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import EnhancedIntro from './EnhancedIntro';
 
 // Types
@@ -945,69 +946,113 @@ const ClubQuiz: React.FC = () => {
       {isStarted ? (
         currentQuestion ? (
           // Question screen
-          <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+          <motion.div 
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white rounded-xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 relative overflow-hidden"
+          >
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#38BFA1] opacity-5 rounded-full -mr-20 -mt-20"></div>
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-[#FF7D54] opacity-5 rounded-full -ml-16 -mb-16"></div>
+            
             {/* Progress bar */}
-            <div className="w-full h-2 bg-gray-200 rounded-full mb-8">
-              <div 
-                className="h-full bg-[#38BFA1] rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
+            <div className="w-full h-3 bg-gray-100 rounded-full mb-8 overflow-hidden shadow-inner">
+              <motion.div 
+                initial={{ width: `${((currentQuestionIndex || 0) / questions.length) * 100}%` }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] rounded-full"
+              ></motion.div>
             </div>
             
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-sm text-gray-500">
+            <div className="flex justify-between items-center mb-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm font-medium text-[#3B82F6]"
+              >
                 Question {currentQuestionIndex !== null ? currentQuestionIndex + 1 : ''} of {questions.length}
-              </div>
-              <div className="text-sm text-gray-500">
-                Skips remaining: {skipsRemaining}
-              </div>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm font-medium text-[#FF7D54] flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Skips: {skipsRemaining}
+              </motion.div>
             </div>
             
-            <h3 className="text-xl font-medium text-[#0A2540] mb-6">
+            <motion.h3 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-2xl font-semibold text-[#0A2540] mb-8"
+            >
               {currentQuestion.text}
-            </h3>
+            </motion.h3>
             
             {/* Question content based on type */}
-            <div className="mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-10"
+            >
               {currentQuestion.type === 'yes-no' && (
                 <div className="flex justify-center gap-4">
-                  {currentQuestion.options?.map((option) => (
-                    <button
+                  {currentQuestion.options?.map((option, index) => (
+                    <motion.button
                       key={option.value}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + index * 0.1 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
-                      className={`flex-1 max-w-[180px] py-4 px-6 rounded-lg border-2 transition-all ${
+                      className={`flex-1 max-w-[180px] py-4 px-6 rounded-xl border-2 transition-all ${
                         isOptionSelected(currentQuestion.id, option.value)
-                          ? 'border-[#38BFA1] bg-[#38BFA1]/10 text-[#0A2540] font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
                       }`}
                     >
                       {option.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               )}
               
               {currentQuestion.type === 'multiple-choice' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {currentQuestion.options?.map((option) => (
-                    <button
+                  {currentQuestion.options?.map((option, index) => (
+                    <motion.button
                       key={option.value}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + index * 0.1 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
-                      className={`py-3 px-4 rounded-lg border-2 text-left transition-all ${
+                      className={`py-4 px-5 rounded-xl border-2 text-left transition-all ${
                         isOptionSelected(currentQuestion.id, option.value)
-                          ? 'border-[#38BFA1] bg-[#38BFA1]/10 text-[#0A2540] font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
                       }`}
                     >
                       {option.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               )}
               
               {currentQuestion.type === 'slider' && (
                 <div className="px-4">
-                  <div className="flex justify-between text-sm text-gray-500 mb-2">
+                  <div className="flex justify-between text-sm text-gray-500 mb-3">
                     <span>{currentQuestion.minLabel}</span>
                     <span>{currentQuestion.maxLabel}</span>
                   </div>
@@ -1017,140 +1062,242 @@ const ClubQuiz: React.FC = () => {
                     max={currentQuestion.max || 5}
                     value={getSliderValue(currentQuestion.id)}
                     onChange={(e) => handleSliderChange(currentQuestion.id, parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#38BFA1]"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3B82F6]"
                   />
-                  <div className="mt-4 text-center">
-                    <span className="inline-block px-4 py-2 bg-[#38BFA1]/10 rounded-full font-medium text-[#38BFA1]">
+                  <div className="mt-6 text-center">
+                    <motion.span 
+                      key={getSliderValue(currentQuestion.id)}
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      className="inline-block px-6 py-3 bg-gradient-to-r from-[#3B82F6]/20 to-[#38BFA1]/20 rounded-full font-medium text-[#3B82F6] shadow-sm"
+                    >
                       {getSliderValue(currentQuestion.id)}
-                    </span>
+                    </motion.span>
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
             
             {/* Navigation buttons */}
-            <div className="flex justify-between items-center">
-              <button
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex justify-between items-center"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handlePrevious}
                 disabled={currentQuestionIndex === null || currentQuestionIndex === 0}
-                className={`px-6 py-2 rounded-lg transition-colors ${
+                className={`px-6 py-3 rounded-xl transition-all ${
                   currentQuestionIndex === null || currentQuestionIndex === 0
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-100 text-[#0A2540] hover:bg-gray-200'
+                    : 'bg-white border border-gray-200 text-[#0A2540] hover:bg-gray-50 hover:shadow-md'
                 }`}
               >
-                Previous
-              </button>
+                <span className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous
+                </span>
+              </motion.button>
               
               {skipsRemaining > 0 && currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleSkip}
-                  className="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="px-6 py-3 rounded-xl bg-white border border-[#FF7D54] text-[#FF7D54] hover:bg-[#FF7D54]/5 transition-all hover:shadow-md"
                 >
                   Skip ({skipsRemaining})
-                </button>
+                </motion.button>
               )}
               
-              <button
+              <motion.button
+                whileHover={isCurrentQuestionAnswered() ? { scale: 1.05 } : {}}
+                whileTap={isCurrentQuestionAnswered() ? { scale: 0.95 } : {}}
                 onClick={handleNext}
                 disabled={!isCurrentQuestionAnswered()}
-                className={`px-6 py-2 rounded-lg transition-colors ${
+                className={`px-6 py-3 rounded-xl transition-all ${
                   isCurrentQuestionAnswered()
-                    ? 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
+                    ? 'bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white hover:shadow-lg'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'}
-              </button>
-            </div>
-          </div>
+                <span className="flex items-center">
+                  {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'}
+                  {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </span>
+              </motion.button>
+            </motion.div>
+          </motion.div>
         ) : showResults ? (
           // Results screen
-          <div className="flex flex-col items-center w-full max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold text-[#0A2540] mb-2">Your Club Matches</h2>
-            <p className="text-gray-600 mb-6 text-center">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center w-full max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 relative overflow-hidden"
+          >
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#38BFA1] opacity-5 rounded-full -mr-20 -mt-20"></div>
+            <div className="absolute bottom-0 left-0 w-56 h-56 bg-[#FF7D54] opacity-5 rounded-full -ml-16 -mb-16"></div>
+            
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="w-20 h-20 bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] rounded-full flex items-center justify-center mb-6 shadow-lg"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </motion.div>
+            
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#0A2540] to-[#3B82F6] mb-2"
+            >
+              Your Club Matches
+            </motion.h2>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-gray-600 mb-8 text-center max-w-lg"
+            >
               Based on your responses, here are the clubs that best match your interests and preferences.
-            </p>
+            </motion.p>
             
             {clubMatches.length > 0 ? (
               <div className="w-full space-y-6">
                 {clubMatches.map((match, index) => (
-                  <div 
+                  <motion.div 
                     key={index} 
-                    className={`p-5 border rounded-lg hover:shadow-md transition-shadow ${
-                      (match.confidenceScore ?? 0) >= 70 ? 'border-green-200 bg-green-50' : 
-                      (match.confidenceScore ?? 0) >= 40 ? 'border-gray-200' : 'border-gray-200 bg-gray-50'
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                    whileHover={{ y: -5, boxShadow: "0 12px 30px rgba(0, 0, 0, 0.1)" }}
+                    className={`p-6 border rounded-xl transition-all ${
+                      (match.confidenceScore ?? 0) >= 70 ? 'border-green-200 bg-gradient-to-r from-green-50 to-teal-50' : 
+                      (match.confidenceScore ?? 0) >= 40 ? 'border-blue-100 bg-gradient-to-r from-white to-blue-50' : 'border-gray-200 bg-gradient-to-r from-white to-gray-50'
                     }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-xl font-semibold text-[#0A2540]">{match.club.name}</h3>
+                        <h3 className="text-xl font-semibold text-[#0A2540] mb-1">{match.club.name}</h3>
                         {match.categoryMatch && (
-                          <span className="text-xs font-medium text-gray-500">{match.categoryMatch}</span>
+                          <span className="text-xs font-medium px-3 py-1 bg-[#3B82F6]/10 text-[#3B82F6] rounded-full">{match.categoryMatch}</span>
                         )}
                       </div>
                       <div className="flex items-center">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold ${
-                          (match.matchPercentage ?? 0) >= 70 ? 'bg-gradient-to-r from-green-500 to-teal-500' :
-                          (match.matchPercentage ?? 0) >= 50 ? 'bg-gradient-to-r from-blue-500 to-purple-500' :
-                          'bg-gradient-to-r from-blue-400 to-indigo-400'
-                        }`}>
+                        <motion.div 
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.5 + index * 0.1 }}
+                          className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+                            (match.matchPercentage ?? 0) >= 70 ? 'bg-gradient-to-r from-green-500 to-teal-500' :
+                            (match.matchPercentage ?? 0) >= 50 ? 'bg-gradient-to-r from-[#3B82F6] to-[#38BFA1]' :
+                            'bg-gradient-to-r from-[#3B82F6] to-indigo-500'
+                          }`}
+                        >
                           {match.matchPercentage}%
-                        </div>
+                        </motion.div>
                       </div>
                     </div>
                     
-                    <p className="text-gray-700 my-3">{match.club.description}</p>
+                    <p className="text-gray-700 my-4">{match.club.description}</p>
                     
-                    <div className="flex items-center mb-2">
-                      <div className={`h-1.5 rounded-full ${
-                        (match.confidenceScore ?? 0) >= 70 ? 'bg-green-500' :
-                        (match.confidenceScore ?? 0) >= 40 ? 'bg-blue-500' : 'bg-gray-400'
-                      }`} style={{ width: `${match.confidenceScore ?? 50}%` }}></div>
-                      <span className="text-xs font-medium ml-2 text-gray-500">
+                    <div className="flex items-center mb-3">
+                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${match.confidenceScore ?? 50}%` }}
+                          transition={{ delay: 0.6 + index * 0.1, duration: 0.8 }}
+                          className={`h-full rounded-full ${
+                            (match.confidenceScore ?? 0) >= 70 ? 'bg-gradient-to-r from-green-500 to-teal-500' :
+                            (match.confidenceScore ?? 0) >= 40 ? 'bg-gradient-to-r from-[#3B82F6] to-[#38BFA1]' : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                          }`}
+                        ></motion.div>
+                      </div>
+                      <span className="text-xs font-medium ml-3 min-w-[90px] text-gray-600">
                         {(match.confidenceScore ?? 0) >= 70 ? 'Strong match' :
                          (match.confidenceScore ?? 0) >= 40 ? 'Good match' : 'Possible match'}
                       </span>
                     </div>
                     
                     {match.matchedAttributes.length > 0 && (
-                      <div className="mt-4">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 + index * 0.1 }}
+                        className="mt-4"
+                      >
                         <p className="text-sm font-medium text-gray-700 mb-2">Matched Attributes:</p>
                         <div className="flex flex-wrap gap-2">
                           {match.matchedAttributes.map((attr, i) => (
-                            <span 
-                              key={i} 
-                              className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
+                            <motion.span 
+                              key={i}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.8 + index * 0.1 + i * 0.03 }}
+                              className="px-3 py-1 bg-[#3B82F6]/10 text-[#3B82F6] text-xs font-medium rounded-full"
                             >
                               {attr}
-                            </span>
+                            </motion.span>
                           ))}
                         </div>
-                      </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             ) : (
-              <div className="text-center p-6 bg-gray-50 rounded-lg w-full">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-center p-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl w-full border border-gray-200"
+              >
                 <p className="text-lg text-gray-700 mb-4">
                   We couldn&apos;t find strong matches based on your responses. Consider exploring a variety of clubs to discover what interests you!
                 </p>
-              </div>
+              </motion.div>
             )}
             
-            <div className="mt-8 flex flex-col items-center">
-              <p className="text-gray-600 mb-4 text-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mt-10 flex flex-col items-center"
+            >
+              <p className="text-gray-600 mb-6 text-center">
                 Remember, this is just a starting point! Feel free to explore clubs outside your matches too.
               </p>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={resetQuiz}
-                className="px-6 py-3 bg-[#0A2540] text-white font-medium rounded-lg hover:bg-[#0D2F4F] transition-colors"
+                className="px-8 py-4 bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white font-medium rounded-xl hover:shadow-xl transition-all"
               >
-                Take Quiz Again
-              </button>
-            </div>
-          </div>
+                <span className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Take Quiz Again
+                </span>
+              </motion.button>
+            </motion.div>
+          </motion.div>
         ) : null
       ) : (
         // Intro screen
