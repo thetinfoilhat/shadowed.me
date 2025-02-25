@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
@@ -73,6 +73,28 @@ export default function CaptainDashboard() {
     visit: Club | null;
     completing: boolean;
   }>({ isOpen: false, visit: null, completing: false });
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Fetch user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const role = userDoc.data().role;
+          setUserRole(role);
+          setIsAdmin(role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+    
+    fetchUserRole();
+  }, [user]);
 
   const fetchCaptainVisits = useCallback(async () => {
     try {
@@ -94,7 +116,8 @@ export default function CaptainDashboard() {
             createdAt: data.createdAt?.toDate() || new Date(),
           } as Club;
         })
-        .filter(visit => visit.captain === user?.email)
+        // If user is admin, show all visits, otherwise only show visits where user is captain
+        .filter(visit => isAdmin || visit.captain === user?.email)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setCaptainVisits(visits);
@@ -103,7 +126,7 @@ export default function CaptainDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (user) {
@@ -285,30 +308,18 @@ export default function CaptainDashboard() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-8 py-12 max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex justify-between items-start gap-16 mb-16">
-          <div className="relative max-w-2xl">
-            <div className="absolute inset-0 -z-10 overflow-hidden">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#38BFA1]/10 rounded-full blur-3xl"></div>
-            </div>
-            <h1 className="text-[3.5rem] font-semibold leading-[1.1] text-[#0A2540] mb-4">
-              Club Captain Dashboard
-            </h1>
-            <p className="text-lg text-gray-600">
-              Schedule and manage your club&apos;s visit opportunities
-            </p>
-          </div>
-
-          <button 
-            onClick={() => {
-              setEditingVisit(null);
-              setIsCreateModalOpen(true);
-            }}
-            className="bg-[#38BFA1] text-white px-12 py-4 rounded-xl hover:bg-[#2DA891] transition-all flex items-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 flex-shrink-0 min-w-[200px] justify-center"
+      <div className="max-w-[1400px] mx-auto px-8 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-semibold text-[#0A2540]">
+            {isAdmin ? 'Admin Captain Dashboard' : 'Captain Dashboard'}
+            {userRole === 'admin' && <span className="ml-2 text-sm bg-red-100 text-red-600 px-2 py-1 rounded-full">Admin View</span>}
+          </h1>
+          
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-[#38BFA1] text-white px-6 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
           >
-            <span className="text-lg">Create Visit</span>
-            <span className="text-xl">→</span>
+            Create New Visit
           </button>
         </div>
 
@@ -343,7 +354,7 @@ export default function CaptainDashboard() {
               <div className="space-y-4">
                 {captainVisits.map((visit) => (
                   <div 
-                    key={visit.id} 
+                    key={visit.id}
                     className="group flex items-center gap-6 p-6 rounded-lg border border-gray-100 hover:border-[#38BFA1]/30 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 cursor-pointer bg-white relative"
                   >
                     {/* Content wrapper with conditional opacity */}
@@ -356,9 +367,16 @@ export default function CaptainDashboard() {
                       
                       {/* Visit Details */}
                       <div className="flex-grow">
-                        <h3 className="text-lg font-semibold text-[#0A2540] mb-2">
-                          {visit.name}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-semibold text-[#0A2540]">
+                            {visit.name}
+                          </h3>
+                          {isAdmin && visit.captain !== user?.email && (
+                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                              Captain: {visit.captain}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex gap-8">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1">
@@ -368,10 +386,6 @@ export default function CaptainDashboard() {
                             <div className="flex items-center gap-1">
                               <span className="text-gray-500">Time:</span>
                               <span className="text-[#0A2540]">{formatTime(visit.time)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Category:</span>
-                              <span className="text-[#38BFA1]">{visit.category}</span>
                             </div>
                           </div>
 
@@ -384,6 +398,11 @@ export default function CaptainDashboard() {
                               <span className="text-gray-500">Available Slots:</span>
                               <span className="text-[#0A2540]">{visit.slots}</span>
                             </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500">Category:</span>
+                            <span className="text-[#38BFA1]">{visit.category}</span>
                           </div>
                         </div>
                       </div>
