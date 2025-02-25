@@ -217,7 +217,10 @@ export default function CaptainDashboard() {
           </div>
 
           <button 
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              setEditingVisit(null);
+              setIsCreateModalOpen(true);
+            }}
             className="bg-[#38BFA1] text-white px-12 py-4 rounded-xl hover:bg-[#2DA891] transition-all flex items-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 flex-shrink-0 min-w-[200px] justify-center"
           >
             <span className="text-lg">Create Visit</span>
@@ -235,7 +238,10 @@ export default function CaptainDashboard() {
                 Let students experience your club by scheduling a visit opportunity.
               </p>
               <button 
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  setEditingVisit(null);
+                  setIsCreateModalOpen(true);
+                }}
                 className="bg-[#38BFA1]/10 text-[#38BFA1] px-6 py-3 rounded-md hover:bg-[#38BFA1]/20 transition-all inline-flex items-center gap-2"
               >
                 <span>Schedule Visit</span>
