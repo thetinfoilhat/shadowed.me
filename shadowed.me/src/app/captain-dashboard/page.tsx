@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
 import { Club } from '@/types/club';
 import Link from 'next/link';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Applicant {
   name: string;
@@ -63,6 +64,10 @@ export default function CaptainDashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
   const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
+    visitId: string;
+  }>({ isOpen: false, visitId: '' });
 
   const fetchCaptainVisits = useCallback(async () => {
     try {
@@ -136,6 +141,19 @@ export default function CaptainDashboard() {
     } catch (error) {
       console.error('Error saving visit:', error);
       throw error;
+    }
+  };
+
+  const handleDeleteClick = (visitId: string) => {
+    setConfirmDelete({ isOpen: true, visitId });
+  };
+
+  const handleDelete = async (visitId: string) => {
+    try {
+      await deleteDoc(doc(db, 'opportunities', visitId));
+      await fetchCaptainVisits();
+    } catch (error) {
+      console.error('Error deleting visit:', error);
     }
   };
 
@@ -294,6 +312,15 @@ export default function CaptainDashboard() {
                       >
                         <span className="text-sm">View Applicants</span>
                       </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(visit.id);
+                        }}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md transition-colors"
+                      >
+                        Delete Visit
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -316,6 +343,15 @@ export default function CaptainDashboard() {
           isOpen={!!viewingApplicants}
           onCloseAction={() => setViewingApplicants(null)}
           applicants={viewingApplicants?.applicants || []}
+        />
+
+        <ConfirmDialog
+          isOpen={confirmDelete.isOpen}
+          onClose={() => setConfirmDelete({ isOpen: false, visitId: '' })}
+          onConfirm={() => handleDelete(confirmDelete.visitId)}
+          title="Delete Visit"
+          message="Are you sure you want to delete this visit opportunity? This action cannot be undone."
+          confirmText="Delete"
         />
       </div>
     </div>

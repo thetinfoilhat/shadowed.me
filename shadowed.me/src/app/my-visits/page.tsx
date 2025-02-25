@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { Club } from '@/types/club';
 import Link from 'next/link';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Applicant {
   email: string;
@@ -18,6 +19,14 @@ export default function MyVisits() {
   const { user } = useAuth();
   const [visits, setVisits] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingVisit, setEditingVisit] = useState<Club | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    visitId: string;
+    isCaptain: boolean;
+  }>({ isOpen: false, visitId: '', isCaptain: false });
 
   const fetchVisits = useCallback(async () => {
     if (!user?.email) return;
@@ -42,32 +51,35 @@ export default function MyVisits() {
     }
   }, [user]);
 
-  const handleUnregister = async (visitId: string) => {
-    if (!user?.email) return;
+  const handleDeleteClick = (visitId: string, isCaptain: boolean) => {
+    setConfirmDialog({ isOpen: true, visitId, isCaptain });
+  };
 
+  const handleDelete = async (visitId: string) => {
     try {
-      // First get the current visit data to find the exact applicant object
       const visitRef = doc(db, 'opportunities', visitId);
       const visitDoc = await getDoc(visitRef);
       const visitData = visitDoc.data();
 
       if (!visitData) return;
 
-      // Find the user's application with all fields
-      const userApplication = visitData.applicants?.find(
-        (applicant: Applicant) => applicant.email === user.email
-      );
+      if (visitData.captain === user?.email) {
+        await deleteDoc(visitRef);
+      } else {
+        const userApplication = visitData.applicants?.find(
+          (applicant: Applicant) => applicant.email === user?.email
+        );
 
-      if (!userApplication) return;
+        if (userApplication) {
+          await updateDoc(visitRef, {
+            applicants: arrayRemove(userApplication)
+          });
+        }
+      }
 
-      // Remove the exact application object
-      await updateDoc(visitRef, {
-        applicants: arrayRemove(userApplication)
-      });
-
-      await fetchVisits(); // Refresh the list
+      await fetchVisits();
     } catch (error) {
-      console.error('Error unregistering:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -189,13 +201,49 @@ export default function MyVisits() {
                     </div>
                   </div>
 
-                  <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      onClick={() => handleUnregister(visit.id)}
-                      className="bg-red-50 text-red-600 px-4 py-2 rounded-md hover:bg-red-100 transition-colors"
-                    >
-                      Unregister
-                    </button>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {visit.captain === user?.email ? (
+                      <>
+                        <button 
+                          className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingVisit(visit);
+                            setIsCreateModalOpen(true);
+                          }}
+                        >
+                          <span className="text-sm">Edit</span>
+                        </button>
+                        <button 
+                          className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingApplicants(visit);
+                          }}
+                        >
+                          <span className="text-sm">View Applicants</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(visit.id, true);
+                          }}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md transition-colors"
+                        >
+                          Delete Visit
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(visit.id, false);
+                        }}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md transition-colors"
+                      >
+                        Unregister from club visit
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -203,6 +251,17 @@ export default function MyVisits() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, visitId: '', isCaptain: false })}
+        onConfirm={() => handleDelete(confirmDialog.visitId)}
+        title={confirmDialog.isCaptain ? "Delete Visit" : "Unregister from Visit"}
+        message={confirmDialog.isCaptain 
+          ? "Are you sure you want to delete this visit opportunity? This action cannot be undone."
+          : "Are you sure you want to unregister from this visit? This action cannot be undone."}
+        confirmText={confirmDialog.isCaptain ? "Delete" : "Unregister"}
+      />
     </div>
   );
 } 
