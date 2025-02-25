@@ -327,6 +327,14 @@ export default function Header() {
                 )}
                 <li>
                   <Link 
+                    href="/what-fits-you"
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    What Fits You!
+                  </Link>
+                </li>
+                <li>
+                  <Link 
                     href="/about" 
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >

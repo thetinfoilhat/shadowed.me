@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { Dialog } from '@headlessui/react';
 
 type UserRole = 'student' | 'captain' | 'admin';
 
@@ -22,6 +23,8 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<{email: string, role: UserRole} | null>(null);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -89,10 +92,22 @@ export default function AdminDashboard() {
       return;
     }
 
+    // If assigning admin role, show confirmation dialog
+    if (selectedRole === 'admin') {
+      setPendingUpdate({ email, role: selectedRole });
+      setShowConfirmation(true);
+      return;
+    }
+
+    // Otherwise proceed with the update
+    await updateUserRole(email, selectedRole);
+  };
+
+  const updateUserRole = async (userEmail: string, role: UserRole) => {
     try {
       // Find user by email
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email));
+      const q = query(usersRef, where('email', '==', userEmail));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -103,16 +118,33 @@ export default function AdminDashboard() {
       const userDoc = querySnapshot.docs[0];
       await setDoc(doc(db, 'users', userDoc.id), {
         ...userDoc.data(),
-        role: selectedRole
+        role
       });
 
-      setSuccess(`Successfully updated role to ${selectedRole}`);
+      if (role === 'admin') {
+        setSuccess(`Successfully granted admin privileges to ${userEmail}`);
+      } else {
+        setSuccess(`Successfully updated role to ${role}`);
+      }
       setEmail('');
       fetchUsers();
     } catch (error) {
       console.error('Error updating role:', error);
       setError('Failed to update role');
     }
+  };
+
+  const handleConfirmAdminRole = async () => {
+    if (pendingUpdate) {
+      await updateUserRole(pendingUpdate.email, pendingUpdate.role);
+      setPendingUpdate(null);
+    }
+    setShowConfirmation(false);
+  };
+
+  const handleCancelAdminRole = () => {
+    setPendingUpdate(null);
+    setShowConfirmation(false);
   };
 
   if (loading) {
@@ -161,7 +193,13 @@ export default function AdminDashboard() {
               >
                 <option value="student">Student</option>
                 <option value="captain">Captain</option>
+                <option value="admin" className="text-red-600 font-medium">Admin (Full Access)</option>
               </select>
+              {selectedRole === 'admin' && (
+                <p className="mt-2 text-amber-600 text-sm font-medium">
+                  Warning: Admin users have full access to manage all aspects of the platform, including user roles and all club visits.
+                </p>
+              )}
             </div>
 
             {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -206,6 +244,54 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Admin Confirmation Dialog */}
+      <Dialog 
+        open={showConfirmation} 
+        onClose={handleCancelAdminRole}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-8">
+            <Dialog.Title className="text-2xl font-semibold text-[#0A2540] mb-4">
+              Confirm Admin Privileges
+            </Dialog.Title>
+            
+            <p className="text-gray-600 mb-4">
+              You are about to grant <span className="font-semibold">{pendingUpdate?.email}</span> admin privileges. 
+              This will give them full access to:
+            </p>
+
+            <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
+              <li>Manage all user roles</li>
+              <li>Access and modify all club visits</li>
+              <li>Delete any club visit</li>
+              <li>View all user data</li>
+            </ul>
+
+            <p className="text-amber-600 font-medium mb-6">
+              This action should only be performed for trusted individuals who need full administrative access.
+            </p>
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={handleCancelAdminRole}
+                className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAdminRole}
+                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Confirm Admin Access
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 } 
