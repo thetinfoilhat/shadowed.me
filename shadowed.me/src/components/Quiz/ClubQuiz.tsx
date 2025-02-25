@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import EnhancedIntro from './EnhancedIntro';
 
 // Types
@@ -945,198 +945,244 @@ const ClubQuiz: React.FC = () => {
       {/* Quiz Content */}
       {isStarted ? (
         currentQuestion ? (
-          // Question screen
-          <motion.div 
-            key={currentQuestionIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 relative overflow-hidden"
-          >
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#38BFA1] opacity-5 rounded-full -mr-20 -mt-20"></div>
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-[#FF7D54] opacity-5 rounded-full -ml-16 -mb-16"></div>
-            
-            {/* Progress bar */}
-            <div className="w-full h-3 bg-gray-100 rounded-full mb-8 overflow-hidden shadow-inner">
-              <motion.div 
-                initial={{ width: `${((currentQuestionIndex || 0) / questions.length) * 100}%` }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] rounded-full"
-              ></motion.div>
-            </div>
-            
-            <div className="flex justify-between items-center mb-4">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm font-medium text-[#3B82F6]"
-              >
-                Question {currentQuestionIndex !== null ? currentQuestionIndex + 1 : ''} of {questions.length}
-              </motion.div>
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm font-medium text-[#FF7D54] flex items-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Skips: {skipsRemaining}
-              </motion.div>
-            </div>
-            
-            <motion.h3 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-2xl font-semibold text-[#0A2540] mb-8"
-            >
-              {currentQuestion.text}
-            </motion.h3>
-            
-            {/* Question content based on type */}
+          // Question screen with improved transitions
+          <AnimatePresence mode="wait">
             <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-10"
+              key={currentQuestionIndex}
+              initial={{ opacity: 0, x: 50, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -50, scale: 0.98 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30,
+                mass: 1
+              }}
+              className="bg-white rounded-xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 relative overflow-hidden"
             >
-              {currentQuestion.type === 'yes-no' && (
-                <div className="flex justify-center gap-4">
-                  {currentQuestion.options?.map((option, index) => (
-                    <motion.button
-                      key={option.value}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + index * 0.1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
-                      className={`flex-1 max-w-[180px] py-4 px-6 rounded-xl border-2 transition-all ${
-                        isOptionSelected(currentQuestion.id, option.value)
-                          ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
-                      }`}
-                    >
-                      {option.label}
-                    </motion.button>
-                  ))}
-                </div>
-              )}
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#38BFA1] opacity-5 rounded-full -mr-20 -mt-20"></div>
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-[#FF7D54] opacity-5 rounded-full -ml-16 -mb-16"></div>
               
-              {currentQuestion.type === 'multiple-choice' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {currentQuestion.options?.map((option, index) => (
-                    <motion.button
-                      key={option.value}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
-                      className={`py-4 px-5 rounded-xl border-2 text-left transition-all ${
-                        isOptionSelected(currentQuestion.id, option.value)
-                          ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
-                      }`}
-                    >
-                      {option.label}
-                    </motion.button>
-                  ))}
-                </div>
-              )}
+              {/* Progress bar */}
+              <div className="w-full h-3 bg-gray-100 rounded-full mb-8 overflow-hidden shadow-inner">
+                <motion.div 
+                  initial={{ width: `${((currentQuestionIndex || 0) / questions.length) * 100}%` }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] rounded-full"
+                ></motion.div>
+              </div>
               
-              {currentQuestion.type === 'slider' && (
-                <div className="px-4">
-                  <div className="flex justify-between text-sm text-gray-500 mb-3">
-                    <span>{currentQuestion.minLabel}</span>
-                    <span>{currentQuestion.maxLabel}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={currentQuestion.min || 1}
-                    max={currentQuestion.max || 5}
-                    value={getSliderValue(currentQuestion.id)}
-                    onChange={(e) => handleSliderChange(currentQuestion.id, parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3B82F6]"
-                  />
-                  <div className="mt-6 text-center">
-                    <motion.span 
-                      key={getSliderValue(currentQuestion.id)}
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      className="inline-block px-6 py-3 bg-gradient-to-r from-[#3B82F6]/20 to-[#38BFA1]/20 rounded-full font-medium text-[#3B82F6] shadow-sm"
-                    >
-                      {getSliderValue(currentQuestion.id)}
-                    </motion.span>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-            
-            {/* Navigation buttons */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex justify-between items-center"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === null || currentQuestionIndex === 0}
-                className={`px-6 py-3 rounded-xl transition-all ${
-                  currentQuestionIndex === null || currentQuestionIndex === 0
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white border border-gray-200 text-[#0A2540] hover:bg-gray-50 hover:shadow-md'
-                }`}
-              >
-                <span className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <div className="flex justify-between items-center mb-4">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm font-medium text-[#3B82F6]"
+                >
+                  Question {currentQuestionIndex !== null ? currentQuestionIndex + 1 : ''} of {questions.length}
+                </motion.div>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm font-medium text-[#FF7D54] flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  Previous
-                </span>
-              </motion.button>
+                  Skips: {skipsRemaining}
+                </motion.div>
+              </div>
               
-              {skipsRemaining > 0 && currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
+              <motion.h3 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.1,
+                  duration: 0.5,
+                  type: "spring",
+                  stiffness: 200
+                }}
+                className="text-2xl font-semibold text-[#0A2540] mb-8"
+              >
+                {currentQuestion.text}
+              </motion.h3>
+              
+              {/* Question content based on type */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.2,
+                  duration: 0.5,
+                  type: "spring",
+                  stiffness: 200
+                }}
+                className="mb-10"
+              >
+                {currentQuestion.type === 'yes-no' && (
+                  <div className="flex justify-center gap-4">
+                    {currentQuestion.options?.map((option, index) => (
+                      <motion.button
+                        key={option.value}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
+                        className={`flex-1 max-w-[180px] py-4 px-6 rounded-xl border-2 transition-all ${
+                          isOptionSelected(currentQuestion.id, option.value)
+                            ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
+                        }`}
+                      >
+                        {option.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+                
+                {currentQuestion.type === 'multiple-choice' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {currentQuestion.options?.map((option, index) => (
+                      <motion.button
+                        key={option.value}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleOptionSelect(currentQuestion.id, option.value, !isOptionSelected(currentQuestion.id, option.value))}
+                        className={`py-4 px-5 rounded-xl border-2 text-left transition-all ${
+                          isOptionSelected(currentQuestion.id, option.value)
+                            ? 'border-[#3B82F6] bg-gradient-to-r from-[#3B82F6]/10 to-[#38BFA1]/10 text-[#0A2540] font-medium shadow-md'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:shadow-sm'
+                        }`}
+                      >
+                        {option.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+                
+                {currentQuestion.type === 'slider' && (
+                  <div className="px-4">
+                    <div className="flex justify-between text-sm text-gray-500 mb-3">
+                      <span>{currentQuestion.minLabel}</span>
+                      <span>{currentQuestion.maxLabel}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={currentQuestion.min || 1}
+                      max={currentQuestion.max || 5}
+                      value={getSliderValue(currentQuestion.id)}
+                      onChange={(e) => handleSliderChange(currentQuestion.id, parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3B82F6]"
+                    />
+                    <div className="mt-6 text-center">
+                      <motion.span 
+                        key={getSliderValue(currentQuestion.id)}
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        className="inline-block px-6 py-3 bg-gradient-to-r from-[#3B82F6]/20 to-[#38BFA1]/20 rounded-full font-medium text-[#3B82F6] shadow-sm"
+                      >
+                        {getSliderValue(currentQuestion.id)}
+                      </motion.span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+              
+              {/* Navigation buttons */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.3,
+                  duration: 0.5,
+                  type: "spring",
+                  stiffness: 200
+                }}
+                className="flex justify-between items-center"
+              >
                 <motion.button
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ 
+                    delay: 0.4,
+                    duration: 0.4,
+                    type: "spring",
+                    stiffness: 200
+                  }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={handleSkip}
-                  className="px-6 py-3 rounded-xl bg-white border border-[#FF7D54] text-[#FF7D54] hover:bg-[#FF7D54]/5 transition-all hover:shadow-md"
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === null || currentQuestionIndex === 0}
+                  className={`px-6 py-3 rounded-xl transition-all ${
+                    currentQuestionIndex === null || currentQuestionIndex === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white border border-gray-200 text-[#0A2540] hover:bg-gray-50 hover:shadow-md'
+                  }`}
                 >
-                  Skip ({skipsRemaining})
-                </motion.button>
-              )}
-              
-              <motion.button
-                whileHover={isCurrentQuestionAnswered() ? { scale: 1.05 } : {}}
-                whileTap={isCurrentQuestionAnswered() ? { scale: 0.95 } : {}}
-                onClick={handleNext}
-                disabled={!isCurrentQuestionAnswered()}
-                className={`px-6 py-3 rounded-xl transition-all ${
-                  isCurrentQuestionAnswered()
-                    ? 'bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white hover:shadow-lg'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <span className="flex items-center">
-                  {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'}
-                  {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                  )}
-                </span>
-              </motion.button>
+                    Previous
+                  </span>
+                </motion.button>
+                
+                {skipsRemaining > 0 && currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      delay: 0.45,
+                      duration: 0.4,
+                      type: "spring",
+                      stiffness: 200
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSkip}
+                    className="px-6 py-3 rounded-xl bg-white border border-[#FF7D54] text-[#FF7D54] hover:bg-[#FF7D54]/5 transition-all hover:shadow-md"
+                  >
+                    Skip ({skipsRemaining})
+                  </motion.button>
+                )}
+                
+                <motion.button
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ 
+                    delay: 0.5,
+                    duration: 0.4,
+                    type: "spring",
+                    stiffness: 200
+                  }}
+                  whileHover={isCurrentQuestionAnswered() ? { scale: 1.05 } : {}}
+                  whileTap={isCurrentQuestionAnswered() ? { scale: 0.95 } : {}}
+                  onClick={handleNext}
+                  disabled={!isCurrentQuestionAnswered()}
+                  className={`px-6 py-3 rounded-xl transition-all ${
+                    isCurrentQuestionAnswered()
+                      ? 'bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white hover:shadow-lg'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'}
+                    {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                  </span>
+                </motion.button>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </AnimatePresence>
         ) : showResults ? (
           // Results screen
           <motion.div 
