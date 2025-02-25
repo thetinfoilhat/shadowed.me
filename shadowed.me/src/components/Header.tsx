@@ -151,6 +151,7 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout, showProfileModal, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
     try {
@@ -161,33 +162,22 @@ export default function Header() {
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
       
       if (!userDoc.exists()) {
-        // New user - show role selection
-        setShowRoleModal(true);
-      } else {
-        // Existing user - redirect to home
-        router.push('/');
+        // New user - automatically set as student
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: result.user.email,
+          role: 'student',
+          createdAt: new Date().toISOString(),
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL
+        });
       }
+      
+      // Redirect to home
+      router.push('/');
     } catch (error) {
       if (error instanceof Error && (error as AuthError).code !== 'auth/cancelled-popup-request') {
         console.error('Error signing in with Google:', error);
       }
-    }
-  };
-
-  const handleRoleSelect = async (role: 'student' | 'captain') => {
-    if (!user) return;
-
-    try {
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        role: role,
-        createdAt: new Date().toISOString(),
-        displayName: user.displayName,
-        photoURL: user.photoURL
-      });
-      setShowRoleModal(false);
-    } catch (error) {
-      console.error('Error saving user role:', error);
     }
   };
 
@@ -234,6 +224,26 @@ export default function Header() {
     };
 
     fetchUserProfile();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user?.uid) {
+        setUserRole(null);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+
+    fetchUserRole();
   }, [user]);
 
   const handleProfileSave = async (data: UserProfile) => {
@@ -300,13 +310,33 @@ export default function Header() {
                   </Link>
                 </li>
                 <li>
-                  <button 
-                    onClick={handleDashboardClick}
+                  <Link 
+                    href="/my-visits"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
-                    Dashboard
-                  </button>
+                    My Visits
+                  </Link>
                 </li>
+                {userRole === 'captain' && (
+                  <li>
+                    <Link 
+                      href="/captain-dashboard"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      Captain Dashboard
+                    </Link>
+                  </li>
+                )}
+                {userRole === 'admin' && (
+                  <li>
+                    <Link 
+                      href="/admin-dashboard"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link 
                     href="/about" 
@@ -411,13 +441,6 @@ export default function Header() {
             </button>
           </div>
         </div>
-      )}
-
-      {showRoleModal && (
-        <UserRoleModal
-          onSelectAction={handleRoleSelect}
-          onCloseAction={() => setShowRoleModal(false)}
-        />
       )}
 
       {showProfileModal && (
