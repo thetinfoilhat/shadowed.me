@@ -707,6 +707,41 @@ const ClubQuiz: React.FC = () => {
       "Medical": ["Biochemistry Club"]
     };
 
+    // Define required attributes for perfect matches (clubs must have these to get 90%+ scores)
+    const clubRequiredAttributes: Record<string, string[]> = {
+      "Art Club": ["creativity", "artistic"],
+      "Ceramics Society": ["pottery", "hands-on"],
+      "Photography Club": ["photography", "visual storytelling"],
+      "Henna Club": ["art", "cultural awareness"],
+      "ASL (American Sign Language & Culture) Club": ["language", "cultural awareness"],
+      "French Club": ["language", "cultural awareness"],
+      "Spanish Club": ["language", "cultural awareness"],
+      "German Club": ["language", "cultural awareness"],
+      "Korean Club": ["language", "cultural awareness"],
+      "Astronomy Club": ["space", "science"],
+      "Biochemistry Club": ["science", "experiments"],
+      "Computer Science Club": ["coding", "technology"],
+      "Math Team": ["math", "competitive"],
+      "Robotics Team (FIRST Robotics)": ["engineering", "technology"],
+      "Science Olympiad": ["science", "competitive"],
+      "Drama Club": ["acting", "performance"],
+      "Marching Band": ["music", "performance"],
+      "Show Choir": ["singing", "performance"],
+      "Orchesis": ["dance", "performance"],
+      "DECA": ["business", "competitive"],
+      "BPA (Business Professionals of America)": ["business", "leadership"],
+      "Investment Club": ["finance", "business"],
+      "Girl Up": ["advocacy", "leadership"],
+      "Interact Club": ["volunteering", "community service"],
+      "UNICEF Club": ["volunteering", "global awareness"],
+      "Debate": ["debate", "public speaking"],
+      "Model UN": ["global issues", "debate"],
+      "Huskie Book Club": ["reading", "literature"],
+      "Chess Club & Team": ["strategy", "critical thinking"],
+      "Esports Club": ["gaming", "competitive"],
+      "Yearbook": ["photography", "design"]
+    };
+
     // Create a map to track attribute matches for each club
     const clubMatches = new Map<Club, { 
       matchedAttributes: string[], 
@@ -717,7 +752,10 @@ const ClubQuiz: React.FC = () => {
       categoryMatch: string | null,
       confidenceScore: number,
       attributeMatchStrength: number,
-      userPreferredAttributes: string[]
+      userPreferredAttributes: string[],
+      requiredAttributesMatched: number,
+      totalRequiredAttributes: number,
+      diminishingReturnsApplied: boolean
     }>();
 
     // Initialize club matches
@@ -730,6 +768,9 @@ const ClubQuiz: React.FC = () => {
         }
       }
 
+      // Get required attributes for this club
+      const requiredAttributes = clubRequiredAttributes[club.name] || [];
+
       clubMatches.set(club, { 
         matchedAttributes: [], 
         negativeAttributes: [],
@@ -739,7 +780,10 @@ const ClubQuiz: React.FC = () => {
         categoryMatch: categories.length > 0 ? categories[0] : null,
         confidenceScore: 0,
         attributeMatchStrength: 0,
-        userPreferredAttributes: []
+        userPreferredAttributes: [],
+        requiredAttributesMatched: 0,
+        totalRequiredAttributes: requiredAttributes.length,
+        diminishingReturnsApplied: false
       });
     });
 
@@ -883,6 +927,9 @@ const ClubQuiz: React.FC = () => {
         const clubMatch = clubMatches.get(club);
         if (!clubMatch) return;
 
+        // Get required attributes for this club
+        const requiredAttributes = clubRequiredAttributes[club.name] || [];
+
         // Check for attribute matches
         responseAttributes.forEach(attr => {
           if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
@@ -891,10 +938,23 @@ const ClubQuiz: React.FC = () => {
             // Apply attribute weight if defined, otherwise use default weight of 1.0
             const attrWeight = attributeWeights[attr] || 1.0;
             clubMatch.matchScore += 1;
-            clubMatch.weightedScore += questionWeight * attrWeight;
+            
+            // Apply diminishing returns for clubs with many attributes
+            // This makes it harder for clubs with many attributes to get high scores
+            const diminishingReturnFactor = Math.max(0.7, 1 - (clubMatch.matchedAttributes.length * 0.03));
+            clubMatch.weightedScore += questionWeight * attrWeight * diminishingReturnFactor;
+            
+            if (diminishingReturnFactor < 1) {
+              clubMatch.diminishingReturnsApplied = true;
+            }
             
             // Track user's preferred attributes that match this club
             clubMatch.userPreferredAttributes.push(attr);
+            
+            // Check if this is a required attribute
+            if (requiredAttributes.includes(attr)) {
+              clubMatch.requiredAttributesMatched += 1;
+            }
           }
         });
         
@@ -948,7 +1008,18 @@ const ClubQuiz: React.FC = () => {
         const weightedPercentage = Math.round((match.weightedScore / Math.max(1, match.totalPossibleScore)) * 100);
         
         // Calculate negative attribute penalty
-        const negativeAttributePenalty = match.negativeAttributes.length * 5; // 5% penalty per negative attribute
+        const negativeAttributePenalty = match.negativeAttributes.length * 8; // Increased from 5 to 8
+        
+        // Calculate required attribute penalty
+        // If the club has required attributes but the user didn't match them all, apply a penalty
+        let requiredAttributePenalty = 0;
+        if (match.totalRequiredAttributes > 0) {
+          const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
+          if (requiredAttributeRatio < 1) {
+            // Apply a significant penalty if not all required attributes are matched
+            requiredAttributePenalty = Math.round((1 - requiredAttributeRatio) * 25);
+          }
+        }
         
         // Calculate final match percentage with a balanced approach
         let matchPercentage = Math.round((weightedPercentage * 0.6) + (rawPercentage * 0.4));
@@ -956,9 +1027,61 @@ const ClubQuiz: React.FC = () => {
         // Apply negative attribute penalty
         matchPercentage = Math.max(5, matchPercentage - negativeAttributePenalty);
         
-        // Boost percentage if club is in a top category
+        // Apply required attribute penalty
+        matchPercentage = Math.max(5, matchPercentage - requiredAttributePenalty);
+        
+        // Boost percentage if club is in a top category (but less than before)
         if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
-          matchPercentage += 10; // Boost by 10%
+          matchPercentage += 8; // Reduced from 10 to 8
+        }
+        
+        // Apply a scaling factor to make high percentages harder to achieve
+        // This creates a more bell-curve distribution of scores
+        if (matchPercentage > 70) {
+          const scalingFactor = 0.8; // Reduce high scores more aggressively
+          matchPercentage = 70 + Math.round((matchPercentage - 70) * scalingFactor);
+        }
+        
+        // Apply diminishing returns penalty for clubs with many attributes
+        if (match.diminishingReturnsApplied) {
+          matchPercentage = Math.max(5, matchPercentage - 5);
+        }
+        
+        // Apply a penalty based on the number of questions answered
+        // If the user answered fewer questions, be more conservative with high scores
+        const questionCompletionRatio = answers.length / questions.length;
+        if (questionCompletionRatio < 0.7 && matchPercentage > 60) {
+          const incompletenessAdjustment = Math.round((1 - questionCompletionRatio) * 20);
+          matchPercentage = Math.max(60, matchPercentage - incompletenessAdjustment);
+        }
+        
+        // Make it extremely difficult to get 100%
+        if (matchPercentage > 90) {
+          // Check if all required attributes are matched
+          if (match.totalRequiredAttributes > 0 && match.requiredAttributesMatched < match.totalRequiredAttributes) {
+            matchPercentage = Math.min(matchPercentage, 90);
+          }
+          
+          // Check if there are any negative attributes
+          if (match.negativeAttributes.length > 0) {
+            matchPercentage = Math.min(matchPercentage, 85);
+          }
+          
+          // Check if the user answered enough questions
+          if (questionCompletionRatio < 0.8) {
+            matchPercentage = Math.min(matchPercentage, 88);
+          }
+        }
+        
+        // Cap at 95% unless it's a perfect match
+        const isPerfectMatch = match.totalRequiredAttributes > 0 && 
+                              match.requiredAttributesMatched === match.totalRequiredAttributes && 
+                              match.negativeAttributes.length === 0 &&
+                              questionCompletionRatio > 0.8 &&
+                              match.matchedAttributes.length >= Math.ceil(club.attributes.length * 0.8);
+        
+        if (!isPerfectMatch) {
+          matchPercentage = Math.min(95, matchPercentage);
         }
         
         // Cap at 100%
@@ -990,6 +1113,16 @@ const ClubQuiz: React.FC = () => {
           confidence += 10; // Boost confidence if user answered most questions
         }
         
+        // Adjust confidence based on required attributes
+        if (match.totalRequiredAttributes > 0) {
+          const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
+          if (requiredAttributeRatio < 0.5) {
+            confidence -= 20; // Significant confidence reduction if less than half of required attributes matched
+          } else if (requiredAttributeRatio === 1) {
+            confidence += 15; // Boost confidence if all required attributes matched
+          }
+        }
+        
         // Ensure confidence is between 0-100
         confidence = Math.max(0, Math.min(100, confidence));
         
@@ -1000,7 +1133,9 @@ const ClubQuiz: React.FC = () => {
           score: match.weightedScore,
           matchPercentage,
           confidenceScore: confidence,
-          categoryMatch: match.categoryMatch
+          categoryMatch: match.categoryMatch,
+          requiredAttributesMatched: match.requiredAttributesMatched,
+          totalRequiredAttributes: match.totalRequiredAttributes
         };
       })
       .sort((a, b) => {

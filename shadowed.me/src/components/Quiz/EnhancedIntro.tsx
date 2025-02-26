@@ -44,10 +44,21 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed"
+          className="text-gray-600 mb-6 max-w-lg mx-auto leading-relaxed"
         >
-          Answer a few questions about your interests and preferences, and we&apos;ll suggest clubs that might be a great fit for you!
+          Answer questions about your interests and preferences, and our advanced matching algorithm will suggest clubs that might be a great fit for you!
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.45 }}
+          className="bg-blue-50 p-4 rounded-lg mb-8 max-w-lg mx-auto"
+        >
+          <p className="text-sm text-gray-700 leading-relaxed">
+            <span className="font-semibold text-blue-600">How it works:</span> Our algorithm analyzes your responses to find clubs that match your core interests. A high match percentage (90%+) means the club aligns exceptionally well with your preferences. Most matches will fall in the 60-85% range, indicating good compatibility.
+          </p>
+        </motion.div>
         
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -93,7 +104,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           <div>
             <p className="text-sm leading-relaxed">
               <span className="font-semibold text-[#3B82F6]">Pro tip:</span>{" "}
-              <span className="text-gray-700">You can skip up to 20 questions if you&apos;re not sure about an answer.</span>
+              <span className="text-gray-700">The more questions you answer, the more accurate your matches will be. You can skip up to 20 questions if you&apos;re not sure.</span>
             </p>
           </div>
         </motion.div>
