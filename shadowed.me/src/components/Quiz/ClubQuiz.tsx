@@ -624,40 +624,86 @@ const ClubQuiz: React.FC = () => {
       1: 1.2,  // Public speaking
       2: 1.5,  // Team vs independent
       3: 1.3,  // Competitiveness
-      4: 1.8,  // Subject preferences (high weight as it's a key indicator)
-      5: 1.2,  // Problem solving
-      6: 1.4,  // Business interest
-      7: 1.3,  // Technology interest
+      4: 2.0,  // Subject preferences (high weight as it's a key indicator)
+      5: 1.4,  // Problem solving
+      6: 1.6,  // Business interest
+      7: 1.5,  // Technology interest
       8: 1.4,  // STEM competitions
-      9: 1.2,  // Writing interest
-      10: 1.5, // Performing arts
-      11: 1.3, // Global issues
-      12: 1.4, // Volunteering
+      9: 1.3,  // Writing interest
+      10: 1.7, // Performing arts
+      11: 1.5, // Global issues
+      12: 1.6, // Volunteering
       13: 1.3, // Event planning
-      14: 1.4, // Hands-on activities
+      14: 1.6, // Hands-on activities
       15: 1.5, // Photography/visual arts
       16: 1.5, // Newspaper/yearbook
-      17: 1.2,  // Strategic thinking
-      18: 1.3,  // Creative expression
-      19: 1.4,  // Structured vs creative
-      20: 1.2,  // Language learning
-      21: 1.3,  // Advocacy for diversity
-      22: 1.4,  // Robotics/coding
-      23: 1.3   // Medical/health
+      17: 1.3, // Strategic thinking
+      18: 1.5, // Creative expression
+      19: 1.6, // Structured vs creative
+      20: 1.4, // Language learning
+      21: 1.5, // Advocacy for diversity
+      22: 1.6, // Robotics/coding
+      23: 1.5  // Medical/health
+    };
+
+    // Define attribute weights (higher = more important for matching)
+    const attributeWeights: Record<string, number> = {
+      // Core interests and skills (highest weight)
+      "coding": 2.0,
+      "science": 1.8,
+      "math": 1.8,
+      "engineering": 1.8,
+      "writing": 1.8,
+      "acting": 1.8,
+      "singing": 1.8,
+      "dancing": 1.8,
+      "language": 1.8,
+      "business": 1.8,
+      "finance": 1.8,
+      "volunteering": 1.8,
+      "photography": 1.8,
+      "design": 1.8,
+      "pottery": 1.8,
+      "painting": 1.8,
+      "drawing": 1.8,
+      
+      // Secondary attributes (medium weight)
+      "teamwork": 1.5,
+      "leadership": 1.5,
+      "problem-solving": 1.5,
+      "critical thinking": 1.5,
+      "creativity": 1.5,
+      "performance": 1.5,
+      "public speaking": 1.5,
+      "debate": 1.5,
+      "research": 1.5,
+      "competition": 1.5,
+      "cultural awareness": 1.5,
+      "global awareness": 1.5,
+      "advocacy": 1.5,
+      
+      // Tertiary attributes (lower weight)
+      "collaboration": 1.2,
+      "communication": 1.2,
+      "innovation": 1.2,
+      "strategy": 1.2,
+      "analytical": 1.2,
+      "organization": 1.2,
+      "discipline": 1.2
     };
 
     // Define club categories for better grouping
     const clubCategories: Record<string, string[]> = {
       "Art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club"],
-      "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "Korean Club"],
-      "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)"],
+      "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "German Club", "Korean Club"],
+      "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
       "Performing Arts": ["Drama Club", "Marching Band", "Show Choir", "Orchesis"],
       "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
       "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
       "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
-      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)"],
-      "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis"],
-      "Advocacy": ["Girl Up", "UNICEF Club"],
+      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
+      "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis", "Yearbook"],
+      "Advocacy": ["Girl Up", "UNICEF Club", "Model UN"],
       "Medical": ["Biochemistry Club"]
     };
 
@@ -669,17 +715,18 @@ const ClubQuiz: React.FC = () => {
       weightedScore: number,
       totalPossibleScore: number,
       categoryMatch: string | null,
-      confidenceScore: number
+      confidenceScore: number,
+      attributeMatchStrength: number,
+      userPreferredAttributes: string[]
     }>();
 
     // Initialize club matches
     clubs.forEach(club => {
-      // Find which category this club belongs to
-      let category = null;
+      // Find which categories this club belongs to
+      const categories: string[] = [];
       for (const [cat, clubNames] of Object.entries(clubCategories)) {
         if (clubNames.includes(club.name)) {
-          category = cat;
-          break;
+          categories.push(cat);
         }
       }
 
@@ -688,9 +735,11 @@ const ClubQuiz: React.FC = () => {
         negativeAttributes: [],
         matchScore: 0,
         weightedScore: 0,
-        totalPossibleScore: club.attributes.length,
-        categoryMatch: category,
-        confidenceScore: 0
+        totalPossibleScore: 0, // Will be calculated based on weighted attributes
+        categoryMatch: categories.length > 0 ? categories[0] : null,
+        confidenceScore: 0,
+        attributeMatchStrength: 0,
+        userPreferredAttributes: []
       });
     });
 
@@ -709,6 +758,10 @@ const ClubQuiz: React.FC = () => {
       "Medical": 0
     };
 
+    // Collect all user's preferred attributes
+    const userAttributes: string[] = [];
+    const userNegativeAttributes: string[] = [];
+    
     // Process each user response
     answers.forEach(response => {
       const question = questions.find(q => q.id === response.questionId);
@@ -733,10 +786,10 @@ const ClubQuiz: React.FC = () => {
               // Add category boosts based on specific answers
               if (question.id === 4) { // Subject preferences
                 if (selectedValue === 'math') categoryBoosts.push("STEM", "Academic & Humanities");
-                if (selectedValue === 'science') categoryBoosts.push("STEM");
+                if (selectedValue === 'science') categoryBoosts.push("STEM", "Medical");
                 if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
                 if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
-                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts");
+                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts", "Creative");
               }
               
               if (question.id === 10) { // Performing arts preferences
@@ -745,8 +798,16 @@ const ClubQuiz: React.FC = () => {
                 if (selectedValue === 'dancing') categoryBoosts.push("Performing Arts");
               }
               
-              if (question.id === 3 && parseInt(selectedValue) >= 4) { // Competitiveness
-                categoryBoosts.push("Competitive");
+              if (question.id === 6 && selectedValue === 'yes') { // Business interest
+                categoryBoosts.push("Business");
+              }
+              
+              if (question.id === 11 && selectedValue === 'yes') { // Global issues
+                categoryBoosts.push("Language & Culture", "Advocacy");
+              }
+              
+              if (question.id === 12 && selectedValue === 'yes') { // Volunteering
+                categoryBoosts.push("Community Service", "Advocacy");
               }
               
               // New questions category boosts
@@ -755,20 +816,20 @@ const ClubQuiz: React.FC = () => {
                 if (selectedValue === 'structured') categoryBoosts.push("Academic & Humanities", "Business");
               }
               
-              if (question.id === 20) { // Language learning
-                if (selectedValue === 'yes') categoryBoosts.push("Language & Culture");
+              if (question.id === 20 && selectedValue === 'yes') { // Language learning
+                categoryBoosts.push("Language & Culture");
               }
               
-              if (question.id === 21) { // Diversity and inclusion
-                if (selectedValue === 'yes') categoryBoosts.push("Advocacy", "Community Service");
+              if (question.id === 21 && selectedValue === 'yes') { // Diversity and inclusion
+                categoryBoosts.push("Advocacy", "Community Service");
               }
               
-              if (question.id === 22) { // Robotics/coding
-                if (selectedValue === 'yes') categoryBoosts.push("STEM");
+              if (question.id === 22 && selectedValue === 'yes') { // Robotics/coding
+                categoryBoosts.push("STEM");
               }
               
-              if (question.id === 23) { // Medical/health
-                if (selectedValue === 'yes') categoryBoosts.push("Medical", "STEM");
+              if (question.id === 23 && selectedValue === 'yes') { // Medical/health
+                categoryBoosts.push("Medical", "STEM");
               }
             }
           });
@@ -779,6 +840,7 @@ const ClubQuiz: React.FC = () => {
             const yesOption = question.options.find(opt => opt.value === 'yes');
             if (yesOption) {
               negativeAttributes = yesOption.attributes;
+              userNegativeAttributes.push(...yesOption.attributes);
             }
           }
         }
@@ -798,9 +860,16 @@ const ClubQuiz: React.FC = () => {
           
           if (question.id === 18 && sliderValue >= 4) { // Creative expression
             categoryBoosts.push("Creative", "Art", "Performing Arts");
+          } else if (question.id === 18 && sliderValue <= 2) {
+            // If user doesn't value creative expression, add negative attributes
+            negativeAttributes.push("creative", "artistic", "self-expression");
+            userNegativeAttributes.push("creative", "artistic", "self-expression");
           }
         }
       }
+
+      // Add user's preferred attributes
+      userAttributes.push(...responseAttributes);
 
       // Boost category scores based on answers
       categoryBoosts.forEach(category => {
@@ -818,8 +887,14 @@ const ClubQuiz: React.FC = () => {
         responseAttributes.forEach(attr => {
           if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
             clubMatch.matchedAttributes.push(attr);
+            
+            // Apply attribute weight if defined, otherwise use default weight of 1.0
+            const attrWeight = attributeWeights[attr] || 1.0;
             clubMatch.matchScore += 1;
-            clubMatch.weightedScore += questionWeight;
+            clubMatch.weightedScore += questionWeight * attrWeight;
+            
+            // Track user's preferred attributes that match this club
+            clubMatch.userPreferredAttributes.push(attr);
           }
         });
         
@@ -827,10 +902,32 @@ const ClubQuiz: React.FC = () => {
         negativeAttributes.forEach(attr => {
           if (club.attributes.includes(attr) && !clubMatch.negativeAttributes.includes(attr)) {
             clubMatch.negativeAttributes.push(attr);
-            // We don't reduce the score here, but we'll use this for confidence calculation
+            // We'll use this for confidence calculation later
           }
         });
       });
+    });
+
+    // Calculate total possible score for each club based on weighted attributes
+    clubs.forEach(club => {
+      const clubMatch = clubMatches.get(club);
+      if (!clubMatch) return;
+      
+      // Calculate total possible weighted score
+      let totalPossibleScore = 0;
+      club.attributes.forEach(attr => {
+        const attrWeight = attributeWeights[attr] || 1.0;
+        totalPossibleScore += attrWeight;
+      });
+      
+      clubMatch.totalPossibleScore = totalPossibleScore;
+      
+      // Calculate attribute match strength (how many of the user's preferred attributes match this club)
+      const uniqueUserAttributes = [...new Set(userAttributes)];
+      if (uniqueUserAttributes.length > 0) {
+        const matchingAttributes = clubMatch.matchedAttributes.length;
+        clubMatch.attributeMatchStrength = matchingAttributes / uniqueUserAttributes.length;
+      }
     });
 
     // Find the top categories
@@ -845,13 +942,27 @@ const ClubQuiz: React.FC = () => {
     const results = Array.from(clubMatches.entries())
       .map(([club, match]) => {
         // Calculate match percentage with a more nuanced approach
-        const rawPercentage = Math.round((match.matchScore / Math.max(1, match.totalPossibleScore)) * 100);
+        const rawPercentage = Math.round((match.matchScore / Math.max(1, club.attributes.length)) * 100);
         
-        // Adjust percentage based on weighted score
-        const weightedPercentage = Math.round((match.weightedScore / (match.totalPossibleScore * 1.5)) * 100);
+        // Calculate weighted percentage based on the weighted score and total possible score
+        const weightedPercentage = Math.round((match.weightedScore / Math.max(1, match.totalPossibleScore)) * 100);
         
-        // Use the better of the two percentages, with a minimum of 5%
-        const matchPercentage = Math.max(5, Math.max(rawPercentage, weightedPercentage));
+        // Calculate negative attribute penalty
+        const negativeAttributePenalty = match.negativeAttributes.length * 5; // 5% penalty per negative attribute
+        
+        // Calculate final match percentage with a balanced approach
+        let matchPercentage = Math.round((weightedPercentage * 0.6) + (rawPercentage * 0.4));
+        
+        // Apply negative attribute penalty
+        matchPercentage = Math.max(5, matchPercentage - negativeAttributePenalty);
+        
+        // Boost percentage if club is in a top category
+        if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
+          matchPercentage += 10; // Boost by 10%
+        }
+        
+        // Cap at 100%
+        matchPercentage = Math.min(100, matchPercentage);
         
         // Calculate confidence score (0-100)
         let confidence = 50; // Start at neutral
@@ -861,11 +972,23 @@ const ClubQuiz: React.FC = () => {
           confidence += 15;
         }
         
-        // Boost confidence based on number of matched attributes
-        confidence += Math.min(20, match.matchedAttributes.length * 2);
+        // Boost confidence based on number of matched attributes and their weights
+        const matchedAttributesBoost = Math.min(25, match.matchedAttributes.length * 3);
+        confidence += matchedAttributesBoost;
+        
+        // Boost confidence based on attribute match strength
+        confidence += Math.round(match.attributeMatchStrength * 15);
         
         // Reduce confidence based on negative attributes
-        confidence -= Math.min(30, match.negativeAttributes.length * 10);
+        confidence -= Math.min(40, match.negativeAttributes.length * 10);
+        
+        // Adjust confidence based on the number of answers provided
+        const answerRatio = answers.length / questions.length;
+        if (answerRatio < 0.5) {
+          confidence -= 15; // Reduce confidence if user answered less than half the questions
+        } else if (answerRatio > 0.8) {
+          confidence += 10; // Boost confidence if user answered most questions
+        }
         
         // Ensure confidence is between 0-100
         confidence = Math.max(0, Math.min(100, confidence));
@@ -874,7 +997,7 @@ const ClubQuiz: React.FC = () => {
           club,
           matchedAttributes: match.matchedAttributes,
           negativeAttributes: match.negativeAttributes,
-          score: match.weightedScore, // Use weighted score
+          score: match.weightedScore,
           matchPercentage,
           confidenceScore: confidence,
           categoryMatch: match.categoryMatch
