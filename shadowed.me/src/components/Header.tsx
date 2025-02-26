@@ -287,14 +287,16 @@ export default function Header() {
                     School Clubs
                   </Link>
                 </li>
-                <li>
-                  <Link 
-                    href="/my-visits"
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    My Visits
-                  </Link>
-                </li>
+                {userRole !== 'student' && (
+                  <li>
+                    <Link 
+                      href="/my-visits"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      My Visits
+                    </Link>
+                  </li>
+                )}
                 {(userRole === 'captain' || userRole === 'admin') && (
                   <li>
                     <Link 

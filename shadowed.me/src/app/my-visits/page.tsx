@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { Club } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useRouter } from 'next/navigation';
 
 interface Applicant {
   email: string;
@@ -24,6 +25,30 @@ export default function MyVisits() {
     visitId: string;
     isCaptain: boolean;
   }>({ isOpen: false, visitId: '', isCaptain: false });
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const router = useRouter();
+
+  const fetchUserRole = useCallback(async () => {
+    if (!user?.uid) {
+      setUserRole(null);
+      return;
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const role = userDoc.data().role;
+        setUserRole(role);
+        
+        // Redirect students to the student dashboard
+        if (role === 'student') {
+          router.push('/student-dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  }, [user, router]);
 
   const fetchVisits = useCallback(async () => {
     if (!user?.email) return;
@@ -85,11 +110,12 @@ export default function MyVisits() {
 
   useEffect(() => {
     if (user) {
+      fetchUserRole();
       fetchVisits();
     } else {
       setLoading(false);
     }
-  }, [user, fetchVisits]);
+  }, [user, fetchUserRole, fetchVisits]);
 
   if (loading) {
     return (
@@ -131,6 +157,11 @@ export default function MyVisits() {
         </div>
       </div>
     );
+  }
+
+  // If user is a student, they should be redirected to student dashboard
+  if (userRole === 'student') {
+    return null; // This shouldn't render as we're redirecting
   }
 
   return (
