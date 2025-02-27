@@ -79,6 +79,7 @@ export default function CaptainDashboard() {
   }>({ isOpen: false, visit: null, completing: false });
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
 
   // Fetch user role
   useEffect(() => {
@@ -99,6 +100,32 @@ export default function CaptainDashboard() {
     
     fetchUserRole();
   }, [user]);
+
+  // Add function to fetch sponsor names
+  const fetchSponsorNames = useCallback(async (visits: Club[]) => {
+    const emails = visits
+      .map(visit => visit.sponsorEmail)
+      .filter((email): email is string => !!email);
+    
+    const uniqueEmails = [...new Set(emails)];
+    const namesMap: Record<string, string> = {};
+    
+    try {
+      for (const email of uniqueEmails) {
+        const usersQuery = await getDocs(collection(db, 'users'));
+        const userDoc = usersQuery.docs.find(doc => doc.data().email === email);
+        
+        if (userDoc) {
+          const userData = userDoc.data();
+          namesMap[email] = userData.displayName || '';
+        }
+      }
+      
+      setSponsorNames(namesMap);
+    } catch (err) {
+      console.error('Error fetching sponsor names:', err);
+    }
+  }, []);
 
   const fetchCaptainVisits = useCallback(async () => {
     try {
@@ -125,12 +152,15 @@ export default function CaptainDashboard() {
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setCaptainVisits(visits);
+      
+      // Fetch sponsor names after getting visits
+      fetchSponsorNames(visits);
     } catch (err) {
       console.error('Error fetching visits:', err);
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, fetchSponsorNames]);
 
   useEffect(() => {
     if (user) {
@@ -144,7 +174,7 @@ export default function CaptainDashboard() {
     try {
       const visitData = {
         name: data.name,
-        school: data.school,
+        school: data.school || '',
         sponsorEmail: data.sponsorEmail,
         category: data.category,
         contactEmail: data.contactEmail,
@@ -156,6 +186,7 @@ export default function CaptainDashboard() {
         captain: user?.email,
         applicants: [],
         status: 'pending',
+        slots: data.slots || 0,
       };
 
       if (data.id) {
@@ -381,6 +412,34 @@ export default function CaptainDashboard() {
                             </span>
                           )}
                         </div>
+                        
+                        {/* Approval Status Bar */}
+                        {visit.status && (
+                          <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
+                            visit.status === 'pending' 
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                              : visit.status === 'approved' 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            {visit.status === 'pending' && (
+                              <span>Waiting for approval from <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                            {visit.status === 'approved' && (
+                              <span>Approved by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                            {visit.status === 'rejected' && (
+                              <span>Rejected by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="flex gap-8">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1">
