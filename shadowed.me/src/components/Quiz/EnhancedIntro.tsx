@@ -110,6 +110,23 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
         </motion.div>
         
         <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.65 }}
+          className="bg-gradient-to-r from-amber-50 to-[#FFF8E6] p-4 px-5 rounded-xl mb-10 max-w-md mx-auto shadow-sm border border-amber-100 flex items-center"
+        >
+          <div className="bg-amber-100 p-2 rounded-full mr-3 flex-shrink-0">
+            <span className="text-amber-500 text-lg">⚠️</span>
+          </div>
+          <div>
+            <p className="text-sm leading-relaxed">
+              <span className="font-semibold text-amber-600">Troubleshooting:</span>{" "}
+              <span className="text-gray-700">If you encounter any issues during the quiz, try refreshing the page and starting again. For best results, answer at least 10 questions.</span>
+            </p>
+          </div>
+        </motion.div>
+        
+        <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.7 }}
