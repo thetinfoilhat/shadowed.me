@@ -115,43 +115,68 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, 'users');
-      // Remove the role filter to see all users
       const querySnapshot = await getDocs(usersRef);
       
       const usersList = querySnapshot.docs
         .map(doc => ({
-          id: doc.id,  // Add this to store the document ID
+          id: doc.id,
           email: doc.data().email,
           role: doc.data().role as UserRole,
           displayName: doc.data().displayName
-        }))
-        .filter(user => user.email)
-        .sort((a, b) => {
-          const roleComparison = ROLE_HIERARCHY[b.role || 'student'] - ROLE_HIERARCHY[a.role || 'student'];
-          if (roleComparison !== 0) return roleComparison;
-          return a.email.localeCompare(b.email);
-        });
+        }));
 
-      // Update hardcoded admin roles if needed
+      // Update hardcoded admin roles only (don't force everyone to be student)
       const adminEmails = [
         'amxie@stu.naperville203.org',
         'ajxu@stu.naperville203.org',
         'arnavsharma0904@gmail.com'
       ];
 
+      // Process all users
       for (const user of usersList) {
-        if (adminEmails.includes(user.email.toLowerCase())) {
-          const userRef = doc(db, 'users', user.id);
+        if (!user.email) continue;
+
+        const userRef = doc(db, 'users', user.id);
+        const isAdmin = adminEmails.includes(user.email.toLowerCase());
+
+        // Only force update hardcoded admins
+        if (isAdmin && user.role !== 'admin') {
           await updateDoc(userRef, {
-            role: 'admin'
+            role: 'admin',
+            email: user.email
           });
           user.role = 'admin';
         }
+        // If no role is set, make them a student by default
+        else if (!user.role) {
+          await updateDoc(userRef, {
+            role: 'student',
+            email: user.email
+          });
+          user.role = 'student';
+        }
       }
 
-      setUsers(usersList);
+      // Filter and sort the final list
+      const filteredList = usersList.filter(user => user.email);
+      
+      // Separate students from other roles
+      const students = filteredList
+        .filter(user => user.role === 'student')
+        .sort((a, b) => a.email.localeCompare(b.email));
+      
+      const staffAndAdmins = filteredList
+        .filter(user => user.role !== 'student')
+        .sort((a, b) => {
+          const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
+          if (roleComparison !== 0) return roleComparison;
+          return a.email.localeCompare(b.email);
+        });
+
+      setUsers([...staffAndAdmins, ...students]);
+      console.log('Updated users list with separated roles');
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching/updating users:', error);
     }
   }, []);
 
@@ -179,7 +204,7 @@ export default function AdminDashboard() {
             await updateDoc(doc(db, 'users', user.uid), {
               ...userData,
               role: 'admin',
-              email: user.email // Ensure email is stored
+              email: user.email
             });
           }
           setIsAdmin(true);
@@ -188,7 +213,16 @@ export default function AdminDashboard() {
           return;
         }
 
-        // Otherwise check their existing role
+        // Always ensure non-admin users are students
+        if (!userData || userData.role !== 'student') {
+          await updateDoc(doc(db, 'users', user.uid), {
+            ...userData,
+            role: 'student',
+            email: user.email
+          });
+        }
+
+        // Only admins can access this page
         const isUserAdmin = userData?.role === 'admin';
         setIsAdmin(isUserAdmin);
 
@@ -623,33 +657,87 @@ export default function AdminDashboard() {
 
         {/* Users List */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Current Captains, Sponsors, and Admins</h2>
+          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Manage Users</h2>
           
-          <div className="space-y-4">
-            {users.map((user) => (
-              <div 
-                key={user.email}
-                className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
-                  ${user.role === 'admin' ? 'bg-red-50' : user.role === 'sponsor' ? 'bg-purple-50' : ''}`}
+          <Tab.Group>
+            <Tab.List className="flex space-x-1 rounded-xl bg-[#F0F9F6] p-1 mb-8">
+              <Tab
+                className={({ selected }) =>
+                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
+                  ${selected 
+                    ? 'bg-[#38BFA1] text-white shadow'
+                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
+                  }`
+                }
               >
-                <div>
-                  <p className="text-[#0A2540] font-medium">
-                    {user.email}
-                    {user.displayName && ` (${user.displayName})`}
-                  </p>
-                  <div className="flex items-center mt-1">
-                    <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
-                      {user.role}
-                    </span>
-                  </div>
+                Staff & Admins ({users.filter(u => u.role !== 'student').length})
+              </Tab>
+              <Tab
+                className={({ selected }) =>
+                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
+                  ${selected 
+                    ? 'bg-[#38BFA1] text-white shadow'
+                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
+                  }`
+                }
+              >
+                Students ({users.filter(u => u.role === 'student').length})
+              </Tab>
+            </Tab.List>
+            
+            <Tab.Panels>
+              <Tab.Panel>
+                <div className="space-y-4">
+                  {users
+                    .filter(user => user.role !== 'student')
+                    .map((user) => (
+                      <div 
+                        key={user.email}
+                        className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
+                          ${user.role === 'admin' ? 'bg-red-50' : user.role === 'sponsor' ? 'bg-purple-50' : ''}`}
+                      >
+                        <div>
+                          <p className="text-[#0A2540] font-medium">
+                            {user.email}
+                            {user.displayName && ` (${user.displayName})`}
+                          </p>
+                          <div className="flex items-center mt-1">
+                            <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
+                              {user.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
-              </div>
-            ))}
-
-            {users.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No captains, sponsors, or admins found</p>
-            )}
-          </div>
+              </Tab.Panel>
+              
+              <Tab.Panel>
+                <div className="space-y-4">
+                  {users
+                    .filter(user => user.role === 'student')
+                    .map((user) => (
+                      <div 
+                        key={user.email}
+                        className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div>
+                          <p className="text-[#0A2540] font-medium">
+                            {user.email}
+                            {user.displayName && ` (${user.displayName})`}
+                          </p>
+                          <div className="flex items-center mt-1">
+                            <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
+                              {user.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </Tab.Panel>
+            </Tab.Panels>
+          </Tab.Group>
         </div>
       </div>
 
