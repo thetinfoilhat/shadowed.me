@@ -149,7 +149,28 @@ export default function AdminDashboard() {
 
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const isUserAdmin = userDoc.data()?.role === 'admin';
+        const userData = userDoc.data();
+        
+        // List of admin emails
+        const adminEmails = [
+          'amxie@stu.naperville203.org',
+          'ajxu@stu.naperville203.org'
+        ];
+
+        // If user's email is in admin list, ensure they have admin role
+        if (adminEmails.includes(user.email.toLowerCase())) {
+          await updateDoc(doc(db, 'users', user.uid), {
+            ...userData,
+            role: 'admin'
+          });
+          setIsAdmin(true);
+          fetchUsers();
+          fetchAllVisits();
+          return;
+        }
+
+        // Otherwise check their existing role
+        const isUserAdmin = userData?.role === 'admin';
         setIsAdmin(isUserAdmin);
 
         if (!isUserAdmin) {
