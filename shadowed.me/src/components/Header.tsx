@@ -297,6 +297,16 @@ export default function Header() {
                     </Link>
                   </li>
                 )}
+                {userRole === 'sponsor' && (
+                  <li>
+                    <Link 
+                      href="/sponsor-dashboard"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      Sponsor Dashboard
+                    </Link>
+                  </li>
+                )}
                 {(userRole === 'captain' || userRole === 'admin') && (
                   <li className="relative group">
                     {userRole === 'admin' ? (

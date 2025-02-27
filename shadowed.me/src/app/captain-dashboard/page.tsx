@@ -30,19 +30,24 @@ interface FirestoreData {
 interface VisitData {
   id?: string;
   name: string;
-  school: string;
-  categories: string[];
+  school?: string;
+  sponsorEmail: string;
   category: string;
   contactEmail: string;
-  slots: number;
   date: string;
   startTime: string;
   endTime: string;
+  slots: number;
   description: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  captain?: string;
+  applicants?: Applicant[];
+  createdAt?: Date;
 }
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
   return format(date, "MMMM do yyyy");
 }
 
@@ -75,6 +80,7 @@ export default function CaptainDashboard() {
   }>({ isOpen: false, visit: null, completing: false });
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
 
   // Fetch user role
   useEffect(() => {
@@ -95,6 +101,32 @@ export default function CaptainDashboard() {
     
     fetchUserRole();
   }, [user]);
+
+  // Add function to fetch sponsor names
+  const fetchSponsorNames = useCallback(async (visits: Club[]) => {
+    const emails = visits
+      .map(visit => visit.sponsorEmail)
+      .filter((email): email is string => !!email);
+    
+    const uniqueEmails = [...new Set(emails)];
+    const namesMap: Record<string, string> = {};
+    
+    try {
+      for (const email of uniqueEmails) {
+        const usersQuery = await getDocs(collection(db, 'users'));
+        const userDoc = usersQuery.docs.find(doc => doc.data().email === email);
+        
+        if (userDoc) {
+          const userData = userDoc.data();
+          namesMap[email] = userData.displayName || '';
+        }
+      }
+      
+      setSponsorNames(namesMap);
+    } catch (err) {
+      console.error('Error fetching sponsor names:', err);
+    }
+  }, []);
 
   const fetchCaptainVisits = useCallback(async () => {
     try {
@@ -121,12 +153,15 @@ export default function CaptainDashboard() {
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setCaptainVisits(visits);
+      
+      // Fetch sponsor names after getting visits
+      fetchSponsorNames(visits);
     } catch (err) {
       console.error('Error fetching visits:', err);
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, fetchSponsorNames]);
 
   useEffect(() => {
     if (user) {
@@ -136,15 +171,14 @@ export default function CaptainDashboard() {
     }
   }, [user, fetchCaptainVisits]);
 
-  const handleSaveVisit = async (data: VisitData) => {
+  const saveVisit = async (data: VisitData) => {
     try {
       const visitData = {
         name: data.name,
-        school: data.school,
-        categories: data.categories,
-        category: data.categories[0],
+        school: data.school || '',
+        sponsorEmail: data.sponsorEmail,
+        category: data.category,
         contactEmail: data.contactEmail,
-        slots: Number(data.slots),
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -152,6 +186,8 @@ export default function CaptainDashboard() {
         time: `${data.startTime} - ${data.endTime}`,
         captain: user?.email,
         applicants: [],
+        status: 'pending',
+        slots: data.slots || 0,
       };
 
       if (data.id) {
@@ -361,8 +397,8 @@ export default function CaptainDashboard() {
                     <div className={`flex items-center gap-6 ${visit.completed ? 'opacity-50' : ''}`}>
                       {/* Date Circle */}
                       <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                        <div className="text-sm font-medium">{format(new Date(visit.date), 'MMM')}</div>
-                        <div className="text-xl font-bold">{format(new Date(visit.date), 'd')}</div>
+                        <div className="text-sm font-medium">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'MMM')}</div>
+                        <div className="text-xl font-bold">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'd')}</div>
                       </div>
                       
                       {/* Visit Details */}
@@ -377,6 +413,34 @@ export default function CaptainDashboard() {
                             </span>
                           )}
                         </div>
+                        
+                        {/* Approval Status Bar */}
+                        {visit.status && (
+                          <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
+                            visit.status === 'pending' 
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                              : visit.status === 'approved' 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            {visit.status === 'pending' && (
+                              <span>Waiting for approval from <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                            {visit.status === 'approved' && (
+                              <span>Approved by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                            {visit.status === 'rejected' && (
+                              <span>Rejected by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="flex gap-8">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1">
@@ -470,8 +534,24 @@ export default function CaptainDashboard() {
             setIsCreateModalOpen(false);
             setEditingVisit(null);
           }}
-          onSubmitAction={handleSaveVisit}
-          initialData={editingVisit}
+          onSubmitAction={saveVisit}
+          initialData={editingVisit ? {
+            id: editingVisit.id,
+            name: editingVisit.name,
+            sponsorEmail: editingVisit.sponsorEmail || '',
+            category: editingVisit.category || '',
+            contactEmail: editingVisit.contactEmail || '',
+            date: editingVisit.date || '',
+            startTime: editingVisit.startTime || '',
+            endTime: editingVisit.endTime || '',
+            slots: editingVisit.slots || 0,
+            description: editingVisit.description || '',
+            captain: editingVisit.captain,
+            applicants: editingVisit.applicants,
+            status: editingVisit.status,
+            createdAt: editingVisit.createdAt,
+            school: editingVisit.school
+          } : null}
         />
 
         <ApplicantsDialog
