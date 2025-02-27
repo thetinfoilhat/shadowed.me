@@ -63,26 +63,30 @@ export default function SchoolClubs() {
       const clubsRef = collection(db, 'opportunities');
       const querySnapshot = await getDocs(clubsRef);
       
-      const clubsData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          captain: data.captain || '',
-          category: data.category || '',
-          createdAt: data.createdAt?.toDate() || new Date(),
-          date: data.date || '',
-          description: data.description || '',
-          endTime: data.endTime || '',
-          name: data.name || '',
-          school: data.school || '',
-          startTime: data.startTime || '',
-          time: data.time || '',
-          slots: data.slots || 0,
-          contactEmail: data.contactEmail || '',
-          applicants: data.applicants || [],
-          categories: data.categories || [],
-        };
-      });
+      const clubsData = querySnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            captain: data.captain || '',
+            category: data.category || '',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            date: data.date || '',
+            description: data.description || '',
+            endTime: data.endTime || '',
+            name: data.name || '',
+            school: data.school || '',
+            sponsorEmail: data.sponsorEmail || '',
+            startTime: data.startTime || '',
+            time: data.time || '',
+            slots: data.slots || 0,
+            contactEmail: data.contactEmail || '',
+            applicants: data.applicants || [],
+            categories: data.categories || [],
+            status: data.status || 'pending',
+          };
+        })
+        .filter(club => club.status === 'approved'); // Only show approved visits
       
       setClubs(clubsData);
     } catch (err) {

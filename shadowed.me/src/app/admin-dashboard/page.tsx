@@ -2,15 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, UserRole, ROLE_HIERARCHY } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@headlessui/react';
-
-type UserRole = 'student' | 'captain' | 'admin';
 
 interface User {
   email: string;
   role: UserRole;
+  displayName?: string | null;
 }
 
 export default function AdminDashboard() {
@@ -57,25 +56,25 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('role', 'in', ['captain', 'admin']));
+      const q = query(usersRef, where('role', 'in', ['captain', 'sponsor', 'admin']));
       const querySnapshot = await getDocs(q);
       
       const usersList = querySnapshot.docs
         .map(doc => ({
           email: doc.data().email,
-          role: doc.data().role as UserRole
+          role: doc.data().role as UserRole,
+          displayName: doc.data().displayName
         }))
         .filter(user => user.email)
-        // Explicit sorting to ensure admins are at the top
+        // Sort by role hierarchy and then by email
         .sort((a, b) => {
-          // First sort by role (admins first)
-          if (a.role === 'admin' && b.role !== 'admin') return -1;
-          if (a.role !== 'admin' && b.role === 'admin') return 1;
+          // First sort by role hierarchy (admins first, then sponsors, then captains)
+          const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
+          if (roleComparison !== 0) return roleComparison;
           // Then sort by email within each role group
           return a.email.localeCompare(b.email);
         });
 
-      console.log('Sorted users:', usersList); // Add this to debug
       setUsers(usersList);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -92,8 +91,8 @@ export default function AdminDashboard() {
       return;
     }
 
-    // If assigning admin role, show confirmation dialog
-    if (selectedRole === 'admin') {
+    // If assigning admin or sponsor role, show confirmation dialog
+    if (selectedRole === 'admin' || selectedRole === 'sponsor') {
       setPendingUpdate({ email, role: selectedRole });
       setShowConfirmation(true);
       return;
@@ -123,6 +122,8 @@ export default function AdminDashboard() {
 
       if (role === 'admin') {
         setSuccess(`Successfully granted admin privileges to ${userEmail}`);
+      } else if (role === 'sponsor') {
+        setSuccess(`Successfully granted sponsor privileges to ${userEmail}`);
       } else {
         setSuccess(`Successfully updated role to ${role}`);
       }
@@ -134,7 +135,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleConfirmAdminRole = async () => {
+  const handleConfirmRoleChange = async () => {
     if (pendingUpdate) {
       await updateUserRole(pendingUpdate.email, pendingUpdate.role);
       setPendingUpdate(null);
@@ -142,9 +143,22 @@ export default function AdminDashboard() {
     setShowConfirmation(false);
   };
 
-  const handleCancelAdminRole = () => {
+  const handleCancelRoleChange = () => {
     setPendingUpdate(null);
     setShowConfirmation(false);
+  };
+
+  const getRoleBadgeClass = (role: UserRole) => {
+    switch(role) {
+      case 'admin':
+        return 'bg-red-100 text-red-800';
+      case 'sponsor':
+        return 'bg-purple-100 text-purple-800';
+      case 'captain':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading) {
@@ -193,11 +207,17 @@ export default function AdminDashboard() {
               >
                 <option value="student">Student</option>
                 <option value="captain">Captain</option>
+                <option value="sponsor" className="text-purple-600 font-medium">Sponsor (Approval Access)</option>
                 <option value="admin" className="text-red-600 font-medium">Admin (Full Access)</option>
               </select>
               {selectedRole === 'admin' && (
                 <p className="mt-2 text-amber-600 text-sm font-medium">
                   Warning: Admin users have full access to manage all aspects of the platform, including user roles and all club visits.
+                </p>
+              )}
+              {selectedRole === 'sponsor' && (
+                <p className="mt-2 text-purple-600 text-sm font-medium">
+                  Sponsors can approve club listings from captains and manage clubs assigned to them.
                 </p>
               )}
             </div>
@@ -216,39 +236,40 @@ export default function AdminDashboard() {
 
         {/* Users List */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Current Captains and Admins</h2>
+          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Current Captains, Sponsors, and Admins</h2>
           
           <div className="space-y-4">
             {users.map((user) => (
               <div 
                 key={user.email}
                 className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
-                  ${user.role === 'admin' ? 'bg-red-50' : ''}`}
+                  ${user.role === 'admin' ? 'bg-red-50' : user.role === 'sponsor' ? 'bg-purple-50' : ''}`}
               >
                 <div>
-                  <p className="text-[#0A2540] font-medium">{user.email}</p>
-                  <p className={`text-sm capitalize ${
-                    user.role === 'admin' 
-                      ? 'text-red-600 font-medium' 
-                      : 'text-gray-500'
-                  }`}>
-                    {user.role}
+                  <p className="text-[#0A2540] font-medium">
+                    {user.email}
+                    {user.displayName && ` (${user.displayName})`}
                   </p>
+                  <div className="flex items-center mt-1">
+                    <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
+                      {user.role}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
 
             {users.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No captains or admins found</p>
+              <p className="text-gray-500 text-center py-4">No captains, sponsors, or admins found</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Admin Confirmation Dialog */}
+      {/* Role Change Confirmation Dialog */}
       <Dialog 
         open={showConfirmation} 
-        onClose={handleCancelAdminRole}
+        onClose={handleCancelRoleChange}
         className="relative z-50"
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -256,37 +277,53 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-8">
             <Dialog.Title className="text-2xl font-semibold text-[#0A2540] mb-4">
-              Confirm Admin Privileges
+              {pendingUpdate?.role === 'admin' ? 'Confirm Admin Privileges' : 'Confirm Sponsor Privileges'}
             </Dialog.Title>
             
             <p className="text-gray-600 mb-4">
-              You are about to grant <span className="font-semibold">{pendingUpdate?.email}</span> admin privileges. 
-              This will give them full access to:
+              You are about to grant <span className="font-semibold">{pendingUpdate?.email}</span> 
+              {pendingUpdate?.role === 'admin' ? ' admin ' : ' sponsor '} 
+              privileges. This will give them access to:
             </p>
 
-            <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
-              <li>Manage all user roles</li>
-              <li>Access and modify all club visits</li>
-              <li>Delete any club visit</li>
-              <li>View all user data</li>
-            </ul>
+            {pendingUpdate?.role === 'admin' ? (
+              <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
+                <li>Manage all user roles</li>
+                <li>Access and modify all club visits</li>
+                <li>Delete any club visit</li>
+                <li>View all user data</li>
+                <li>Approve any club listing</li>
+              </ul>
+            ) : (
+              <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
+                <li>Approve club listings from captains</li>
+                <li>Manage clubs assigned to them</li>
+                <li>View club visit data for their assigned clubs</li>
+              </ul>
+            )}
 
-            <p className="text-amber-600 font-medium mb-6">
-              This action should only be performed for trusted individuals who need full administrative access.
+            <p className={`${pendingUpdate?.role === 'admin' ? 'text-amber-600' : 'text-purple-600'} font-medium mb-6`}>
+              {pendingUpdate?.role === 'admin' 
+                ? 'This action should only be performed for trusted individuals who need full administrative access.'
+                : 'This action should only be performed for teachers or staff members who supervise clubs.'}
             </p>
 
             <div className="flex justify-end gap-4">
               <button
-                onClick={handleCancelAdminRole}
+                onClick={handleCancelRoleChange}
                 className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
               >
                 Cancel
               </button>
               <button
-                onClick={handleConfirmAdminRole}
-                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                onClick={handleConfirmRoleChange}
+                className={`px-6 py-2 rounded-lg text-white transition-colors ${
+                  pendingUpdate?.role === 'admin' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
               >
-                Confirm Admin Access
+                {pendingUpdate?.role === 'admin' ? 'Confirm Admin Access' : 'Confirm Sponsor Access'}
               </button>
             </div>
           </Dialog.Panel>

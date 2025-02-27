@@ -27,6 +27,16 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
+// Define user roles and their hierarchy
+export type UserRole = 'student' | 'captain' | 'sponsor' | 'admin';
+
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  'student': 0,
+  'captain': 1,
+  'sponsor': 2,
+  'admin': 3
+};
+
 interface UserWithProfile {
   uid: string;
   email: string | null;
@@ -34,7 +44,7 @@ interface UserWithProfile {
   photoURL?: string | null;
 }
 
-export async function createUserDocument(user: UserWithProfile, role: string = 'student') {
+export async function createUserDocument(user: UserWithProfile, role: UserRole = 'student') {
   if (!user.email) return;
   
   try {

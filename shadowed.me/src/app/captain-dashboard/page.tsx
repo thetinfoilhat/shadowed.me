@@ -30,15 +30,19 @@ interface FirestoreData {
 interface VisitData {
   id?: string;
   name: string;
-  school: string;
-  categories: string[];
+  school?: string;
+  sponsorEmail: string;
   category: string;
   contactEmail: string;
-  slots: number;
   date: string;
   startTime: string;
   endTime: string;
+  slots: number;
   description: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  captain?: string;
+  applicants?: Applicant[];
+  createdAt?: Date;
 }
 
 function formatDate(dateStr: string) {
@@ -136,15 +140,14 @@ export default function CaptainDashboard() {
     }
   }, [user, fetchCaptainVisits]);
 
-  const handleSaveVisit = async (data: VisitData) => {
+  const saveVisit = async (data: VisitData) => {
     try {
       const visitData = {
         name: data.name,
         school: data.school,
-        categories: data.categories,
-        category: data.categories[0],
+        sponsorEmail: data.sponsorEmail,
+        category: data.category,
         contactEmail: data.contactEmail,
-        slots: Number(data.slots),
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -152,6 +155,7 @@ export default function CaptainDashboard() {
         time: `${data.startTime} - ${data.endTime}`,
         captain: user?.email,
         applicants: [],
+        status: 'pending',
       };
 
       if (data.id) {
@@ -470,7 +474,7 @@ export default function CaptainDashboard() {
             setIsCreateModalOpen(false);
             setEditingVisit(null);
           }}
-          onSubmitAction={handleSaveVisit}
+          onSubmitAction={saveVisit}
           initialData={editingVisit}
         />
 

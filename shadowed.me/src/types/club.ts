@@ -8,7 +8,8 @@ export interface Applicant {
 export interface Club {
   id: string;
   name: string;
-  school: string;
+  school?: string;
+  sponsorEmail?: string;
   category: string;
   date: string;
   time: string;
@@ -17,11 +18,12 @@ export interface Club {
   slots: number;
   applicants: Applicant[];
   completed?: boolean;
-  createdAt: Date;
+  categories?: string[];
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt?: Date;
   startTime: string;
   endTime: string;
   contactEmail: string;
-  categories?: string[];
 }
 
 export interface CompletedVisit {
