@@ -115,68 +115,28 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, 'users');
-      const querySnapshot = await getDocs(usersRef);
+      const q = query(usersRef, where('role', 'in', ['captain', 'sponsor', 'admin']));
+      const querySnapshot = await getDocs(q);
       
       const usersList = querySnapshot.docs
         .map(doc => ({
-          id: doc.id,
           email: doc.data().email,
           role: doc.data().role as UserRole,
           displayName: doc.data().displayName
-        }));
-
-      // Update hardcoded admin roles only (don't force everyone to be student)
-      const adminEmails = [
-        'amxie@stu.naperville203.org',
-        'ajxu@stu.naperville203.org',
-        'arnavsharma0904@gmail.com'
-      ];
-
-      // Process all users
-      for (const user of usersList) {
-        if (!user.email) continue;
-
-        const userRef = doc(db, 'users', user.id);
-        const isAdmin = adminEmails.includes(user.email.toLowerCase());
-
-        // Only force update hardcoded admins
-        if (isAdmin && user.role !== 'admin') {
-          await updateDoc(userRef, {
-            role: 'admin',
-            email: user.email
-          });
-          user.role = 'admin';
-        }
-        // If no role is set, make them a student by default
-        else if (!user.role) {
-          await updateDoc(userRef, {
-            role: 'student',
-            email: user.email
-          });
-          user.role = 'student';
-        }
-      }
-
-      // Filter and sort the final list
-      const filteredList = usersList.filter(user => user.email);
-      
-      // Separate students from other roles
-      const students = filteredList
-        .filter(user => user.role === 'student')
-        .sort((a, b) => a.email.localeCompare(b.email));
-      
-      const staffAndAdmins = filteredList
-        .filter(user => user.role !== 'student')
+        }))
+        .filter(user => user.email)
+        // Sort by role hierarchy and then by email
         .sort((a, b) => {
+          // First sort by role hierarchy (admins first, then sponsors, then captains)
           const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
           if (roleComparison !== 0) return roleComparison;
+          // Then sort by email within each role group
           return a.email.localeCompare(b.email);
         });
 
-      setUsers([...staffAndAdmins, ...students]);
-      console.log('Updated users list with separated roles');
+      setUsers(usersList);
     } catch (error) {
-      console.error('Error fetching/updating users:', error);
+      console.error('Error fetching users:', error);
     }
   }, []);
 
@@ -189,41 +149,9 @@ export default function AdminDashboard() {
 
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
+
         
-        // List of admin emails
-        const adminEmails = [
-          'amxie@stu.naperville203.org',
-          'ajxu@stu.naperville203.org',
-          'arnavsharma0904@gmail.com'
-        ];
-
-        // If user's email is in admin list, ensure they have admin role
-        if (adminEmails.includes(user.email.toLowerCase())) {
-          if (!userData || userData.role !== 'admin') {
-            await updateDoc(doc(db, 'users', user.uid), {
-              ...userData,
-              role: 'admin',
-              email: user.email
-            });
-          }
-          setIsAdmin(true);
-          fetchUsers();
-          fetchAllVisits();
-          return;
-        }
-
-        // Always ensure non-admin users are students
-        if (!userData || userData.role !== 'student') {
-          await updateDoc(doc(db, 'users', user.uid), {
-            ...userData,
-            role: 'student',
-            email: user.email
-          });
-        }
-
-        // Only admins can access this page
-        const isUserAdmin = userData?.role === 'admin';
+        const isUserAdmin = userDoc.data()?.role === 'admin';
         setIsAdmin(isUserAdmin);
 
         if (!isUserAdmin) {
@@ -657,87 +585,33 @@ export default function AdminDashboard() {
 
         {/* Users List */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Manage Users</h2>
+          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Current Captains, Sponsors, and Admins</h2>
           
-          <Tab.Group>
-            <Tab.List className="flex space-x-1 rounded-xl bg-[#F0F9F6] p-1 mb-8">
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                  ${selected 
-                    ? 'bg-[#38BFA1] text-white shadow'
-                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }
+          <div className="space-y-4">
+            {users.map((user) => (
+              <div 
+                key={user.email}
+                className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
+                  ${user.role === 'admin' ? 'bg-red-50' : user.role === 'sponsor' ? 'bg-purple-50' : ''}`}
               >
-                Staff & Admins ({users.filter(u => u.role !== 'student').length})
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                  ${selected 
-                    ? 'bg-[#38BFA1] text-white shadow'
-                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }
-              >
-                Students ({users.filter(u => u.role === 'student').length})
-              </Tab>
-            </Tab.List>
-            
-            <Tab.Panels>
-              <Tab.Panel>
-                <div className="space-y-4">
-                  {users
-                    .filter(user => user.role !== 'student')
-                    .map((user) => (
-                      <div 
-                        key={user.email}
-                        className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
-                          ${user.role === 'admin' ? 'bg-red-50' : user.role === 'sponsor' ? 'bg-purple-50' : ''}`}
-                      >
-                        <div>
-                          <p className="text-[#0A2540] font-medium">
-                            {user.email}
-                            {user.displayName && ` (${user.displayName})`}
-                          </p>
-                          <div className="flex items-center mt-1">
-                            <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
-                              {user.role}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                <div>
+                  <p className="text-[#0A2540] font-medium">
+                    {user.email}
+                    {user.displayName && ` (${user.displayName})`}
+                  </p>
+                  <div className="flex items-center mt-1">
+                    <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
+                      {user.role}
+                    </span>
+                  </div>
                 </div>
-              </Tab.Panel>
-              
-              <Tab.Panel>
-                <div className="space-y-4">
-                  {users
-                    .filter(user => user.role === 'student')
-                    .map((user) => (
-                      <div 
-                        key={user.email}
-                        className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div>
-                          <p className="text-[#0A2540] font-medium">
-                            {user.email}
-                            {user.displayName && ` (${user.displayName})`}
-                          </p>
-                          <div className="flex items-center mt-1">
-                            <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
-                              {user.role}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </Tab.Panel>
-            </Tab.Panels>
-          </Tab.Group>
+              </div>
+            ))}
+
+            {users.length === 0 && (
+              <p className="text-gray-500 text-center py-4">No captains, sponsors, or admins found</p>
+            )}
+          </div>
         </div>
       </div>
 
