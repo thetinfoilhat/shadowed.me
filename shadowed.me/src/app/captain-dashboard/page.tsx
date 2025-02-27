@@ -47,6 +47,7 @@ interface VisitData {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
   return format(date, "MMMM do yyyy");
 }
 
@@ -396,8 +397,8 @@ export default function CaptainDashboard() {
                     <div className={`flex items-center gap-6 ${visit.completed ? 'opacity-50' : ''}`}>
                       {/* Date Circle */}
                       <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                        <div className="text-sm font-medium">{format(new Date(visit.date), 'MMM')}</div>
-                        <div className="text-xl font-bold">{format(new Date(visit.date), 'd')}</div>
+                        <div className="text-sm font-medium">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'MMM')}</div>
+                        <div className="text-xl font-bold">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'd')}</div>
                       </div>
                       
                       {/* Visit Details */}

@@ -20,6 +20,7 @@ type UserProfile = {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
   return format(date, "MMMM do yyyy");
 }
 

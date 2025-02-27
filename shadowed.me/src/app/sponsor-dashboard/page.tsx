@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Tab } from '@headlessui/react';
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import VisitModal from '@/components/VisitModal';
 
 interface Applicant {
   name: string;
@@ -35,18 +36,24 @@ interface VisitData {
 }
 
 function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  // Add a day to fix timezone offset issue
+  date.setDate(date.getDate() + 1);
+  
   const options: Intl.DateTimeFormatOptions = { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  return date.toLocaleDateString(undefined, options);
 }
 
 export default function SponsorDashboard() {
   const { user } = useAuth();
   const [visits, setVisits] = useState<VisitData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<VisitData | null>(null);
 
   const fetchVisits = useCallback(async () => {
     if (!user?.email) return;
@@ -106,6 +113,67 @@ export default function SponsorDashboard() {
     }
   };
 
+  const handleEditClick = (visit: VisitData) => {
+    setEditingVisit(visit);
+    setIsCreateModalOpen(true);
+  };
+
+  const saveVisit = async (data: {
+    id?: string;
+    name: string;
+    school?: string;
+    sponsorEmail: string;
+    category: string;
+    contactEmail: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    slots: number;
+    description: string;
+    captain?: string;
+    applicants?: Applicant[];
+    status?: 'pending' | 'approved' | 'rejected';
+    createdAt?: Date;
+  }) => {
+    try {
+      const visitData = {
+        name: data.name,
+        school: data.school || '',
+        sponsorEmail: user?.email,
+        category: data.category,
+        contactEmail: data.contactEmail,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        description: data.description,
+        time: `${data.startTime} - ${data.endTime}`,
+        captain: user?.email, // Sponsor is also the captain for self-created opportunities
+        applicants: data.applicants || [],
+        status: 'approved', // Auto-approve since sponsor is creating it
+        slots: data.slots || 0,
+      };
+
+      if (data.id) {
+        const visitRef = doc(db, 'opportunities', data.id);
+        await updateDoc(visitRef, visitData);
+        toast.success('Opportunity updated successfully');
+      } else {
+        const visitRef = collection(db, 'opportunities');
+        await addDoc(visitRef, {
+          ...visitData,
+          createdAt: new Date(),
+        });
+        toast.success('Opportunity created successfully');
+      }
+      
+      await fetchVisits();
+    } catch (error) {
+      console.error('Error saving visit:', error);
+      toast.error('Failed to save opportunity');
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -145,14 +213,97 @@ export default function SponsorDashboard() {
   const approvedVisits = visits.filter(visit => visit.status === 'approved');
   const rejectedVisits = visits.filter(visit => visit.status === 'rejected');
 
+  const renderApprovedVisitsPanel = () => {
+    return (
+      <Tab.Panel>
+        {approvedVisits.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No approved visits</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {approvedVisits.map((visit) => (
+              <div key={visit.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+                <div className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h2>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Created by: {visit.captain} • {formatDate(visit.date)} • {visit.time}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Approved
+                      </span>
+                      {visit.captain === user?.email && (
+                        <button
+                          onClick={() => handleEditClick(visit)}
+                          className="p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Category:</span>
+                      <span className="ml-2 text-gray-900">{visit.category}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Contact:</span>
+                      <span className="ml-2 text-gray-900">{visit.contactEmail}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Available Slots:</span>
+                      <span className="ml-2 text-gray-900">{visit.slots}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Description:</span>
+                      <p className="mt-1 text-gray-900">{visit.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <button
+                      onClick={() => handleReject(visit.id)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <XCircleIcon className="h-5 w-5 mr-2" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Tab.Panel>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-[#0A2540] mb-4">Sponsor Dashboard</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Manage visit opportunities that require your approval. Approve or reject visits created by captains.
-          </p>
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-3xl font-bold text-[#0A2540] mb-4">Sponsor Dashboard</h1>
+            <p className="text-gray-600 max-w-2xl">
+              Manage visit opportunities that require your approval. You can also create your own opportunities.
+            </p>
+          </div>
+          
+          <button
+            onClick={() => {
+              setEditingVisit(null);
+              setIsCreateModalOpen(true);
+            }}
+            className="bg-[#38BFA1] text-white px-6 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
+          >
+            Create New Opportunity
+          </button>
         </div>
 
         <Tab.Group>
@@ -257,62 +408,7 @@ export default function SponsorDashboard() {
               )}
             </Tab.Panel>
             
-            <Tab.Panel>
-              {approvedVisits.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">No approved visits</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {approvedVisits.map((visit) => (
-                    <div key={visit.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                      <div className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h2>
-                            <p className="text-sm text-gray-500 mb-4">
-                              Created by: {visit.captain} • {formatDate(visit.date)} • {visit.time}
-                            </p>
-                          </div>
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Approved
-                          </span>
-                        </div>
-                        
-                        <div className="mt-4 space-y-3">
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Category:</span>
-                            <span className="ml-2 text-gray-900">{visit.category}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Contact:</span>
-                            <span className="ml-2 text-gray-900">{visit.contactEmail}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Available Slots:</span>
-                            <span className="ml-2 text-gray-900">{visit.slots}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Description:</span>
-                            <p className="mt-1 text-gray-900">{visit.description}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-6">
-                          <button
-                            onClick={() => handleReject(visit.id)}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            <XCircleIcon className="h-5 w-5 mr-2" />
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Tab.Panel>
+            {renderApprovedVisitsPanel()}
             
             <Tab.Panel>
               {rejectedVisits.length === 0 ? (
@@ -373,6 +469,16 @@ export default function SponsorDashboard() {
           </Tab.Panels>
         </Tab.Group>
       </div>
+
+      <VisitModal
+        isOpen={isCreateModalOpen}
+        onCloseAction={() => {
+          setIsCreateModalOpen(false);
+          setEditingVisit(null);
+        }}
+        onSubmitAction={saveVisit}
+        initialData={editingVisit}
+      />
     </div>
   );
 } 

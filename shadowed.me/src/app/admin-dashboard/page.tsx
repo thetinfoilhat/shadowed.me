@@ -41,12 +41,16 @@ interface VisitData {
 }
 
 function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  // Add a day to fix timezone offset issue
+  date.setDate(date.getDate() + 1);
+  
   const options: Intl.DateTimeFormatOptions = { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  return date.toLocaleDateString(undefined, options);
 }
 
 export default function AdminDashboard() {
@@ -63,63 +67,6 @@ export default function AdminDashboard() {
   const [pendingUpdate, setPendingUpdate] = useState<{email: string, role: UserRole} | null>(null);
   const [visits, setVisits] = useState<VisitData[]>([]);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user?.email) {
-        router.push('/');
-        return;
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const isUserAdmin = userDoc.data()?.role === 'admin';
-        setIsAdmin(isUserAdmin);
-
-        if (!isUserAdmin) {
-          router.push('/');
-        } else {
-          fetchUsers();
-          fetchAllVisits();
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        router.push('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user, router]);
-
-  const fetchUsers = async () => {
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('role', 'in', ['captain', 'sponsor', 'admin']));
-      const querySnapshot = await getDocs(q);
-      
-      const usersList = querySnapshot.docs
-        .map(doc => ({
-          email: doc.data().email,
-          role: doc.data().role as UserRole,
-          displayName: doc.data().displayName
-        }))
-        .filter(user => user.email)
-        // Sort by role hierarchy and then by email
-        .sort((a, b) => {
-          // First sort by role hierarchy (admins first, then sponsors, then captains)
-          const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
-          if (roleComparison !== 0) return roleComparison;
-          // Then sort by email within each role group
-          return a.email.localeCompare(b.email);
-        });
-
-      setUsers(usersList);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
 
   const fetchSponsorNames = useCallback(async (visits: VisitData[]) => {
     const emails = visits
@@ -164,6 +111,63 @@ export default function AdminDashboard() {
       toast.error('Failed to load visits');
     }
   }, [fetchSponsorNames]);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('role', 'in', ['captain', 'sponsor', 'admin']));
+      const querySnapshot = await getDocs(q);
+      
+      const usersList = querySnapshot.docs
+        .map(doc => ({
+          email: doc.data().email,
+          role: doc.data().role as UserRole,
+          displayName: doc.data().displayName
+        }))
+        .filter(user => user.email)
+        // Sort by role hierarchy and then by email
+        .sort((a, b) => {
+          // First sort by role hierarchy (admins first, then sponsors, then captains)
+          const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
+          if (roleComparison !== 0) return roleComparison;
+          // Then sort by email within each role group
+          return a.email.localeCompare(b.email);
+        });
+
+      setUsers(usersList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.email) {
+        router.push('/');
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const isUserAdmin = userDoc.data()?.role === 'admin';
+        setIsAdmin(isUserAdmin);
+
+        if (!isUserAdmin) {
+          router.push('/');
+        } else {
+          fetchUsers();
+          fetchAllVisits();
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        router.push('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, router, fetchAllVisits, fetchUsers]);
 
   const handleUpdateRole = async (e: React.FormEvent) => {
     e.preventDefault();
