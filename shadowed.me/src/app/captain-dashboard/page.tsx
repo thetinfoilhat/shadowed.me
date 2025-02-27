@@ -46,20 +46,65 @@ interface VisitData {
 }
 
 function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  date.setDate(date.getDate() + 1);
-  return format(date, "MMMM do yyyy");
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    date.setDate(date.getDate() + 1);
+    return format(date, "MMMM do yyyy");
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
 }
 
-function formatTime(timeStr: string) {
-  const [start, end] = timeStr.split(' - ').map(time => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  });
-  return `${start} - ${end}`;
+function formatDateForCircle(dateStr: string | undefined) {
+  if (!dateStr) return { month: '---', day: '--' };
+  
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return { month: '---', day: '--' };
+    }
+    date.setDate(date.getDate() + 1);
+    return {
+      month: format(date, 'MMM'),
+      day: format(date, 'd')
+    };
+  } catch (error) {
+    console.error('Error formatting date for circle:', error);
+    return { month: '---', day: '--' };
+  }
+}
+
+function formatTime(timeStr: string | undefined) {
+  if (!timeStr) return 'Time not set';
+  
+  try {
+    const [start, end] = timeStr.split(' - ').map(time => {
+      if (!time) return 'Invalid time';
+      
+      const [hours, minutes] = time.split(':');
+      if (!hours || !minutes) return 'Invalid time';
+      
+      const hour = parseInt(hours, 10);
+      if (isNaN(hour)) return 'Invalid time';
+      
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes} ${ampm}`;
+    });
+
+    if (start === 'Invalid time' || end === 'Invalid time') {
+      return 'Invalid time format';
+    }
+
+    return `${start} - ${end}`;
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid time format';
+  }
 }
 
 export default function CaptainDashboard() {
@@ -397,8 +442,8 @@ export default function CaptainDashboard() {
                     <div className={`flex items-center gap-6 ${visit.completed ? 'opacity-50' : ''}`}>
                       {/* Date Circle */}
                       <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                        <div className="text-sm font-medium">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'MMM')}</div>
-                        <div className="text-xl font-bold">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'd')}</div>
+                        <div className="text-sm font-medium">{formatDateForCircle(visit.date).month}</div>
+                        <div className="text-xl font-bold">{formatDateForCircle(visit.date).day}</div>
                       </div>
                       
                       {/* Visit Details */}

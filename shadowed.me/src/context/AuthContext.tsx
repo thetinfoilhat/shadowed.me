@@ -1,18 +1,11 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  User,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  loading: boolean;
   logout: () => Promise<void>;
   showProfileModal: boolean;
   setShowProfileModal: (show: boolean) => void;
@@ -20,12 +13,15 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  signIn: async () => {},
-  signUp: async () => {},
+  loading: true,
   logout: async () => {},
   showProfileModal: false,
   setShowProfileModal: () => {},
 });
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,38 +29,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const value = {
+    user,
+    loading,
+    logout,
+    showProfileModal,
+    setShowProfileModal,
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      signIn,
-      signUp,
-      logout,
-      showProfileModal,
-      setShowProfileModal,
-    }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );
-}
-
-export const useAuth = () => useContext(AuthContext); 
+} 

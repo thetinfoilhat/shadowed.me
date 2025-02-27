@@ -163,7 +163,7 @@ export default function Header() {
         // New user - automatically set as student
         await setDoc(doc(db, 'users', result.user.uid), {
           email: result.user.email,
-          role: 'student',
+          role: 'student', // Always set new users as students
           createdAt: new Date().toISOString(),
           displayName: result.user.displayName,
           photoURL: result.user.photoURL
