@@ -115,24 +115,39 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('role', 'in', ['captain', 'sponsor', 'admin']));
-      const querySnapshot = await getDocs(q);
+      // Remove the role filter to see all users
+      const querySnapshot = await getDocs(usersRef);
       
       const usersList = querySnapshot.docs
         .map(doc => ({
+          id: doc.id,  // Add this to store the document ID
           email: doc.data().email,
           role: doc.data().role as UserRole,
           displayName: doc.data().displayName
         }))
         .filter(user => user.email)
-        // Sort by role hierarchy and then by email
         .sort((a, b) => {
-          // First sort by role hierarchy (admins first, then sponsors, then captains)
-          const roleComparison = ROLE_HIERARCHY[b.role] - ROLE_HIERARCHY[a.role];
+          const roleComparison = ROLE_HIERARCHY[b.role || 'student'] - ROLE_HIERARCHY[a.role || 'student'];
           if (roleComparison !== 0) return roleComparison;
-          // Then sort by email within each role group
           return a.email.localeCompare(b.email);
         });
+
+      // Update hardcoded admin roles if needed
+      const adminEmails = [
+        'amxie@stu.naperville203.org',
+        'ajxu@stu.naperville203.org',
+        'arnavsharma0904@gmail.com'
+      ];
+
+      for (const user of usersList) {
+        if (adminEmails.includes(user.email.toLowerCase())) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            role: 'admin'
+          });
+          user.role = 'admin';
+        }
+      }
 
       setUsers(usersList);
     } catch (error) {
@@ -160,10 +175,13 @@ export default function AdminDashboard() {
 
         // If user's email is in admin list, ensure they have admin role
         if (adminEmails.includes(user.email.toLowerCase())) {
-          await updateDoc(doc(db, 'users', user.uid), {
-            ...userData,
-            role: 'admin'
-          });
+          if (!userData || userData.role !== 'admin') {
+            await updateDoc(doc(db, 'users', user.uid), {
+              ...userData,
+              role: 'admin',
+              email: user.email // Ensure email is stored
+            });
+          }
           setIsAdmin(true);
           fetchUsers();
           fetchAllVisits();
