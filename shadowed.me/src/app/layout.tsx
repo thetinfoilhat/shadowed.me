@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from 'next/font/google';
 import { Suspense } from 'react';
 import Header from "@/components/Header";
@@ -23,7 +23,12 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Shadowed.me - Connect & Grow",
   description: "Connecting students to opportunities through clubs, volunteering, and career shadowing",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
