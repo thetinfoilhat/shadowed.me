@@ -38,15 +38,15 @@ export default function StudentDashboard() {
   }>({ isOpen: false, visitId: '', isCaptain: false });
 
   const fetchCompletedVisits = useCallback(async () => {
-    if (!user?.uid) return;
+      if (!user?.uid) return;
 
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-      
-      setCompletedVisits(userData?.completedVisits || []);
-    } catch (error) {
-      console.error('Error fetching completed visits:', error);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        
+        setCompletedVisits(userData?.completedVisits || []);
+      } catch (error) {
+        console.error('Error fetching completed visits:', error);
     }
   }, [user]);
 

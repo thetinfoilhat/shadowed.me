@@ -615,25 +615,25 @@ export default function AdminDashboard() {
             
             <Tab.Panels>
               <Tab.Panel>
-                <div className="space-y-4">
+          <div className="space-y-4">
                   {users
                     .filter(user => ['admin', 'sponsor', 'captain'].includes(user.role || ''))
                     .map((user) => (
-                      <div 
-                        key={user.email}
-                        className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
+              <div 
+                key={user.email}
+                className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
                           ${user.role === 'admin' ? 'bg-red-50' : 
                             user.role === 'sponsor' ? 'bg-purple-50' : 
                             user.role === 'captain' ? 'bg-blue-50' : ''}`}
-                      >
-                        <div>
+              >
+                <div>
                           <p className="text-[#0A2540] font-medium">
                             {user.email}
                             {user.displayName && ` (${user.displayName})`}
                           </p>
                           <div className="flex items-center mt-1">
                             <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
-                              {user.role}
+                    {user.role}
                             </span>
                           </div>
                         </div>
@@ -665,14 +665,14 @@ export default function AdminDashboard() {
                               {user.role}
                             </span>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                </div>
+              </div>
+            ))}
 
                   {users.filter(user => user.role === 'student').length === 0 && (
                     <p className="text-gray-500 text-center py-4">No students found</p>
-                  )}
-                </div>
+            )}
+          </div>
               </Tab.Panel>
             </Tab.Panels>
           </Tab.Group>
@@ -700,11 +700,11 @@ export default function AdminDashboard() {
             </p>
 
             {pendingUpdate?.role === 'admin' ? (
-              <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
-                <li>Manage all user roles</li>
-                <li>Access and modify all club visits</li>
-                <li>Delete any club visit</li>
-                <li>View all user data</li>
+            <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
+              <li>Manage all user roles</li>
+              <li>Access and modify all club visits</li>
+              <li>Delete any club visit</li>
+              <li>View all user data</li>
                 <li>Approve any club listing</li>
               </ul>
             ) : (
@@ -712,7 +712,7 @@ export default function AdminDashboard() {
                 <li>Approve club listings from captains</li>
                 <li>Manage clubs assigned to them</li>
                 <li>View club visit data for their assigned clubs</li>
-              </ul>
+            </ul>
             )}
 
             <p className={`${pendingUpdate?.role === 'admin' ? 'text-amber-600' : 'text-purple-600'} font-medium mb-6`}>
