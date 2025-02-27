@@ -475,7 +475,23 @@ export default function CaptainDashboard() {
             setEditingVisit(null);
           }}
           onSubmitAction={saveVisit}
-          initialData={editingVisit}
+          initialData={editingVisit ? {
+            id: editingVisit.id,
+            name: editingVisit.name,
+            sponsorEmail: editingVisit.sponsorEmail || '',
+            category: editingVisit.category || '',
+            contactEmail: editingVisit.contactEmail || '',
+            date: editingVisit.date || '',
+            startTime: editingVisit.startTime || '',
+            endTime: editingVisit.endTime || '',
+            slots: editingVisit.slots || 0,
+            description: editingVisit.description || '',
+            captain: editingVisit.captain,
+            applicants: editingVisit.applicants,
+            status: editingVisit.status,
+            createdAt: editingVisit.createdAt,
+            school: editingVisit.school
+          } : null}
         />
 
         <ApplicantsDialog
