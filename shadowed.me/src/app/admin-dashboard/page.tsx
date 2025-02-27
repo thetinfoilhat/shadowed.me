@@ -154,7 +154,8 @@ export default function AdminDashboard() {
         // List of admin emails
         const adminEmails = [
           'amxie@stu.naperville203.org',
-          'ajxu@stu.naperville203.org'
+          'ajxu@stu.naperville203.org',
+          'arnavsharma0904@gmail.com'
         ];
 
         // If user's email is in admin list, ensure they have admin role
