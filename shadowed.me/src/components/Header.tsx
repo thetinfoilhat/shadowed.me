@@ -150,6 +150,7 @@ export default function Header() {
   const { user, logout, showProfileModal, setShowProfileModal } = useAuth();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -262,107 +263,131 @@ export default function Header() {
 
   return (
     <>
-      <div className="h-[73px]" />
+      {/* Spacer for fixed header */}
+      <div className="h-16 sm:h-[73px]" />
       
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-[1400px] mx-auto px-16 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-12">
-            <Link href="/" className="flex items-center">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 w-full">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-16 py-3 sm:py-5 flex items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center mr-4">
               <Image 
                 src="/logo.png" 
                 alt="Shadowed.me" 
                 width={180} 
                 height={40}
-                className="h-8 w-auto"
+                className="h-6 sm:h-8 w-auto"
+                priority
               />
             </Link>
-            
-            <nav>
-              <ul className="flex gap-8">
-                <li>
-                  <Link 
-                    href="/school-clubs"
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    School Clubs
-                  </Link>
-                </li>
-                {userRole !== 'student' && (
-                  <li>
-                    <Link 
-                      href="/my-visits"
-                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                    >
-                      My Visits
-                    </Link>
-                  </li>
-                )}
-                {(userRole === 'captain' || userRole === 'admin') && (
-                  <li className="relative group">
-                    {userRole === 'admin' ? (
-                      <>
-                        <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
-                          <span>Dashboard</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                        <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                          <Link 
-                            href="/captain-dashboard"
-                            className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                          >
-                            Captain Dashboard
-                          </Link>
-                          <Link 
-                            href="/admin-dashboard"
-                            className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                          >
-                            Admin Dashboard
-                          </Link>
-                        </div>
-                      </>
-                    ) : (
-                      <Link 
-                        href="/captain-dashboard"
-                        className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                      >
-                        Captain Dashboard
-                      </Link>
-                    )}
-                  </li>
-                )}
-                {userRole === 'student' && (
-                  <li>
-                    <Link 
-                      href="/student-dashboard"
-                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                    >
-                      Student Dashboard
-                    </Link>
-                  </li>
-                )}
-                <li>
-                  <Link 
-                    href="/what-fits-you"
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    What Fits You!
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/about" 
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    About
-                  </Link>
-                </li>
-              </ul>
-            </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Mobile Menu Button - ensure it's visible */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="block md:hidden p-2 text-gray-600 hover:text-gray-900 z-50"
+            aria-label="Toggle menu"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {isOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:block">
+            <ul className="flex gap-8">
+              <li>
+                <Link 
+                  href="/school-clubs"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  School Clubs
+                </Link>
+              </li>
+              {userRole !== 'student' && (
+                <li>
+                  <Link 
+                    href="/my-visits"
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    My Visits
+                  </Link>
+                </li>
+              )}
+              {(userRole === 'captain' || userRole === 'admin') && (
+                <li className="relative group">
+                  {userRole === 'admin' ? (
+                    <>
+                      <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
+                        <span>Dashboard</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                      <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <Link 
+                          href="/captain-dashboard"
+                          className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                        >
+                          Captain Dashboard
+                        </Link>
+                        <Link 
+                          href="/admin-dashboard"
+                          className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                        >
+                          Admin Dashboard
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <Link 
+                      href="/captain-dashboard"
+                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                    >
+                      Captain Dashboard
+                    </Link>
+                  )}
+                </li>
+              )}
+              {userRole === 'student' && (
+                <li>
+                  <Link 
+                    href="/student-dashboard"
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    Student Dashboard
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link 
+                  href="/what-fits-you"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  What Fits You!
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/about" 
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  About
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          {/* Desktop Auth Controls */}
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
               <div className="relative group">
                 <button
@@ -427,6 +452,97 @@ export default function Header() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Mobile Navigation Menu - improved styling */}
+        <div 
+          className={`fixed inset-0 bg-white z-40 transition-transform duration-300 ease-in-out transform ${
+            isOpen ? 'translate-x-0' : 'translate-x-full'
+          } md:hidden`}
+          style={{ 
+            top: '64px',
+            height: 'calc(100% - 64px)', // Only take up space below the header
+            overflowY: 'auto' // Allow scrolling within menu
+          }}
+        >
+          <nav className="h-full overflow-y-auto">
+            <ul className="px-6 py-4 space-y-4">
+              <li>
+                <Link 
+                  href="/school-clubs"
+                  className="block py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  School Clubs
+                </Link>
+              </li>
+              {userRole !== 'student' && (
+                <li>
+                  <Link 
+                    href="/my-visits"
+                    className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Visits
+                  </Link>
+                </li>
+              )}
+              {userRole === 'student' && (
+                <li>
+                  <Link 
+                    href="/student-dashboard"
+                    className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Student Dashboard
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link 
+                  href="/what-fits-you"
+                  className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  What Fits You!
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/about"
+                  className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  About
+                </Link>
+              </li>
+              {!user ? (
+                <li>
+                  <button
+                    onClick={() => {
+                      handleGoogleLogin();
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
+                  >
+                    Login
+                  </button>
+                </li>
+              ) : (
+                <li>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
+                  >
+                    Logout
+                  </button>
+                </li>
+              )}
+            </ul>
+          </nav>
         </div>
       </header>
 

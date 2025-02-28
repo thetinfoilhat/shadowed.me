@@ -17,26 +17,26 @@ const AnimatedHeadline = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % phrases.length);
-    }, 2500); // Slightly faster transitions
+    }, 2500);
     
     return () => clearInterval(interval);
   }, [phrases.length]);
   
   return (
     <motion.div 
-      className="text-4xl font-bold text-center mb-32"
+      className="text-2xl md:text-4xl font-bold text-center mb-16 md:mb-32"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
-      <div className="flex justify-center items-center">
+      <div className="flex flex-col md:flex-row justify-center items-center">
         <h2 className="flex flex-wrap justify-center items-center">
-          <span className="text-[#0A2540] mr-2">We help students</span>
-          <span className="relative inline-block text-[#2A8E9E] overflow-hidden" style={{ minWidth: '450px', height: '70px', display: 'flex', alignItems: 'center' }}>
+          <span className="text-[#0A2540] mr-0 md:mr-2 mb-2 md:mb-0">We help students</span>
+          <span className="relative inline-block text-[#2A8E9E] overflow-hidden w-full md:w-auto" style={{ minHeight: '40px', height: 'auto' }}>
             <AnimatePresence mode="wait">
               <motion.span
                 key={currentIndex}
-                className="absolute left-0 whitespace-nowrap"
+                className="absolute left-0 right-0 text-center md:text-left whitespace-normal md:whitespace-nowrap"
                 initial={{ opacity: 0, filter: "blur(8px)" }}
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(8px)" }}
@@ -242,14 +242,14 @@ const SyncedCounters = () => {
 
 export default function Home() {
   return (
-    <div className="pt-[100px] min-h-screen bg-[#FAFAFA]" suppressHydrationWarning>
+    <div className="pt-[70px] md:pt-[100px] min-h-screen bg-[#FAFAFA] overflow-x-hidden" suppressHydrationWarning>
       {/* Hero Section */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 pt-24 pb-48 md:pb-64">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 pt-12 md:pt-24 pb-24 md:pb-48 lg:pb-64">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24">
           {/* Left Column */}
           <div>
             <motion.h1 
-              className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[1.15] mb-8"
+              className="text-[2rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] leading-[1.15] mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -268,7 +268,7 @@ export default function Home() {
             
             <div className="mt-8">
               <motion.p 
-                className="text-lg md:text-xl text-[#180D39]/70 mb-12 max-w-xl"
+                className="text-base md:text-lg lg:text-xl text-[#180D39]/70 mb-8 md:mb-12 max-w-xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
@@ -277,26 +277,26 @@ export default function Home() {
               </motion.p>
 
               <motion.div
-                className="flex items-center gap-6"
+                className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <Link href="/school-clubs">
-                  <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+                  <button className="w-full sm:w-auto bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
                     Get Started →
                   </button>
                 </Link>
-                <span className="text-[#180D39]/40">Join 500+ students</span>
+                <span className="text-[#180D39]/40 mt-2 sm:mt-0">Join 500+ students</span>
               </motion.div>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="relative pt-24">
+          {/* Right Column - only show on larger screens */}
+          <div className="relative pt-12 md:pt-24 hidden md:block">
             {/* Main Feature Card */}
             <motion.div 
-              className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-8 shadow-xl w-[95%]"
+              className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-8 shadow-xl w-full md:w-[95%]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -360,7 +360,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Stats Card - Repositioned to overlap purple card */}
+            {/* Stats Card */}
             <motion.div 
               className="absolute top-4 right-4 bg-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
               initial={{ opacity: 0, y: 20, x: 20 }}
@@ -371,11 +371,6 @@ export default function Home() {
               <div className="text-white text-2xl font-bold mt-1">500+</div>
               <div className="text-white/70 text-xs mt-1">across 12 schools</div>
             </motion.div>
-
-            {/* Decorative Elements */}
-            <div className="absolute -z-10 top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
-              <div className="w-96 h-96 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl" />
-            </div>
           </div>
         </div>
       </div>
@@ -500,43 +495,43 @@ export default function Home() {
       </div>
 
       {/* How It Works Section */}
-      <div className="bg-[#0A2540] mt-48 py-24 text-white">
-        <div className="max-w-[1400px] mx-auto px-8">
+      <div className="bg-[#0A2540] mt-24 md:mt-48 py-16 md:py-24 text-white">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
           <motion.h2 
-            className="text-4xl font-bold mb-16"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-12 md:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             Maximize your experience with a
-            <br />
+            <br className="hidden md:block" />
             platform that connects.
           </motion.h2>
 
-          <div className="grid grid-cols-3 gap-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16">
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">1</div>
-              <h3 className="text-2xl font-semibold mb-4">Create your profile</h3>
-              <p className="text-gray-400">Set your interests, availability, and preferences</p>
+              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">1</div>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Create your profile</h3>
+              <p className="text-sm md:text-base text-gray-400">Set your interests, availability, and preferences</p>
             </div>
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">2</div>
-              <h3 className="text-2xl font-semibold mb-4">Discover opportunities</h3>
-              <p className="text-gray-400">Browse and filter opportunities that match your profile</p>
+              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">2</div>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Discover opportunities</h3>
+              <p className="text-sm md:text-base text-gray-400">Browse and filter opportunities that match your profile</p>
             </div>
             <div>
-              <div className="text-8xl font-light text-[#38BFA1] mb-8">3</div>
-              <h3 className="text-2xl font-semibold mb-4">Track your growth</h3>
-              <p className="text-gray-400">Build your portfolio as you participate</p>
+              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">3</div>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Track your growth</h3>
+              <p className="text-sm md:text-base text-gray-400">Build your portfolio as you participate</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Why students choose section - Moved here */}
-      <div className="max-w-[1400px] mx-auto px-8 pt-48">
+      {/* Why students choose section */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-24 md:pt-48">
         <motion.h2 
-          className="text-4xl font-bold text-[#0A2540] mb-24 text-center"
+          className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0A2540] mb-12 md:mb-24 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -544,7 +539,7 @@ export default function Home() {
           Why students choose shadowed.me
         </motion.h2>
 
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
           <motion.div 
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
@@ -619,12 +614,12 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-[#102C4C] mt-48">
-        <div className="max-w-[1400px] mx-auto px-8 py-24">
-          <div className="flex justify-between items-center">
+      <div className="bg-[#102C4C] mt-24 md:mt-48">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-16 md:py-24">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div>
               <motion.h2 
-                className="text-4xl font-bold text-white mb-4"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 md:mb-4 text-center md:text-left"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -632,7 +627,7 @@ export default function Home() {
                 Ready to start exploring?
               </motion.h2>
               <motion.p 
-                className="text-xl text-white/70"
+                className="text-lg md:text-xl text-white/70 text-center md:text-left"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -643,7 +638,7 @@ export default function Home() {
             </div>
             <Link href="/school-clubs">
               <motion.button 
-                className="bg-[#2A8E9E] text-white px-10 py-5 text-xl rounded-2xl hover:bg-[#247A87] transition-all"
+                className="w-full md:w-auto bg-[#2A8E9E] text-white px-6 md:px-10 py-3 md:py-5 text-lg md:text-xl rounded-xl md:rounded-2xl hover:bg-[#247A87] transition-all"
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}

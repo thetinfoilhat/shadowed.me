@@ -1198,8 +1198,9 @@ const ClubQuiz: React.FC = () => {
     setCurrentQuestionIndex(0);
   };
 
+  // Modify the main container to ensure scrolling works
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full overflow-visible relative">
       {/* Quiz Content */}
       {isStarted ? (
         currentQuestion ? (
