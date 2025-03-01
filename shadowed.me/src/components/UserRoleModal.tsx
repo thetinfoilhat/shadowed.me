@@ -60,6 +60,11 @@ export default function UserRoleModal({ onSelectAction, onCloseAction }: UserRol
             </div>
             <span className="text-[#725A44]">→</span>
           </button>
+          
+          <div className="mt-6 pt-4 border-t border-[#E2D9D0] text-sm text-[#725A44] text-center">
+            <p>Sponsor and Admin roles are assigned by existing administrators.</p>
+            <p>Please contact your school administrator if you need these privileges.</p>
+          </div>
         </div>
       </div>
     </div>

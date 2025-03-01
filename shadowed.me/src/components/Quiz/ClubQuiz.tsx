@@ -490,681 +490,859 @@ const ClubQuiz: React.FC = () => {
   // Calculate progress percentage
   const progress = ((currentQuestionIndex || 0) / questions.length) * 100;
 
-  // Handle Yes/No and Multiple Choice answers
-  const handleOptionSelect = (questionId: number, optionValue: string, selected: boolean) => {
-    console.log(`Option selected: Question ${questionId}, Option ${optionValue}, Selected: ${selected}`);
-    
-    setAnswers(prevAnswers => {
-      const questionIndex = prevAnswers.findIndex(a => a.questionId === questionId);
-      
-      let updatedAnswers;
-      if (questionIndex === -1) {
-        // Question hasn't been answered yet
-        const newAnswer = {
-          questionId,
-          selectedOptions: selected ? [optionValue] : []
-        };
-        console.log('New answer:', newAnswer);
-        updatedAnswers = [...prevAnswers, newAnswer];
-      } else {
-        // Update existing answer
-        updatedAnswers = [...prevAnswers];
-        const currentOptions = updatedAnswers[questionIndex].selectedOptions || [];
-        
-        if (selected) {
-          // For Yes/No questions, replace the answer
-          if (questions.find(q => q.id === questionId)?.type === 'yes-no') {
-            updatedAnswers[questionIndex].selectedOptions = [optionValue];
-          } else {
-            // For multiple choice, add to the array if not already there
-            if (!currentOptions.includes(optionValue)) {
-              updatedAnswers[questionIndex].selectedOptions = [...currentOptions, optionValue];
-            }
-          }
-        } else {
-          // Remove the option if unselected
-          updatedAnswers[questionIndex].selectedOptions = currentOptions.filter(opt => opt !== optionValue);
-        }
-        
-        console.log('Updated answers:', updatedAnswers);
-      }
-      
-      return updatedAnswers;
-    });
-  };
-
-  // Handle Slider answers
-  const handleSliderChange = (questionId: number, value: number) => {
-    setAnswers(prevAnswers => {
-      const questionIndex = prevAnswers.findIndex(a => a.questionId === questionId);
-      
-      if (questionIndex === -1) {
-        // Question hasn't been answered yet
-        return [...prevAnswers, {
-          questionId,
-          sliderValue: value
-        }];
-      } else {
-        // Update existing answer
-        const updatedAnswers = [...prevAnswers];
-        updatedAnswers[questionIndex].sliderValue = value;
-        return updatedAnswers;
-      }
-    });
-  };
-
-  // Navigate to next question
+  // Navigate to next question with error handling
   const handleNext = () => {
-    if (currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prevIndex => prevIndex !== null ? prevIndex + 1 : 0);
-    } else {
-      // Quiz completed
-      calculateResults();
-      setShowResults(true);
-      setCurrentQuestionIndex(null); // Reset current question index when showing results
-    }
-  };
-
-  // Skip current question
-  const handleSkip = () => {
-    if (skipsRemaining > 0 && currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1) {
-      setSkipsRemaining(prev => prev - 1);
-      setCurrentQuestionIndex(prevIndex => prevIndex !== null ? prevIndex + 1 : 0);
-    }
-  };
-
-  // Navigate to previous question
-  const handlePrevious = () => {
-    if (currentQuestionIndex !== null && currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prevIndex => prevIndex !== null ? prevIndex - 1 : 0);
-    }
-  };
-
-  // Check if current question has been answered
-  const isCurrentQuestionAnswered = () => {
-    if (currentQuestionIndex === null || !currentQuestion) return false;
-    
-    // Special case for the last question - always enable the button if it's the last question
-    if (currentQuestionIndex === questions.length - 1) {
-      // For the last question, check if it has been answered, but if not, still allow proceeding
-      const answer = answers.find(a => a.questionId === currentQuestion.id);
-      if (answer) {
-        if (currentQuestion.type === 'slider') {
-          return answer.sliderValue !== undefined;
-        } else if (currentQuestion.type === 'yes-no' || currentQuestion.type === 'multiple-choice') {
-          return answer.selectedOptions !== undefined && answer.selectedOptions.length > 0;
-        }
+    try {
+      if (currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1) {
+        // Use functional update to ensure we're working with the latest state
+        setCurrentQuestionIndex(prevIndex => {
+          if (prevIndex === null) return 0;
+          return prevIndex + 1;
+        });
+      } else {
+        // Quiz completed
+        calculateResults();
+        setShowResults(true);
+        setCurrentQuestionIndex(null); // Reset current question index when showing results
       }
-      // Even if not answered, allow proceeding on the last question
-      return true;
+    } catch (error) {
+      console.error("Error navigating to next question:", error);
+      // Attempt recovery by resetting to a known good state
+      if (currentQuestionIndex === null || currentQuestionIndex >= questions.length - 1) {
+        calculateResults();
+        setShowResults(true);
+      } else {
+        setCurrentQuestionIndex(0);
+      }
     }
-    
-    const answer = answers.find(a => a.questionId === currentQuestion.id);
-    
-    console.log(`Checking if question ${currentQuestion.id} is answered:`, answer);
-    
-    if (!answer) return false;
-    
-    let isAnswered = false;
-    
-    if (currentQuestion.type === 'slider') {
-      isAnswered = answer.sliderValue !== undefined;
-    } else if (currentQuestion.type === 'yes-no' || currentQuestion.type === 'multiple-choice') {
-      isAnswered = answer.selectedOptions !== undefined && answer.selectedOptions.length > 0;
+  };
+
+  // Skip current question with error handling
+  const handleSkip = () => {
+    try {
+      if (skipsRemaining > 0 && currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1) {
+        // Use functional updates to ensure we're working with the latest state
+        setSkipsRemaining(prev => Math.max(0, prev - 1));
+        setCurrentQuestionIndex(prevIndex => {
+          if (prevIndex === null) return 0;
+          return Math.min(questions.length - 1, prevIndex + 1);
+        });
+      }
+    } catch (error) {
+      console.error("Error skipping question:", error);
+      // Attempt recovery
+      if (currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      }
     }
-    
-    console.log(`Question ${currentQuestion.id} is answered: ${isAnswered}`);
-    return isAnswered;
+  };
+
+  // Navigate to previous question with error handling
+  const handlePrevious = () => {
+    try {
+      if (currentQuestionIndex !== null && currentQuestionIndex > 0) {
+        // Use functional update to ensure we're working with the latest state
+        setCurrentQuestionIndex(prevIndex => {
+          if (prevIndex === null || prevIndex <= 0) return 0;
+          return prevIndex - 1;
+        });
+      }
+    } catch (error) {
+      console.error("Error navigating to previous question:", error);
+      // Attempt recovery
+      if (currentQuestionIndex !== null && currentQuestionIndex > 0) {
+        setCurrentQuestionIndex(currentQuestionIndex - 1);
+      } else {
+        setCurrentQuestionIndex(0);
+      }
+    }
+  };
+
+  // Check if current question has been answered with better error handling
+  const isCurrentQuestionAnswered = () => {
+    try {
+      if (currentQuestionIndex === null) return false;
+      
+      const currentQuestion = questions[currentQuestionIndex];
+      if (!currentQuestion) return false;
+      
+      // Special case for the last question - always enable the button if it's the last question
+      if (currentQuestionIndex === questions.length - 1) {
+        // For the last question, check if it has been answered, but if not, still allow proceeding
+        const answer = answers.find(a => a.questionId === currentQuestion.id);
+        if (answer) {
+          if (currentQuestion.type === 'slider') {
+            return answer.sliderValue !== undefined;
+          } else if (currentQuestion.type === 'yes-no' || currentQuestion.type === 'multiple-choice') {
+            return answer.selectedOptions !== undefined && answer.selectedOptions.length > 0;
+          }
+        }
+        // Even if not answered, allow proceeding on the last question
+        return true;
+      }
+      
+      const answer = answers.find(a => a.questionId === currentQuestion.id);
+      
+      if (!answer) return false;
+      
+      let isAnswered = false;
+      
+      if (currentQuestion.type === 'slider') {
+        isAnswered = answer.sliderValue !== undefined;
+      } else if (currentQuestion.type === 'yes-no' || currentQuestion.type === 'multiple-choice') {
+        isAnswered = answer.selectedOptions !== undefined && answer.selectedOptions.length > 0;
+      }
+      
+      return isAnswered;
+    } catch (error) {
+      console.error("Error checking if question is answered:", error);
+      // Default to false to prevent unexpected navigation
+      return false;
+    }
+  };
+
+  // Handle Yes/No and Multiple Choice answers with better error handling
+  const handleOptionSelect = (questionId: number, optionValue: string, selected: boolean) => {
+    try {
+      console.log(`Option selected: Question ${questionId}, Option ${optionValue}, Selected: ${selected}`);
+      
+      // Find the question to determine its type
+      const question = questions.find(q => q.id === questionId);
+      if (!question) {
+        console.error(`Question with ID ${questionId} not found`);
+        return;
+      }
+      
+      setAnswers(prevAnswers => {
+        try {
+          const questionIndex = prevAnswers.findIndex(a => a.questionId === questionId);
+          
+          let updatedAnswers;
+          if (questionIndex === -1) {
+            // Question hasn't been answered yet
+            const newAnswer = {
+              questionId,
+              selectedOptions: selected ? [optionValue] : []
+            };
+            console.log('New answer:', newAnswer);
+            updatedAnswers = [...prevAnswers, newAnswer];
+          } else {
+            // Update existing answer
+            updatedAnswers = [...prevAnswers];
+            const currentOptions = updatedAnswers[questionIndex].selectedOptions || [];
+            
+            if (selected) {
+              // For Yes/No questions, replace the answer
+              if (question.type === 'yes-no') {
+                updatedAnswers[questionIndex].selectedOptions = [optionValue];
+              } else {
+                // For multiple choice, add to the array if not already there
+                if (!currentOptions.includes(optionValue)) {
+                  updatedAnswers[questionIndex].selectedOptions = [...currentOptions, optionValue];
+                }
+              }
+            } else {
+              // Remove the option if unselected
+              updatedAnswers[questionIndex].selectedOptions = currentOptions.filter(opt => opt !== optionValue);
+            }
+            
+            console.log('Updated answers:', updatedAnswers);
+          }
+          
+          return updatedAnswers;
+        } catch (innerError) {
+          console.error("Error updating answers:", innerError);
+          // Return unchanged state if there's an error
+          return prevAnswers;
+        }
+      });
+    } catch (error) {
+      console.error("Error handling option select:", error);
+      // Continue without updating if there's an error
+    }
+  };
+
+  // Handle Slider answers with better error handling
+  const handleSliderChange = (questionId: number, value: number) => {
+    try {
+      // Ensure value is within valid range
+      const question = questions.find(q => q.id === questionId);
+      if (!question) return;
+      
+      const min = question.min || 1;
+      const max = question.max || 5;
+      const safeValue = Math.max(min, Math.min(max, value));
+      
+      setAnswers(prevAnswers => {
+        try {
+          const questionIndex = prevAnswers.findIndex(a => a.questionId === questionId);
+          
+          if (questionIndex === -1) {
+            // Question hasn't been answered yet
+            return [...prevAnswers, {
+              questionId,
+              sliderValue: safeValue
+            }];
+          } else {
+            // Update existing answer
+            const updatedAnswers = [...prevAnswers];
+            updatedAnswers[questionIndex].sliderValue = safeValue;
+            return updatedAnswers;
+          }
+        } catch (innerError) {
+          console.error("Error updating slider value:", innerError);
+          // Return unchanged state if there's an error
+          return prevAnswers;
+        }
+      });
+    } catch (error) {
+      console.error("Error handling slider change:", error);
+      // Continue without updating if there's an error
+    }
+  };
+
+  // Start the quiz with error handling
+  const startQuiz = () => {
+    try {
+      setIsStarted(true);
+      setCurrentQuestionIndex(0);
+      // Initialize with empty answers array to prevent undefined issues
+      setAnswers([]);
+      setClubMatches([]);
+      setSkipsRemaining(20);
+      setShowResults(false);
+    } catch (error) {
+      console.error("Error starting quiz:", error);
+      // Attempt recovery
+      setIsStarted(true);
+      setCurrentQuestionIndex(0);
+    }
   };
 
   // Calculate matches based on user responses
   const calculateMatches = () => {
-    // Define question weights (higher number = more important)
-    const questionWeights: Record<number, number> = {
-      1: 1.2,  // Public speaking
-      2: 1.5,  // Team vs independent
-      3: 1.3,  // Competitiveness
-      4: 2.0,  // Subject preferences (high weight as it's a key indicator)
-      5: 1.4,  // Problem solving
-      6: 1.6,  // Business interest
-      7: 1.5,  // Technology interest
-      8: 1.4,  // STEM competitions
-      9: 1.3,  // Writing interest
-      10: 1.7, // Performing arts
-      11: 1.5, // Global issues
-      12: 1.6, // Volunteering
-      13: 1.3, // Event planning
-      14: 1.6, // Hands-on activities
-      15: 1.5, // Photography/visual arts
-      16: 1.5, // Newspaper/yearbook
-      17: 1.3, // Strategic thinking
-      18: 1.5, // Creative expression
-      19: 1.6, // Structured vs creative
-      20: 1.4, // Language learning
-      21: 1.5, // Advocacy for diversity
-      22: 1.6, // Robotics/coding
-      23: 1.5  // Medical/health
-    };
+    try {
+      // Define question weights (higher number = more important)
+      const questionWeights: Record<number, number> = {
+        1: 1.2,  // Public speaking
+        2: 1.5,  // Team vs independent
+        3: 1.3,  // Competitiveness
+        4: 2.0,  // Subject preferences (high weight as it's a key indicator)
+        5: 1.4,  // Problem solving
+        6: 1.6,  // Business interest
+        7: 1.5,  // Technology interest
+        8: 1.4,  // STEM competitions
+        9: 1.3,  // Writing interest
+        10: 1.7, // Performing arts
+        11: 1.5, // Global issues
+        12: 1.6, // Volunteering
+        13: 1.3, // Event planning
+        14: 1.6, // Hands-on activities
+        15: 1.5, // Photography/visual arts
+        16: 1.5, // Newspaper/yearbook
+        17: 1.3, // Strategic thinking
+        18: 1.5, // Creative expression
+        19: 1.6, // Structured vs creative
+        20: 1.4, // Language learning
+        21: 1.5, // Advocacy for diversity
+        22: 1.6, // Robotics/coding
+        23: 1.5  // Medical/health
+      };
 
-    // Define attribute weights (higher = more important for matching)
-    const attributeWeights: Record<string, number> = {
-      // Core interests and skills (highest weight)
-      "coding": 2.0,
-      "science": 1.8,
-      "math": 1.8,
-      "engineering": 1.8,
-      "writing": 1.8,
-      "acting": 1.8,
-      "singing": 1.8,
-      "dancing": 1.8,
-      "language": 1.8,
-      "business": 1.8,
-      "finance": 1.8,
-      "volunteering": 1.8,
-      "photography": 1.8,
-      "design": 1.8,
-      "pottery": 1.8,
-      "painting": 1.8,
-      "drawing": 1.8,
-      
-      // Secondary attributes (medium weight)
-      "teamwork": 1.5,
-      "leadership": 1.5,
-      "problem-solving": 1.5,
-      "critical thinking": 1.5,
-      "creativity": 1.5,
-      "performance": 1.5,
-      "public speaking": 1.5,
-      "debate": 1.5,
-      "research": 1.5,
-      "competition": 1.5,
-      "cultural awareness": 1.5,
-      "global awareness": 1.5,
-      "advocacy": 1.5,
-      
-      // Tertiary attributes (lower weight)
-      "collaboration": 1.2,
-      "communication": 1.2,
-      "innovation": 1.2,
-      "strategy": 1.2,
-      "analytical": 1.2,
-      "organization": 1.2,
-      "discipline": 1.2
-    };
+      // Define attribute weights (higher = more important for matching)
+      const attributeWeights: Record<string, number> = {
+        // Core interests and skills (highest weight)
+        "coding": 2.0,
+        "science": 1.8,
+        "math": 1.8,
+        "engineering": 1.8,
+        "writing": 1.8,
+        "acting": 1.8,
+        "singing": 1.8,
+        "dancing": 1.8,
+        "language": 1.8,
+        "business": 1.8,
+        "finance": 1.8,
+        "volunteering": 1.8,
+        "photography": 1.8,
+        "design": 1.8,
+        "pottery": 1.8,
+        "painting": 1.8,
+        "drawing": 1.8,
+        
+        // Secondary attributes (medium weight)
+        "teamwork": 1.5,
+        "leadership": 1.5,
+        "problem-solving": 1.5,
+        "critical thinking": 1.5,
+        "creativity": 1.5,
+        "performance": 1.5,
+        "public speaking": 1.5,
+        "debate": 1.5,
+        "research": 1.5,
+        "competition": 1.5,
+        "cultural awareness": 1.5,
+        "global awareness": 1.5,
+        "advocacy": 1.5,
+        
+        // Tertiary attributes (lower weight)
+        "collaboration": 1.2,
+        "communication": 1.2,
+        "innovation": 1.2,
+        "strategy": 1.2,
+        "analytical": 1.2,
+        "organization": 1.2,
+        "discipline": 1.2
+      };
 
-    // Define club categories for better grouping
-    const clubCategories: Record<string, string[]> = {
-      "Art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club"],
-      "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "German Club", "Korean Club"],
-      "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
-      "Performing Arts": ["Drama Club", "Marching Band", "Show Choir", "Orchesis"],
-      "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
-      "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
-      "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
-      "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
-      "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis", "Yearbook"],
-      "Advocacy": ["Girl Up", "UNICEF Club", "Model UN"],
-      "Medical": ["Biochemistry Club"]
-    };
+      // Define club categories for better grouping
+      const clubCategories: Record<string, string[]> = {
+        "Art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club"],
+        "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "German Club", "Korean Club"],
+        "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
+        "Performing Arts": ["Drama Club", "Marching Band", "Show Choir", "Orchesis"],
+        "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
+        "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
+        "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
+        "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
+        "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis", "Yearbook"],
+        "Advocacy": ["Girl Up", "UNICEF Club", "Model UN"],
+        "Medical": ["Biochemistry Club"]
+      };
 
-    // Define required attributes for perfect matches (clubs must have these to get 90%+ scores)
-    const clubRequiredAttributes: Record<string, string[]> = {
-      "Art Club": ["creativity", "artistic"],
-      "Ceramics Society": ["pottery", "hands-on"],
-      "Photography Club": ["photography", "visual storytelling"],
-      "Henna Club": ["art", "cultural awareness"],
-      "ASL (American Sign Language & Culture) Club": ["language", "cultural awareness"],
-      "French Club": ["language", "cultural awareness"],
-      "Spanish Club": ["language", "cultural awareness"],
-      "German Club": ["language", "cultural awareness"],
-      "Korean Club": ["language", "cultural awareness"],
-      "Astronomy Club": ["space", "science"],
-      "Biochemistry Club": ["science", "experiments"],
-      "Computer Science Club": ["coding", "technology"],
-      "Math Team": ["math", "competitive"],
-      "Robotics Team (FIRST Robotics)": ["engineering", "technology"],
-      "Science Olympiad": ["science", "competitive"],
-      "Drama Club": ["acting", "performance"],
-      "Marching Band": ["music", "performance"],
-      "Show Choir": ["singing", "performance"],
-      "Orchesis": ["dance", "performance"],
-      "DECA": ["business", "competitive"],
-      "BPA (Business Professionals of America)": ["business", "leadership"],
-      "Investment Club": ["finance", "business"],
-      "Girl Up": ["advocacy", "leadership"],
-      "Interact Club": ["volunteering", "community service"],
-      "UNICEF Club": ["volunteering", "global awareness"],
-      "Debate": ["debate", "public speaking"],
-      "Model UN": ["global issues", "debate"],
-      "Huskie Book Club": ["reading", "literature"],
-      "Chess Club & Team": ["strategy", "critical thinking"],
-      "Esports Club": ["gaming", "competitive"],
-      "Yearbook": ["photography", "design"]
-    };
+      // Define required attributes for perfect matches (clubs must have these to get 90%+ scores)
+      const clubRequiredAttributes: Record<string, string[]> = {
+        "Art Club": ["creativity", "artistic"],
+        "Ceramics Society": ["pottery", "hands-on"],
+        "Photography Club": ["photography", "visual storytelling"],
+        "Henna Club": ["art", "cultural awareness"],
+        "ASL (American Sign Language & Culture) Club": ["language", "cultural awareness"],
+        "French Club": ["language", "cultural awareness"],
+        "Spanish Club": ["language", "cultural awareness"],
+        "German Club": ["language", "cultural awareness"],
+        "Korean Club": ["language", "cultural awareness"],
+        "Astronomy Club": ["space", "science"],
+        "Biochemistry Club": ["science", "experiments"],
+        "Computer Science Club": ["coding", "technology"],
+        "Math Team": ["math", "competitive"],
+        "Robotics Team (FIRST Robotics)": ["engineering", "technology"],
+        "Science Olympiad": ["science", "competitive"],
+        "Drama Club": ["acting", "performance"],
+        "Marching Band": ["music", "performance"],
+        "Show Choir": ["singing", "performance"],
+        "Orchesis": ["dance", "performance"],
+        "DECA": ["business", "competitive"],
+        "BPA (Business Professionals of America)": ["business", "leadership"],
+        "Investment Club": ["finance", "business"],
+        "Girl Up": ["advocacy", "leadership"],
+        "Interact Club": ["volunteering", "community service"],
+        "UNICEF Club": ["volunteering", "global awareness"],
+        "Debate": ["debate", "public speaking"],
+        "Model UN": ["global issues", "debate"],
+        "Huskie Book Club": ["reading", "literature"],
+        "Chess Club & Team": ["strategy", "critical thinking"],
+        "Esports Club": ["gaming", "competitive"],
+        "Yearbook": ["photography", "design"]
+      };
 
-    // Create a map to track attribute matches for each club
-    const clubMatches = new Map<Club, { 
-      matchedAttributes: string[], 
-      negativeAttributes: string[],
-      matchScore: number,
-      weightedScore: number,
-      totalPossibleScore: number,
-      categoryMatch: string | null,
-      confidenceScore: number,
-      attributeMatchStrength: number,
-      userPreferredAttributes: string[],
-      requiredAttributesMatched: number,
-      totalRequiredAttributes: number,
-      diminishingReturnsApplied: boolean
-    }>();
+      // Create a map to track attribute matches for each club
+      const clubMatches = new Map<Club, { 
+        matchedAttributes: string[], 
+        negativeAttributes: string[],
+        matchScore: number,
+        weightedScore: number,
+        totalPossibleScore: number,
+        categoryMatch: string | null,
+        confidenceScore: number,
+        attributeMatchStrength: number,
+        userPreferredAttributes: string[],
+        requiredAttributesMatched: number,
+        totalRequiredAttributes: number,
+        diminishingReturnsApplied: boolean
+      }>();
 
-    // Initialize club matches
-    clubs.forEach(club => {
-      // Find which categories this club belongs to
-      const categories: string[] = [];
-      for (const [cat, clubNames] of Object.entries(clubCategories)) {
-        if (clubNames.includes(club.name)) {
-          categories.push(cat);
-        }
-      }
-
-      // Get required attributes for this club
-      const requiredAttributes = clubRequiredAttributes[club.name] || [];
-
-      clubMatches.set(club, { 
-        matchedAttributes: [], 
-        negativeAttributes: [],
-        matchScore: 0,
-        weightedScore: 0,
-        totalPossibleScore: 0, // Will be calculated based on weighted attributes
-        categoryMatch: categories.length > 0 ? categories[0] : null,
-        confidenceScore: 0,
-        attributeMatchStrength: 0,
-        userPreferredAttributes: [],
-        requiredAttributesMatched: 0,
-        totalRequiredAttributes: requiredAttributes.length,
-        diminishingReturnsApplied: false
-      });
-    });
-
-    // Track user's preferred categories based on answers
-    const categoryScores: Record<string, number> = {
-      "Art": 0,
-      "Language & Culture": 0,
-      "STEM": 0,
-      "Performing Arts": 0,
-      "Business": 0,
-      "Community Service": 0,
-      "Academic & Humanities": 0,
-      "Competitive": 0,
-      "Creative": 0,
-      "Advocacy": 0,
-      "Medical": 0
-    };
-
-    // Collect all user's preferred attributes
-    const userAttributes: string[] = [];
-    const userNegativeAttributes: string[] = [];
-    
-    // Process each user response
-    answers.forEach(response => {
-      const question = questions.find(q => q.id === response.questionId);
-      if (!question) return;
-
-      // Get the weight for this question
-      const questionWeight = questionWeights[question.id] || 1.0;
-      
-      let responseAttributes: string[] = [];
-      let negativeAttributes: string[] = [];
-      const categoryBoosts: string[] = [];
-
-      // Extract attributes based on question type
-      if (question.type === 'yes-no' || question.type === 'multiple-choice') {
-        if (question.options && response.selectedOptions) {
-          // Handle multiple selected options for multiple-choice questions
-          response.selectedOptions.forEach(selectedValue => {
-            const selectedOption = question.options?.find(opt => opt.value === selectedValue);
-            if (selectedOption) {
-              responseAttributes = [...responseAttributes, ...selectedOption.attributes];
-              
-              // Add category boosts based on specific answers
-              if (question.id === 4) { // Subject preferences
-                if (selectedValue === 'math') categoryBoosts.push("STEM", "Academic & Humanities");
-                if (selectedValue === 'science') categoryBoosts.push("STEM", "Medical");
-                if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
-                if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
-                if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts", "Creative");
-              }
-              
-              if (question.id === 10) { // Performing arts preferences
-                if (selectedValue === 'acting') categoryBoosts.push("Performing Arts");
-                if (selectedValue === 'singing') categoryBoosts.push("Performing Arts");
-                if (selectedValue === 'dancing') categoryBoosts.push("Performing Arts");
-              }
-              
-              if (question.id === 6 && selectedValue === 'yes') { // Business interest
-                categoryBoosts.push("Business");
-              }
-              
-              if (question.id === 11 && selectedValue === 'yes') { // Global issues
-                categoryBoosts.push("Language & Culture", "Advocacy");
-              }
-              
-              if (question.id === 12 && selectedValue === 'yes') { // Volunteering
-                categoryBoosts.push("Community Service", "Advocacy");
-              }
-              
-              // New questions category boosts
-              if (question.id === 19) { // Structured vs creative
-                if (selectedValue === 'creative') categoryBoosts.push("Creative", "Art");
-                if (selectedValue === 'structured') categoryBoosts.push("Academic & Humanities", "Business");
-              }
-              
-              if (question.id === 20 && selectedValue === 'yes') { // Language learning
-                categoryBoosts.push("Language & Culture");
-              }
-              
-              if (question.id === 21 && selectedValue === 'yes') { // Diversity and inclusion
-                categoryBoosts.push("Advocacy", "Community Service");
-              }
-              
-              if (question.id === 22 && selectedValue === 'yes') { // Robotics/coding
-                categoryBoosts.push("STEM");
-              }
-              
-              if (question.id === 23 && selectedValue === 'yes') { // Medical/health
-                categoryBoosts.push("Medical", "STEM");
-              }
-            }
-          });
-          
-          // For "No" answers in yes-no questions, add negative attributes
-          if (question.type === 'yes-no' && response.selectedOptions.includes('no')) {
-            // Find the "yes" option to get attributes to avoid
-            const yesOption = question.options.find(opt => opt.value === 'yes');
-            if (yesOption) {
-              negativeAttributes = yesOption.attributes;
-              userNegativeAttributes.push(...yesOption.attributes);
-            }
-          }
-        }
-      } else if (question.type === 'slider') {
-        const sliderValue = response.sliderValue;
-        if (question.attributes && sliderValue !== undefined && question.attributes[sliderValue]) {
-          responseAttributes = question.attributes[sliderValue];
-          
-          // Add category boosts based on slider values
-          if (question.id === 3 && sliderValue >= 4) { // Competitiveness
-            categoryBoosts.push("Competitive");
-          }
-          
-          if (question.id === 7 && sliderValue >= 4) { // Technology interest
-            categoryBoosts.push("STEM");
-          }
-          
-          if (question.id === 18 && sliderValue >= 4) { // Creative expression
-            categoryBoosts.push("Creative", "Art", "Performing Arts");
-          } else if (question.id === 18 && sliderValue <= 2) {
-            // If user doesn't value creative expression, add negative attributes
-            negativeAttributes.push("creative", "artistic", "self-expression");
-            userNegativeAttributes.push("creative", "artistic", "self-expression");
-          }
-        }
-      }
-
-      // Add user's preferred attributes
-      userAttributes.push(...responseAttributes);
-
-      // Boost category scores based on answers
-      categoryBoosts.forEach(category => {
-        if (categoryScores[category] !== undefined) {
-          categoryScores[category] += questionWeight;
-        }
-      });
-
-      // Update club matches based on response attributes
+      // Initialize club matches
       clubs.forEach(club => {
-        const clubMatch = clubMatches.get(club);
-        if (!clubMatch) return;
+        // Find which categories this club belongs to
+        const categories: string[] = [];
+        for (const [cat, clubNames] of Object.entries(clubCategories)) {
+          if (clubNames.includes(club.name)) {
+            categories.push(cat);
+          }
+        }
 
         // Get required attributes for this club
         const requiredAttributes = clubRequiredAttributes[club.name] || [];
 
-        // Check for attribute matches
-        responseAttributes.forEach(attr => {
-          if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
-            clubMatch.matchedAttributes.push(attr);
-            
-            // Apply attribute weight if defined, otherwise use default weight of 1.0
-            const attrWeight = attributeWeights[attr] || 1.0;
-            clubMatch.matchScore += 1;
-            
-            // Apply diminishing returns for clubs with many attributes
-            // This makes it harder for clubs with many attributes to get high scores
-            const diminishingReturnFactor = Math.max(0.7, 1 - (clubMatch.matchedAttributes.length * 0.03));
-            clubMatch.weightedScore += questionWeight * attrWeight * diminishingReturnFactor;
-            
-            if (diminishingReturnFactor < 1) {
-              clubMatch.diminishingReturnsApplied = true;
-            }
-            
-            // Track user's preferred attributes that match this club
-            clubMatch.userPreferredAttributes.push(attr);
-            
-            // Check if this is a required attribute
-            if (requiredAttributes.includes(attr)) {
-              clubMatch.requiredAttributesMatched += 1;
-            }
-          }
-        });
-        
-        // Check for negative attribute matches (attributes to avoid)
-        negativeAttributes.forEach(attr => {
-          if (club.attributes.includes(attr) && !clubMatch.negativeAttributes.includes(attr)) {
-            clubMatch.negativeAttributes.push(attr);
-            // We'll use this for confidence calculation later
-          }
+        clubMatches.set(club, { 
+          matchedAttributes: [], 
+          negativeAttributes: [],
+          matchScore: 0,
+          weightedScore: 0,
+          totalPossibleScore: 0, // Will be calculated based on weighted attributes
+          categoryMatch: categories.length > 0 ? categories[0] : null,
+          confidenceScore: 0,
+          attributeMatchStrength: 0,
+          userPreferredAttributes: [],
+          requiredAttributesMatched: 0,
+          totalRequiredAttributes: requiredAttributes.length,
+          diminishingReturnsApplied: false
         });
       });
-    });
 
-    // Calculate total possible score for each club based on weighted attributes
-    clubs.forEach(club => {
-      const clubMatch = clubMatches.get(club);
-      if (!clubMatch) return;
-      
-      // Calculate total possible weighted score
-      let totalPossibleScore = 0;
-      club.attributes.forEach(attr => {
-        const attrWeight = attributeWeights[attr] || 1.0;
-        totalPossibleScore += attrWeight;
-      });
-      
-      clubMatch.totalPossibleScore = totalPossibleScore;
-      
-      // Calculate attribute match strength (how many of the user's preferred attributes match this club)
-      const uniqueUserAttributes = [...new Set(userAttributes)];
-      if (uniqueUserAttributes.length > 0) {
-        const matchingAttributes = clubMatch.matchedAttributes.length;
-        clubMatch.attributeMatchStrength = matchingAttributes / uniqueUserAttributes.length;
-      }
-    });
+      // Track user's preferred categories based on answers
+      const categoryScores: Record<string, number> = {
+        "Art": 0,
+        "Language & Culture": 0,
+        "STEM": 0,
+        "Performing Arts": 0,
+        "Business": 0,
+        "Community Service": 0,
+        "Academic & Humanities": 0,
+        "Competitive": 0,
+        "Creative": 0,
+        "Advocacy": 0,
+        "Medical": 0
+      };
 
-    // Find the top categories
-    const sortedCategories = Object.entries(categoryScores)
-      .sort((a, b) => b[1] - a[1])
-      .filter(([, score]) => score > 0)
-      .map(([category]) => category);
-    
-    const topCategories = sortedCategories.slice(0, 3);
+      // Collect all user's preferred attributes
+      const userAttributes: string[] = [];
+      const userNegativeAttributes: string[] = [];
+      
+      // Process each user response
+      answers.forEach(response => {
+        const question = questions.find(q => q.id === response.questionId);
+        if (!question) return;
 
-    // Calculate match percentages, confidence scores, and sort by weighted score
-    const results = Array.from(clubMatches.entries())
-      .map(([club, match]) => {
-        // Calculate match percentage with a more nuanced approach
-        const rawPercentage = Math.round((match.matchScore / Math.max(1, club.attributes.length)) * 100);
+        // Get the weight for this question
+        const questionWeight = questionWeights[question.id] || 1.0;
         
-        // Calculate weighted percentage based on the weighted score and total possible score
-        const weightedPercentage = Math.round((match.weightedScore / Math.max(1, match.totalPossibleScore)) * 100);
-        
-        // Calculate negative attribute penalty
-        const negativeAttributePenalty = match.negativeAttributes.length * 8; // Increased from 5 to 8
-        
-        // Calculate required attribute penalty
-        // If the club has required attributes but the user didn't match them all, apply a penalty
-        let requiredAttributePenalty = 0;
-        if (match.totalRequiredAttributes > 0) {
-          const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
-          if (requiredAttributeRatio < 1) {
-            // Apply a significant penalty if not all required attributes are matched
-            requiredAttributePenalty = Math.round((1 - requiredAttributeRatio) * 25);
+        let responseAttributes: string[] = [];
+        let negativeAttributes: string[] = [];
+        const categoryBoosts: string[] = [];
+
+        // Extract attributes based on question type
+        if (question.type === 'yes-no' || question.type === 'multiple-choice') {
+          if (question.options && response.selectedOptions && response.selectedOptions.length > 0) {
+            // Handle multiple selected options for multiple-choice questions
+            response.selectedOptions.forEach(selectedValue => {
+              const selectedOption = question.options?.find(opt => opt.value === selectedValue);
+              if (selectedOption) {
+                responseAttributes = [...responseAttributes, ...selectedOption.attributes];
+                
+                // Add category boosts based on specific answers
+                if (question.id === 4) { // Subject preferences
+                  if (selectedValue === 'math') categoryBoosts.push("STEM", "Academic & Humanities");
+                  if (selectedValue === 'science') categoryBoosts.push("STEM", "Medical");
+                  if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
+                  if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
+                  if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts", "Creative");
+                }
+                
+                if (question.id === 10) { // Performing arts preferences
+                  if (selectedValue === 'acting') categoryBoosts.push("Performing Arts");
+                  if (selectedValue === 'singing') categoryBoosts.push("Performing Arts");
+                  if (selectedValue === 'dancing') categoryBoosts.push("Performing Arts");
+                }
+                
+                if (question.id === 6 && selectedValue === 'yes') { // Business interest
+                  categoryBoosts.push("Business");
+                }
+                
+                if (question.id === 11 && selectedValue === 'yes') { // Global issues
+                  categoryBoosts.push("Language & Culture", "Advocacy");
+                }
+                
+                if (question.id === 12 && selectedValue === 'yes') { // Volunteering
+                  categoryBoosts.push("Community Service", "Advocacy");
+                }
+                
+                // New questions category boosts
+                if (question.id === 19) { // Structured vs creative
+                  if (selectedValue === 'creative') categoryBoosts.push("Creative", "Art");
+                  if (selectedValue === 'structured') categoryBoosts.push("Academic & Humanities", "Business");
+                }
+                
+                if (question.id === 20 && selectedValue === 'yes') { // Language learning
+                  categoryBoosts.push("Language & Culture");
+                }
+                
+                if (question.id === 21 && selectedValue === 'yes') { // Diversity and inclusion
+                  categoryBoosts.push("Advocacy", "Community Service");
+                }
+                
+                if (question.id === 22 && selectedValue === 'yes') { // Robotics/coding
+                  categoryBoosts.push("STEM");
+                }
+                
+                if (question.id === 23 && selectedValue === 'yes') { // Medical/health
+                  categoryBoosts.push("Medical", "STEM");
+                }
+              }
+            });
+            
+            // For "No" answers in yes-no questions, add negative attributes
+            if (question.type === 'yes-no' && response.selectedOptions.includes('no')) {
+              // Find the "yes" option to get attributes to avoid
+              const yesOption = question.options.find(opt => opt.value === 'yes');
+              if (yesOption) {
+                negativeAttributes = yesOption.attributes;
+                userNegativeAttributes.push(...yesOption.attributes);
+              }
+            }
+          }
+        } else if (question.type === 'slider') {
+          const sliderValue = response.sliderValue;
+          if (question.attributes && sliderValue !== undefined && question.attributes[sliderValue]) {
+            responseAttributes = question.attributes[sliderValue];
+            
+            // Add category boosts based on slider values
+            if (question.id === 3 && sliderValue >= 4) { // Competitiveness
+              categoryBoosts.push("Competitive");
+            }
+            
+            if (question.id === 7 && sliderValue >= 4) { // Technology interest
+              categoryBoosts.push("STEM");
+            }
+            
+            if (question.id === 18 && sliderValue >= 4) { // Creative expression
+              categoryBoosts.push("Creative", "Art", "Performing Arts");
+            } else if (question.id === 18 && sliderValue <= 2) {
+              // If user doesn't value creative expression, add negative attributes
+              negativeAttributes.push("creative", "artistic", "self-expression");
+              userNegativeAttributes.push("creative", "artistic", "self-expression");
+            }
+          } else if (question.attributes && sliderValue !== undefined) {
+            // Handle case where exact slider value doesn't have attributes
+            // Find the closest value that has attributes
+            const availableValues = Object.keys(question.attributes).map(Number).sort((a, b) => a - b);
+            if (availableValues.length > 0) {
+              let closestValue = availableValues[0];
+              let minDiff = Math.abs(sliderValue - closestValue);
+              
+              for (const val of availableValues) {
+                const diff = Math.abs(sliderValue - val);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestValue = val;
+                }
+              }
+              
+              responseAttributes = question.attributes[closestValue] || [];
+            }
           }
         }
+
+        // Add user's preferred attributes
+        userAttributes.push(...responseAttributes);
+
+        // Boost category scores based on answers
+        categoryBoosts.forEach(category => {
+          if (categoryScores[category] !== undefined) {
+            categoryScores[category] += questionWeight;
+          }
+        });
+
+        // Update club matches based on response attributes
+        clubs.forEach(club => {
+          const clubMatch = clubMatches.get(club);
+          if (!clubMatch) return;
+
+          // Get required attributes for this club
+          const requiredAttributes = clubRequiredAttributes[club.name] || [];
+
+          // Check for attribute matches
+          responseAttributes.forEach(attr => {
+            if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
+              clubMatch.matchedAttributes.push(attr);
+              
+              // Apply attribute weight if defined, otherwise use default weight of 1.0
+              const attrWeight = attributeWeights[attr] || 1.0;
+              clubMatch.matchScore += 1;
+              
+              // Apply diminishing returns for clubs with many attributes
+              // This makes it harder for clubs with many attributes to get high scores
+              const diminishingReturnFactor = Math.max(0.7, 1 - (clubMatch.matchedAttributes.length * 0.03));
+              clubMatch.weightedScore += questionWeight * attrWeight * diminishingReturnFactor;
+              
+              if (diminishingReturnFactor < 1) {
+                clubMatch.diminishingReturnsApplied = true;
+              }
+              
+              // Track user's preferred attributes that match this club
+              clubMatch.userPreferredAttributes.push(attr);
+              
+              // Check if this is a required attribute
+              if (requiredAttributes.includes(attr)) {
+                clubMatch.requiredAttributesMatched += 1;
+              }
+            }
+          });
+          
+          // Check for negative attribute matches (attributes to avoid)
+          negativeAttributes.forEach(attr => {
+            if (club.attributes.includes(attr) && !clubMatch.negativeAttributes.includes(attr)) {
+              clubMatch.negativeAttributes.push(attr);
+              // We'll use this for confidence calculation later
+            }
+          });
+        });
+      });
+
+      // Calculate total possible score for each club based on weighted attributes
+      clubs.forEach(club => {
+        const clubMatch = clubMatches.get(club);
+        if (!clubMatch) return;
         
-        // Calculate final match percentage with a balanced approach
-        let matchPercentage = Math.round((weightedPercentage * 0.6) + (rawPercentage * 0.4));
+        // Calculate total possible weighted score
+        let totalPossibleScore = 0;
+        club.attributes.forEach(attr => {
+          const attrWeight = attributeWeights[attr] || 1.0;
+          totalPossibleScore += attrWeight;
+        });
         
-        // Apply negative attribute penalty
-        matchPercentage = Math.max(5, matchPercentage - negativeAttributePenalty);
+        clubMatch.totalPossibleScore = totalPossibleScore;
         
-        // Apply required attribute penalty
-        matchPercentage = Math.max(5, matchPercentage - requiredAttributePenalty);
-        
-        // Boost percentage if club is in a top category (but less than before)
-        if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
-          matchPercentage += 8; // Reduced from 10 to 8
+        // Calculate attribute match strength (how many of the user's preferred attributes match this club)
+        const uniqueUserAttributes = [...new Set(userAttributes)];
+        if (uniqueUserAttributes.length > 0) {
+          const matchingAttributes = clubMatch.matchedAttributes.length;
+          clubMatch.attributeMatchStrength = matchingAttributes / uniqueUserAttributes.length;
         }
-        
-        // Apply a scaling factor to make high percentages harder to achieve
-        // This creates a more bell-curve distribution of scores
-        if (matchPercentage > 70) {
-          const scalingFactor = 0.8; // Reduce high scores more aggressively
-          matchPercentage = 70 + Math.round((matchPercentage - 70) * scalingFactor);
-        }
-        
-        // Apply diminishing returns penalty for clubs with many attributes
-        if (match.diminishingReturnsApplied) {
-          matchPercentage = Math.max(5, matchPercentage - 5);
-        }
-        
-        // Apply a penalty based on the number of questions answered
-        // If the user answered fewer questions, be more conservative with high scores
-        const questionCompletionRatio = answers.length / questions.length;
-        if (questionCompletionRatio < 0.7 && matchPercentage > 60) {
-          const incompletenessAdjustment = Math.round((1 - questionCompletionRatio) * 20);
-          matchPercentage = Math.max(60, matchPercentage - incompletenessAdjustment);
-        }
-        
-        // Make it extremely difficult to get 100%
-        if (matchPercentage > 90) {
-          // Check if all required attributes are matched
-          if (match.totalRequiredAttributes > 0 && match.requiredAttributesMatched < match.totalRequiredAttributes) {
-            matchPercentage = Math.min(matchPercentage, 90);
+      });
+
+      // Find the top categories
+      const sortedCategories = Object.entries(categoryScores)
+        .sort((a, b) => b[1] - a[1])
+        .filter(([, score]) => score > 0)
+        .map(([category]) => category);
+      
+      const topCategories = sortedCategories.slice(0, 3);
+
+      // Calculate match percentages, confidence scores, and sort by weighted score
+      const results = Array.from(clubMatches.entries())
+        .map(([club, match]) => {
+          // Calculate match percentage with a more nuanced approach
+          const rawPercentage = Math.round((match.matchScore / Math.max(1, club.attributes.length)) * 100);
+          
+          // Calculate weighted percentage based on the weighted score and total possible score
+          const weightedPercentage = Math.round((match.weightedScore / Math.max(1, match.totalPossibleScore)) * 100);
+          
+          // Calculate negative attribute penalty
+          const negativeAttributePenalty = match.negativeAttributes.length * 8; // Increased from 5 to 8
+          
+          // Calculate required attribute penalty
+          // If the club has required attributes but the user didn't match them all, apply a penalty
+          let requiredAttributePenalty = 0;
+          if (match.totalRequiredAttributes > 0) {
+            const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
+            if (requiredAttributeRatio < 1) {
+              // Apply a significant penalty if not all required attributes are matched
+              requiredAttributePenalty = Math.round((1 - requiredAttributeRatio) * 25);
+            }
           }
           
-          // Check if there are any negative attributes
-          if (match.negativeAttributes.length > 0) {
-            matchPercentage = Math.min(matchPercentage, 85);
+          // Calculate final match percentage with a balanced approach
+          let matchPercentage = Math.round((weightedPercentage * 0.6) + (rawPercentage * 0.4));
+          
+          // Apply negative attribute penalty
+          matchPercentage = Math.max(5, matchPercentage - negativeAttributePenalty);
+          
+          // Apply required attribute penalty
+          matchPercentage = Math.max(5, matchPercentage - requiredAttributePenalty);
+          
+          // Boost percentage if club is in a top category (but less than before)
+          if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
+            matchPercentage += 8; // Reduced from 10 to 8
           }
           
-          // Check if the user answered enough questions
-          if (questionCompletionRatio < 0.8) {
-            matchPercentage = Math.min(matchPercentage, 88);
+          // Apply a scaling factor to make high percentages harder to achieve
+          // This creates a more bell-curve distribution of scores
+          if (matchPercentage > 70) {
+            const scalingFactor = 0.8; // Reduce high scores more aggressively
+            matchPercentage = 70 + Math.round((matchPercentage - 70) * scalingFactor);
           }
-        }
-        
-        // Cap at 95% unless it's a perfect match
-        const isPerfectMatch = match.totalRequiredAttributes > 0 && 
-                              match.requiredAttributesMatched === match.totalRequiredAttributes && 
-                              match.negativeAttributes.length === 0 &&
-                              questionCompletionRatio > 0.8 &&
-                              match.matchedAttributes.length >= Math.ceil(club.attributes.length * 0.8);
-        
-        if (!isPerfectMatch) {
-          matchPercentage = Math.min(95, matchPercentage);
-        }
-        
-        // Cap at 100%
-        matchPercentage = Math.min(100, matchPercentage);
-        
-        // Calculate confidence score (0-100)
-        let confidence = 50; // Start at neutral
-        
-        // Boost confidence if the club is in a top category
-        if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
-          confidence += 15;
-        }
-        
-        // Boost confidence based on number of matched attributes and their weights
-        const matchedAttributesBoost = Math.min(25, match.matchedAttributes.length * 3);
-        confidence += matchedAttributesBoost;
-        
-        // Boost confidence based on attribute match strength
-        confidence += Math.round(match.attributeMatchStrength * 15);
-        
-        // Reduce confidence based on negative attributes
-        confidence -= Math.min(40, match.negativeAttributes.length * 10);
-        
-        // Adjust confidence based on the number of answers provided
-        const answerRatio = answers.length / questions.length;
-        if (answerRatio < 0.5) {
-          confidence -= 15; // Reduce confidence if user answered less than half the questions
-        } else if (answerRatio > 0.8) {
-          confidence += 10; // Boost confidence if user answered most questions
-        }
-        
-        // Adjust confidence based on required attributes
-        if (match.totalRequiredAttributes > 0) {
-          const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
-          if (requiredAttributeRatio < 0.5) {
-            confidence -= 20; // Significant confidence reduction if less than half of required attributes matched
-          } else if (requiredAttributeRatio === 1) {
-            confidence += 15; // Boost confidence if all required attributes matched
+          
+          // Apply diminishing returns penalty for clubs with many attributes
+          if (match.diminishingReturnsApplied) {
+            matchPercentage = Math.max(5, matchPercentage - 5);
           }
-        }
-        
-        // Ensure confidence is between 0-100
-        confidence = Math.max(0, Math.min(100, confidence));
-        
-        return {
-          club,
-          matchedAttributes: match.matchedAttributes,
-          negativeAttributes: match.negativeAttributes,
-          score: match.weightedScore,
-          matchPercentage,
-          confidenceScore: confidence,
-          categoryMatch: match.categoryMatch,
-          requiredAttributesMatched: match.requiredAttributesMatched,
-          totalRequiredAttributes: match.totalRequiredAttributes
-        };
-      })
-      .sort((a, b) => {
-        // Sort by match percentage first
-        if (b.matchPercentage !== a.matchPercentage) {
-          return b.matchPercentage - a.matchPercentage;
-        }
-        // If percentages are equal, sort by confidence score
-        return b.confidenceScore - a.confidenceScore;
-      });
+          
+          // Apply a penalty based on the number of questions answered
+          // If the user answered fewer questions, be more conservative with high scores
+          const questionCompletionRatio = answers.length / questions.length;
+          if (questionCompletionRatio < 0.7 && matchPercentage > 60) {
+            const incompletenessAdjustment = Math.round((1 - questionCompletionRatio) * 20);
+            matchPercentage = Math.max(60, matchPercentage - incompletenessAdjustment);
+          }
+          
+          // Make it extremely difficult to get 100%
+          if (matchPercentage > 90) {
+            // Check if all required attributes are matched
+            if (match.totalRequiredAttributes > 0 && match.requiredAttributesMatched < match.totalRequiredAttributes) {
+              matchPercentage = Math.min(matchPercentage, 90);
+            }
+            
+            // Check if there are any negative attributes
+            if (match.negativeAttributes.length > 0) {
+              matchPercentage = Math.min(matchPercentage, 85);
+            }
+            
+            // Check if the user answered enough questions
+            if (questionCompletionRatio < 0.8) {
+              matchPercentage = Math.min(matchPercentage, 88);
+            }
+          }
+          
+          // Cap at 95% unless it's a perfect match
+          const isPerfectMatch = match.totalRequiredAttributes > 0 && 
+                                match.requiredAttributesMatched === match.totalRequiredAttributes && 
+                                match.negativeAttributes.length === 0 &&
+                                questionCompletionRatio > 0.8 &&
+                                match.matchedAttributes.length >= Math.ceil(club.attributes.length * 0.8);
+          
+          if (!isPerfectMatch) {
+            matchPercentage = Math.min(95, matchPercentage);
+          }
+          
+          // Cap at 100%
+          matchPercentage = Math.min(100, matchPercentage);
+          
+          // Calculate confidence score (0-100)
+          let confidence = 50; // Start at neutral
+          
+          // Boost confidence if the club is in a top category
+          if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
+            confidence += 15;
+          }
+          
+          // Boost confidence based on number of matched attributes and their weights
+          const matchedAttributesBoost = Math.min(25, match.matchedAttributes.length * 3);
+          confidence += matchedAttributesBoost;
+          
+          // Boost confidence based on attribute match strength
+          confidence += Math.round(match.attributeMatchStrength * 15);
+          
+          // Reduce confidence based on negative attributes
+          confidence -= Math.min(40, match.negativeAttributes.length * 10);
+          
+          // Adjust confidence based on the number of answers provided
+          const answerRatio = answers.length / questions.length;
+          if (answerRatio < 0.5) {
+            confidence -= 15; // Reduce confidence if user answered less than half the questions
+          } else if (answerRatio > 0.8) {
+            confidence += 10; // Boost confidence if user answered most questions
+          }
+          
+          // Adjust confidence based on required attributes
+          if (match.totalRequiredAttributes > 0) {
+            const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
+            if (requiredAttributeRatio < 0.5) {
+              confidence -= 20; // Significant confidence reduction if less than half of required attributes matched
+            } else if (requiredAttributeRatio === 1) {
+              confidence += 15; // Boost confidence if all required attributes matched
+            }
+          }
+          
+          // Ensure confidence is between 0-100
+          confidence = Math.max(0, Math.min(100, confidence));
+          
+          return {
+            club,
+            matchedAttributes: match.matchedAttributes,
+            negativeAttributes: match.negativeAttributes,
+            score: match.weightedScore,
+            matchPercentage,
+            confidenceScore: confidence,
+            categoryMatch: match.categoryMatch,
+            requiredAttributesMatched: match.requiredAttributesMatched,
+            totalRequiredAttributes: match.totalRequiredAttributes
+          };
+        })
+        .sort((a, b) => {
+          // Sort by match percentage first
+          if (b.matchPercentage !== a.matchPercentage) {
+            return b.matchPercentage - a.matchPercentage;
+          }
+          // If percentages are equal, sort by confidence score
+          return b.confidenceScore - a.confidenceScore;
+        });
 
-    // Return top matches (clubs with at least 20% match)
-    const topMatches = results.filter(result => result.matchPercentage >= 20);
-    
-    // Group matches by category for better organization
-    const categorizedMatches = topMatches.length > 0 ? topMatches : results.slice(0, 5);
-    
-    return categorizedMatches;
+      // Return top matches (clubs with at least 20% match)
+      const topMatches = results.filter(result => result.matchPercentage >= 20);
+      
+      // Group matches by category for better organization
+      const categorizedMatches = topMatches.length > 0 ? topMatches : results.slice(0, 5);
+      
+      return categorizedMatches;
+    } catch (error) {
+      console.error("Error calculating matches:", error);
+      // Return a safe fallback
+      return clubs.slice(0, 5).map(club => ({
+        club,
+        matchedAttributes: [],
+        negativeAttributes: [],
+        score: 0,
+        matchPercentage: 20,
+        confidenceScore: 10,
+        categoryMatch: null
+      }));
+    }
   };
 
   // Calculate quiz results
   const calculateResults = () => {
-    if (answers.length === 0) return;
-    
-    // Match clubs based on attributes
-    const matches: ClubMatch[] = calculateMatches();
-    
-    setClubMatches(matches);
-    setShowResults(true);
+    try {
+      // Add a safety check to ensure we have answers
+      if (answers.length === 0) {
+        // If no answers, provide some default matches rather than breaking
+        setClubMatches(clubs.slice(0, 5).map(club => ({
+          club,
+          matchedAttributes: [],
+          negativeAttributes: [],
+          score: 0,
+          matchPercentage: 20,
+          confidenceScore: 10,
+          categoryMatch: null
+        })));
+        setShowResults(true);
+        return;
+      }
+      
+      // Match clubs based on attributes
+      const matches: ClubMatch[] = calculateMatches();
+      
+      // Ensure we have valid matches
+      if (!matches || matches.length === 0) {
+        // Fallback to providing some default matches
+        setClubMatches(clubs.slice(0, 5).map(club => ({
+          club,
+          matchedAttributes: [],
+          negativeAttributes: [],
+          score: 0,
+          matchPercentage: 20,
+          confidenceScore: 10,
+          categoryMatch: null
+        })));
+      } else {
+        setClubMatches(matches);
+      }
+      
+      setShowResults(true);
+    } catch (error) {
+      console.error("Error calculating results:", error);
+      // Provide fallback results in case of error
+      setClubMatches(clubs.slice(0, 5).map(club => ({
+        club,
+        matchedAttributes: [],
+        negativeAttributes: [],
+        score: 0,
+        matchPercentage: 20,
+        confidenceScore: 10,
+        categoryMatch: null
+      })));
+      setShowResults(true);
+    }
   };
 
   // Reset the quiz
@@ -1188,14 +1366,13 @@ const ClubQuiz: React.FC = () => {
 
   // Get slider value
   const getSliderValue = (questionId: number) => {
-    const answer = answers.find(a => a.questionId === questionId);
-    return answer?.sliderValue !== undefined ? answer.sliderValue : 3; // Default to middle value
-  };
-
-  // Start the quiz
-  const startQuiz = () => {
-    setIsStarted(true);
-    setCurrentQuestionIndex(0);
+    try {
+      const answer = answers.find(a => a.questionId === questionId);
+      return answer?.sliderValue !== undefined ? answer.sliderValue : 3; // Default to middle value
+    } catch (error) {
+      console.error("Error getting slider value:", error);
+      return 3; // Safe default
+    }
   };
 
   // Modify the main container to ensure scrolling works

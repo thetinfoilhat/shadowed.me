@@ -38,15 +38,15 @@ export default function StudentDashboard() {
   }>({ isOpen: false, visitId: '', isCaptain: false });
 
   const fetchCompletedVisits = useCallback(async () => {
-    if (!user?.uid) return;
+      if (!user?.uid) return;
 
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-      
-      setCompletedVisits(userData?.completedVisits || []);
-    } catch (error) {
-      console.error('Error fetching completed visits:', error);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        
+        setCompletedVisits(userData?.completedVisits || []);
+      } catch (error) {
+        console.error('Error fetching completed visits:', error);
     }
   }, [user]);
 
@@ -210,8 +210,8 @@ export default function StudentDashboard() {
                 >
                   <div className="flex items-center gap-6">
                     <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                      <div className="text-sm font-medium">{format(new Date(visit.date), 'MMM')}</div>
-                      <div className="text-xl font-bold">{format(new Date(visit.date), 'd')}</div>
+                      <div className="text-sm font-medium">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'MMM')}</div>
+                      <div className="text-xl font-bold">{format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), 'd')}</div>
                     </div>
                     
                     <div className="flex-grow">
@@ -289,7 +289,7 @@ export default function StudentDashboard() {
                     </span>
                   </div>
                   <div className="text-sm text-gray-500">
-                    Completed on {format(new Date(visit.completedAt), "MMMM do yyyy")}
+                    Completed on {format(new Date(new Date(visit.completedAt).setDate(new Date(visit.completedAt).getDate() + 1)), "MMMM do yyyy")}
                   </div>
                 </div>
                 
@@ -298,7 +298,7 @@ export default function StudentDashboard() {
                     <span className="font-medium">School:</span> {visit.school}
                   </div>
                   <div>
-                    <span className="font-medium">Date:</span> {format(new Date(visit.date), "MMMM do yyyy")}
+                    <span className="font-medium">Date:</span> {format(new Date(new Date(visit.date).setDate(new Date(visit.date).getDate() + 1)), "MMMM do yyyy")}
                   </div>
                   <div>
                     <span className="font-medium">Time:</span> {visit.time}
