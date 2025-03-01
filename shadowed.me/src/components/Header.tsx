@@ -1,3 +1,5 @@
+
+
 'use client';
 import Link from "next/link";
 import Image from "next/image";
@@ -402,25 +404,6 @@ export default function Header() {
                     )}
                   </li>
                 )}
-                {userRole === 'student' && (
-                  <li>
-                    <Link 
-                      href="/student-dashboard"
-                      className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                    >
-                      Student Dashboard
-                    </Link>
-                  </li>
-                )}
-                <li>
-                  <Link 
-                    href="/what-fits-you"
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    What Fits You!
-                  </Link>
-                </li>
-              )}
               {userRole === 'student' && (
                 <li>
                   <Link 
@@ -646,3 +629,4 @@ export default function Header() {
     </>
   );
 } 
+
