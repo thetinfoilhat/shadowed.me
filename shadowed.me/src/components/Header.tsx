@@ -1,5 +1,3 @@
-
-
 'use client';
 import Link from "next/link";
 import Image from "next/image";
@@ -457,15 +455,15 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu - improved styling */}
+        {/* Mobile Navigation Menu */}
         <div 
           className={`fixed inset-0 bg-white z-40 transition-transform duration-300 ease-in-out transform ${
             isOpen ? 'translate-x-0' : 'translate-x-full'
           } md:hidden`}
           style={{ 
             top: '64px',
-            height: 'calc(100% - 64px)', // Only take up space below the header
-            overflowY: 'auto' // Allow scrolling within menu
+            height: 'calc(100% - 64px)',
+            overflowY: 'auto'
           }}
         >
           <nav className="h-full overflow-y-auto">
@@ -473,7 +471,7 @@ export default function Header() {
               <li>
                 <Link 
                   href="/school-clubs"
-                  className="block py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   School Clubs
@@ -483,10 +481,44 @@ export default function Header() {
                 <li>
                   <Link 
                     href="/my-visits"
-                    className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
                     My Visits
+                  </Link>
+                </li>
+              )}
+              {/* Add Dashboard options based on role */}
+              {userRole === 'admin' && (
+                <>
+                  <li>
+                    <Link 
+                      href="/admin-dashboard"
+                      className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/captain-dashboard"
+                      className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Captain Dashboard
+                    </Link>
+                  </li>
+                </>
+              )}
+              {userRole === 'captain' && (
+                <li>
+                  <Link 
+                    href="/captain-dashboard"
+                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Captain Dashboard
                   </Link>
                 </li>
               )}
@@ -494,7 +526,7 @@ export default function Header() {
                 <li>
                   <Link 
                     href="/student-dashboard"
-                    className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
                     Student Dashboard
@@ -504,7 +536,7 @@ export default function Header() {
               <li>
                 <Link 
                   href="/what-fits-you"
-                  className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   What Fits You!
@@ -513,7 +545,7 @@ export default function Header() {
               <li>
                 <Link 
                   href="/about"
-                  className="block py-2 text-black hover:text-[#38BFA1] font-medium"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   About
@@ -526,23 +558,36 @@ export default function Header() {
                       handleGoogleLogin();
                       setIsOpen(false);
                     }}
-                    className="block w-full text-left py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
+                    className="block w-full text-left py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   >
                     Login
                   </button>
                 </li>
               ) : (
-                <li>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="block w-full text-left py-2 text-lg text-black hover:text-[#38BFA1] font-medium"
-                  >
-                    Logout
-                  </button>
-                </li>
+                <>
+                  <li>
+                    <button
+                      onClick={() => {
+                        setShowProfileModal(true);
+                        setIsOpen(false);
+                      }}
+                      className="block w-full text-left py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                    >
+                      Edit Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsOpen(false);
+                      }}
+                      className="block w-full text-left py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
               )}
             </ul>
           </nav>
