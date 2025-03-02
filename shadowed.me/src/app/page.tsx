@@ -29,27 +29,27 @@ const AnimatedHeadline = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
-      <div className="flex flex-col md:flex-row justify-center items-center">
-        <h2 className="flex flex-wrap justify-center items-center">
-          <span className="text-[#0A2540] mr-0 md:mr-2 mb-2 md:mb-0">We help students</span>
-          <span className="relative inline-block text-[#2A8E9E] overflow-hidden w-full md:w-auto" style={{ minHeight: '40px', height: 'auto' }}>
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={currentIndex}
-                className="absolute left-0 right-0 text-center md:text-left whitespace-normal md:whitespace-nowrap"
-                initial={{ opacity: 0, filter: "blur(8px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, filter: "blur(8px)" }}
-                transition={{ 
-                  opacity: { duration: 0.7, ease: "easeInOut" },
-                  filter: { duration: 0.7, ease: "easeInOut" }
-                }}
-              >
+      <div className="flex flex-col md:flex-row justify-center items-center gap-2">
+        <h2 className="text-[#0A2540]">We help students</h2>
+        <div className="relative h-[40px] md:h-[60px] w-full md:w-[300px]"> {/* Fixed height container */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              className="absolute inset-0 flex items-center justify-center md:justify-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ 
+                duration: 0.5,
+                ease: "easeInOut"
+              }}
+            >
+              <span className="text-[#2A8E9E] whitespace-nowrap">
                 {phrases[currentIndex]}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        </h2>
+              </span>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
       
       {/* Animated underline */}
