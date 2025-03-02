@@ -8,6 +8,7 @@ import { Tab } from '@headlessui/react';
 import { CheckCircleIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import VisitModal from '@/components/VisitModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Applicant {
   name: string;
@@ -176,8 +177,8 @@ export default function SponsorDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[#725A44]">Loading...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

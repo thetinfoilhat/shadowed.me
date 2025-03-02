@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import SponsorSelect from './SponsorSelect';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Add CSS to prevent layout shifts
 const modalStyles = `
@@ -367,6 +368,12 @@ export default function VisitModal({
                   </button>
                 </div>
               </form>
+
+              {isSubmitting && (
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                  <LoadingSpinner size="md" />
+                </div>
+              )}
             </Dialog.Panel>
           </Transition.Child>
         </div>

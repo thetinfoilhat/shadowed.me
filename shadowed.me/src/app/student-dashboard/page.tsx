@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { Club } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface CompletedVisit {
   id: string;
@@ -117,8 +118,8 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[#725A44]">Loading...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

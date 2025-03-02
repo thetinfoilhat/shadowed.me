@@ -42,7 +42,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="min-h-screen bg-white flex items-center justify-center">
               <LoadingSpinner size="lg" />
             </div>
           }>

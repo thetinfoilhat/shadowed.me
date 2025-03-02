@@ -255,6 +255,9 @@ export default function Header() {
       }, { merge: true });
       
       setUserProfile(data);
+      setShowProfileModal(false);
+      // Force a profile data refresh
+      window.location.reload();
     } catch (error) {
       console.error('Error saving profile:', error);
       throw error;

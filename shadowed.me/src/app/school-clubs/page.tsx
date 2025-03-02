@@ -7,6 +7,8 @@ import { Dialog } from '@headlessui/react';
 import { format} from 'date-fns';
 import { Club } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { toast } from 'react-hot-toast';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const CATEGORIES = ['All', 'STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
 
@@ -39,6 +41,12 @@ function isUserRegistered(club: Club, userEmail?: string | null) {
   if (!userEmail || !club.applicants) return false;
   return club.applicants.some(applicant => applicant.email === userEmail);
 }
+
+const getAvailableSlots = (club: Club) => {
+  const registeredCount = club.applicants?.length || 0;
+  const totalSlots = club.slots || 0;
+  return Math.max(0, totalSlots - registeredCount);
+};
 
 export default function SchoolClubs() {
   const { user, setShowProfileModal } = useAuth();
@@ -150,8 +158,8 @@ export default function SchoolClubs() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[#725A44]">Loading...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -168,6 +176,13 @@ export default function SchoolClubs() {
   const handleRegister = async (club: Club) => {
     if (!user) {
       document.querySelector<HTMLButtonElement>('button[data-login-button]')?.click();
+      return;
+    }
+
+    // Check if slots are available
+    const availableSlots = getAvailableSlots(club);
+    if (availableSlots === 0) {
+      toast.error('Sorry, this opportunity is full');
       return;
     }
 
@@ -188,9 +203,10 @@ export default function SchoolClubs() {
         })
       });
       await fetchClubs();
+      toast.success('Successfully registered!');
     } catch (error) {
       console.error('Error registering:', error);
-      throw error;
+      toast.error('Failed to register. Please try again.');
     }
   };
 
@@ -278,6 +294,8 @@ export default function SchoolClubs() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClubs.map((club) => {
             const isRegistered = isUserRegistered(club, user?.email);
+            const availableSlots = getAvailableSlots(club);
+            const isFull = availableSlots === 0;
             
             return (
               <div key={club.id} className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative">
@@ -319,7 +337,14 @@ export default function SchoolClubs() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[#38BFA1] font-medium">Available Slots:</span>
-                    <span>{club.slots}</span>
+                    <span className={`${availableSlots === 0 ? 'text-red-500 font-medium' : ''}`}>
+                      {availableSlots} of {club.slots}
+                    </span>
+                    {isFull && (
+                      <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
+                        Full
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -327,12 +352,19 @@ export default function SchoolClubs() {
                   className={`w-full px-6 py-3 rounded-md transition-all ${
                     isRegistered 
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
+                      : isFull
+                        ? 'bg-red-50 text-red-400 cursor-not-allowed'
+                        : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
                   }`}
-                  onClick={() => !isRegistered && setRegisteringVisit(club)}
-                  disabled={isRegistered}
+                  onClick={() => !isRegistered && !isFull && setRegisteringVisit(club)}
+                  disabled={isRegistered || isFull}
                 >
-                  {isRegistered ? 'Already Registered' : 'Register to Visit'}
+                  {isRegistered 
+                    ? 'Already Registered' 
+                    : isFull 
+                      ? 'No Slots Available' 
+                      : 'Register to Visit'
+                  }
                 </button>
 
                 {userRole === 'admin' && (
