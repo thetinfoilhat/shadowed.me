@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
+  userRole: string | null;
   loading: boolean;
   logout: () => Promise<void>;
   showProfileModal: boolean;
@@ -13,6 +14,7 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
+  userRole: null,
   loading: true,
   logout: async () => {},
   showProfileModal: false,
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
+    userRole: null,
     loading,
     logout,
     showProfileModal,

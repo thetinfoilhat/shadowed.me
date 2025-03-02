@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, setDoc, query, where, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, UserRole, ROLE_HIERARCHY } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Dialog, Tab } from '@headlessui/react';
@@ -41,6 +41,14 @@ interface VisitData {
   createdAt: Date;
 }
 
+interface ClubListing {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  captain: string;
+}
+
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   // Add a day to fix timezone offset issue
@@ -68,6 +76,7 @@ export default function AdminDashboard() {
   const [pendingUpdate, setPendingUpdate] = useState<{email: string, role: UserRole} | null>(null);
   const [visits, setVisits] = useState<VisitData[]>([]);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
+  const [allClubs, setAllClubs] = useState<ClubListing[]>([]);
 
   const fetchSponsorNames = useCallback(async (visits: VisitData[]) => {
     const emails = visits
@@ -142,6 +151,23 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const fetchAllClubs = async () => {
+    try {
+      const clubsRef = collection(db, 'clubs');
+      const querySnapshot = await getDocs(clubsRef);
+      
+      const clubsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ClubListing[];
+      
+      setAllClubs(clubsData);
+    } catch (error) {
+      console.error('Error fetching clubs:', error);
+      toast.error('Failed to load clubs');
+    }
+  };
+
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user?.email) {
@@ -169,6 +195,10 @@ export default function AdminDashboard() {
 
     checkAdminStatus();
   }, [user, router, fetchAllVisits, fetchUsers]);
+
+  useEffect(() => {
+    fetchAllClubs();
+  }, []);
 
   const handleUpdateRole = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,6 +307,17 @@ export default function AdminDashboard() {
         return 'bg-gray-100 text-gray-600';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleClubDelete = async (clubId: string) => {
+    try {
+      await deleteDoc(doc(db, 'clubs', clubId));
+      await fetchAllClubs();
+      toast.success('Club deleted successfully');
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      toast.error('Failed to delete club');
     }
   };
 
@@ -677,6 +718,46 @@ export default function AdminDashboard() {
               </Tab.Panel>
             </Tab.Panels>
           </Tab.Group>
+        </div>
+
+        {/* Club Management */}
+        <div className="mt-12 bg-white rounded-xl p-8 shadow-sm">
+          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
+            All Club Listings ({allClubs.length})
+          </h2>
+          
+          <div className="space-y-4">
+            {allClubs.map((club) => (
+              <div 
+                key={club.id}
+                className="flex items-center justify-between p-6 rounded-lg border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-lg font-medium text-[#0A2540]">{club.name}</h3>
+                  <p className="text-gray-600 mt-1">{club.description}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="inline-block px-3 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+                      {club.category}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Captain: {club.captain}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleClubDelete(club.id)}
+                    className="p-2 text-gray-600 hover:text-red-500 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

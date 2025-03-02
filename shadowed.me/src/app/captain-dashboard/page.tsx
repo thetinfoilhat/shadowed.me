@@ -6,10 +6,12 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit } from '@/types/club';
+import { Club, CompletedVisit, ClubListing } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ClubModal from '@/components/ClubModal';
+import { toast } from 'react-hot-toast';
 
 interface Applicant {
   name: string;
@@ -124,9 +126,15 @@ export default function CaptainDashboard() {
     visit: Club | null;
     completing: boolean;
   }>({ isOpen: false, visit: null, completing: false });
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
+  const [isCreateClubModalOpen, setIsCreateClubModalOpen] = useState(false);
+  const [captainClubs, setCaptainClubs] = useState<ClubListing[]>([]);
+  const [editingClub, setEditingClub] = useState<ClubListing | null>(null);
+  const [confirmClubDelete, setConfirmClubDelete] = useState<{
+    isOpen: boolean;
+    clubId: string;
+  }>({ isOpen: false, clubId: '' });
 
   // Fetch user role
   useEffect(() => {
@@ -136,9 +144,7 @@ export default function CaptainDashboard() {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          const role = userDoc.data().role;
-          setUserRole(role);
-          setIsAdmin(role === 'admin');
+          setIsAdmin(userDoc.data().role === 'admin');
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
@@ -346,6 +352,43 @@ export default function CaptainDashboard() {
     }
   };
 
+  // Add fetch function for clubs
+  const fetchCaptainClubs = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      const clubsRef = collection(db, 'clubs');
+      const q = query(clubsRef, where('captain', '==', user.email));
+      const querySnapshot = await getDocs(q);
+      
+      const clubsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ClubListing[];
+      
+      setCaptainClubs(clubsData);
+    } catch (error) {
+      console.error('Error fetching clubs:', error);
+      toast.error('Failed to load clubs');
+    }
+  }, [user]);
+
+  // Add delete handler
+  const handleClubDelete = async (clubId: string) => {
+    try {
+      await deleteDoc(doc(db, 'clubs', clubId));
+      await fetchCaptainClubs();
+      toast.success('Club deleted successfully');
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      toast.error('Failed to delete club');
+    }
+  };
+
+  useEffect(() => {
+    fetchCaptainClubs();
+  }, [fetchCaptainClubs]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -389,20 +432,24 @@ export default function CaptainDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-[1400px] mx-auto px-8 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-semibold text-[#0A2540]">
-            {isAdmin ? 'Admin Captain Dashboard' : 'Captain Dashboard'}
-            {userRole === 'admin' && <span className="ml-2 text-sm bg-red-100 text-red-600 px-2 py-1 rounded-full">Admin View</span>}
-          </h1>
-          
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[#38BFA1] text-white px-6 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
-          >
-            Create New Visit
-          </button>
+    <div className="min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-[#0A2540]">Captain Dashboard</h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setIsCreateClubModalOpen(true)}
+              className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
+            >
+              Create New Club
+            </button>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
+            >
+              Create Visit
+            </button>
+          </div>
         </div>
 
         {captainVisits.length === 0 ? (
@@ -625,6 +672,70 @@ export default function CaptainDashboard() {
             : "Are you sure you want to unmark this visit as completed? This will remove it from students' completed visits."
           }
           confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
+        />
+
+        <ClubModal
+          isOpen={isCreateClubModalOpen}
+          onCloseAction={() => setIsCreateClubModalOpen(false)}
+          onSubmitAction={fetchCaptainClubs}
+        />
+
+        <div className="mt-12 bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
+            Your Clubs ({captainClubs.length})
+          </h2>
+          
+          <div className="space-y-4">
+            {captainClubs.map((club) => (
+              <div 
+                key={club.id}
+                className="flex items-center justify-between p-6 rounded-lg border border-gray-100 hover:border-[#38BFA1]/30 hover:shadow-lg transition-all"
+              >
+                <div>
+                  <h3 className="text-lg font-medium text-[#0A2540]">{club.name}</h3>
+                  <p className="text-gray-600 mt-1">{club.description}</p>
+                  <span className="inline-block mt-2 px-3 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+                    {club.category}
+                  </span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingClub(club)}
+                    className="p-2 text-gray-600 hover:text-[#38BFA1] transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setConfirmClubDelete({ isOpen: true, clubId: club.id })}
+                    className="p-2 text-gray-600 hover:text-red-500 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ClubModal
+          isOpen={!!editingClub}
+          onCloseAction={() => setEditingClub(null)}
+          onSubmitAction={fetchCaptainClubs}
+          initialData={editingClub}
+        />
+
+        <ConfirmDialog
+          isOpen={confirmClubDelete.isOpen}
+          onClose={() => setConfirmClubDelete({ isOpen: false, clubId: '' })}
+          onConfirm={() => handleClubDelete(confirmClubDelete.clubId)}
+          title="Delete Club"
+          message="Are you sure you want to delete this club? This action cannot be undone."
+          confirmText="Delete"
         />
       </div>
     </div>

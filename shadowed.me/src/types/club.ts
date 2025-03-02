@@ -35,4 +35,18 @@ export interface CompletedVisit {
   time: string;
   description: string;
   completedAt: string;
+}
+
+export interface ClubListing {
+  id: string;
+  name: string;
+  description: string;
+  mission: string;
+  meetingTimes: string;
+  contactInfo: string;
+  category: string;
+  captain: string;
+  sponsorEmail: string;
+  achievements: string[];
+  createdAt: Date;
 } 

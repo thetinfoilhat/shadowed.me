@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { signInWithPopup, AuthError } from 'firebase/auth';
+import { signInWithPopup, AuthError, updateProfile } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -203,22 +203,18 @@ export default function Header() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user?.uid) return;
-      
-      try {
+      if (user?.uid) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setUserProfile({
             name: data.displayName || user.displayName || '',
             email: user.email || '',
-            age: data.age,
-            school: data.school,
-            grade: data.grade,
+            age: data.age || 0,
+            school: data.school || '',
+            grade: data.grade || 0,
           });
         }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
       }
     };
 
@@ -251,12 +247,18 @@ export default function Header() {
     try {
       await setDoc(doc(db, 'users', user.uid), {
         ...data,
+        displayName: data.name,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       
+      if (user && data.name !== user.displayName) {
+        await updateProfile(user, {
+          displayName: data.name
+        });
+      }
+      
       setUserProfile(data);
       setShowProfileModal(false);
-      // Force a profile data refresh
       window.location.reload();
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -309,68 +311,65 @@ export default function Header() {
             <ul className="flex gap-8">
               <li>
                 <Link 
+                  href="/club-listings"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  Club List
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/school-clubs"
                   className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                 >
-                  School Clubs
+                  Club Visits
                 </Link>
               </li>
-              {userRole !== 'student' && (
-                <li>
+              
+              {/* Combined Dashboard Menu */}
+              <li className="relative group">
+                {userRole === 'student' ? (
                   <Link 
                     href="/my-visits"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
-                    My Visits
+                    My Dashboard
                   </Link>
-                </li>
-              )}
-
-                {(userRole === 'captain' || userRole === 'admin') && (
-                  <li className="relative group">
-                    {userRole === 'admin' ? (
-                      <>
-                        <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
-                          <span>Dashboard</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                        <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                          <Link 
-                            href="/captain-dashboard"
-                            className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                          >
-                            Captain Dashboard
-                          </Link>
-                          <Link 
-                            href="/admin-dashboard"
-                            className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                          >
-                            Admin Dashboard
-                          </Link>
-                        </div>
-                      </>
-                    ) : (
+                ) : (userRole === 'admin' || userRole === 'captain') ? (
+                  <>
+                    <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
+                      <span>Dashboard</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       <Link 
-                        href="/captain-dashboard"
-                        className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                        href="/my-visits"
+                        className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
                       >
-                        Captain Dashboard
+                        Student View
                       </Link>
-                    )}
-                  </li>
-                )}
-              {userRole === 'student' && (
-                <li>
-                  <Link 
-                    href="/student-dashboard"
-                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                  >
-                    Student Dashboard
-                  </Link>
-                </li>
-              )}
+                      {userRole === 'captain' || userRole === 'admin' ? (
+                        <Link 
+                          href="/captain-dashboard"
+                          className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                        >
+                          Captain Dashboard
+                        </Link>
+                      ) : null}
+                      {userRole === 'admin' && (
+                        <Link 
+                          href="/admin-dashboard"
+                          className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                        >
+                          Admin Dashboard
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </li>
               <li>
                 <Link 
                   href="/what-fits-you"
@@ -473,34 +472,41 @@ export default function Header() {
             <ul className="px-6 py-4 space-y-4">
               <li>
                 <Link 
+                  href="/club-listings"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Club List
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/school-clubs"
                   className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   onClick={() => setIsOpen(false)}
                 >
-                  School Clubs
+                  Club Visits
                 </Link>
               </li>
-              {userRole !== 'student' && (
+              {userRole === 'student' ? (
                 <li>
                   <Link 
                     href="/my-visits"
                     className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    My Visits
+                    My Dashboard
                   </Link>
                 </li>
-              )}
-              {/* Add Dashboard options based on role */}
-              {userRole === 'admin' && (
+              ) : (userRole === 'captain' || userRole === 'admin') ? (
                 <>
                   <li>
                     <Link 
-                      href="/admin-dashboard"
+                      href="/my-visits"
                       className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                       onClick={() => setIsOpen(false)}
                     >
-                      Admin Dashboard
+                      Student Dashboard
                     </Link>
                   </li>
                   <li>
@@ -512,30 +518,19 @@ export default function Header() {
                       Captain Dashboard
                     </Link>
                   </li>
+                  {userRole === 'admin' && (
+                    <li>
+                      <Link 
+                        href="/admin-dashboard"
+                        className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    </li>
+                  )}
                 </>
-              )}
-              {userRole === 'captain' && (
-                <li>
-                  <Link 
-                    href="/captain-dashboard"
-                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Captain Dashboard
-                  </Link>
-                </li>
-              )}
-              {userRole === 'student' && (
-                <li>
-                  <Link 
-                    href="/student-dashboard"
-                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Student Dashboard
-                  </Link>
-                </li>
-              )}
+              ) : null}
               <li>
                 <Link 
                   href="/what-fits-you"
