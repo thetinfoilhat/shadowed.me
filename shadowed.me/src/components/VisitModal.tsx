@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, memo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
@@ -66,6 +66,9 @@ interface FormData {
   slots: number;
   description: string;
 }
+
+// Create a memoized version of SponsorSelect
+const MemoizedSponsorSelect = memo(SponsorSelect);
 
 export default function VisitModal({ 
   isOpen, 
@@ -241,7 +244,7 @@ export default function VisitModal({
                   </div>
 
                   <div className="sponsor-select-wrapper form-group">
-                    <SponsorSelect
+                    <MemoizedSponsorSelect
                       value={formData.sponsorEmail}
                       onChange={(value) => handleInputChange('sponsorEmail', value)}
                       required

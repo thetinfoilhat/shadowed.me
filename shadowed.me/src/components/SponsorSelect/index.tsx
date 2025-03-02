@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -14,7 +14,7 @@ interface Sponsor {
   displayName?: string;
 }
 
-export default function SponsorSelect({ value, onChange, required = false }: SponsorSelectProps) {
+const SponsorSelect = ({ value, onChange, required }: SponsorSelectProps) => {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -136,4 +136,11 @@ export default function SponsorSelect({ value, onChange, required = false }: Spo
       </select>
     </div>
   );
-} 
+};
+
+// Add comparison function to prevent unnecessary re-renders
+const areEqual = (prevProps: SponsorSelectProps, nextProps: SponsorSelectProps) => {
+  return prevProps.value === nextProps.value;
+};
+
+export default memo(SponsorSelect, areEqual); 
