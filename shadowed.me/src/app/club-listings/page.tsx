@@ -9,6 +9,7 @@ import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 // Enhanced categories and attributes for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Miscellaneous'] as const;
@@ -414,11 +415,13 @@ export default function ClubListings() {
                 onClick={() => setSelectedClub(club)}
                 className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
               >
-                <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0">
-                  <img 
+                <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative">
+                  <Image 
                     src={club.image || 'https://via.placeholder.com/300x200?text=No+Image'} 
                     alt={club.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 100vw, 192px"
+                    className="object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = 'https://via.placeholder.com/300x200?text=No+Image';
