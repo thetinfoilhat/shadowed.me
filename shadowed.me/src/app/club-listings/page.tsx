@@ -5,7 +5,6 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
 import ClubCard from '@/components/ClubCard';
-import ClubModal from '@/components/ClubModal';
 import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -152,10 +151,9 @@ const PLACEHOLDER_CLUBS: ClubListing[] = [
 ];
 
 export default function ClubListings() {
-  const { userRole } = useAuth();
+  const {} = useAuth(); // Not using any auth properties
   const [clubs, setClubs] = useState<ClubListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
   
   // Enhanced filtering state
@@ -269,14 +267,6 @@ export default function ClubListings() {
           </div>
           
           <div className="flex gap-2">
-            {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
-              >
-                Create New Club
-              </button>
-            )}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
@@ -470,12 +460,6 @@ export default function ClubListings() {
           </div>
         )}
       </div>
-
-      <ClubModal
-        isOpen={isCreateModalOpen}
-        onCloseAction={() => setIsCreateModalOpen(false)}
-        onSubmitAction={fetchClubs}
-      />
 
       {selectedClub && (
         <ClubDetailsDialog
