@@ -90,15 +90,6 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
               }>
                 Past Events
               </Tab>
-              <Tab className={({ selected }) =>
-                `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
-                ${selected
-                  ? 'bg-white text-[#38BFA1] shadow'
-                  : 'text-[#38BFA1]/60 hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                }`
-              }>
-                Achievements
-              </Tab>
             </Tab.List>
 
             <Tab.Panels>
@@ -169,21 +160,6 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                   </div>
                 ) : (
                   <p className="text-center text-gray-500 py-12">No past events</p>
-                )}
-              </Tab.Panel>
-
-              {/* Achievements Panel */}
-              <Tab.Panel>
-                {club.achievements && club.achievements.length > 0 ? (
-                  <div className="space-y-4">
-                    {club.achievements.map((achievement, index) => (
-                      <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-[#0A2540]">{achievement}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-12">No achievements listed yet</p>
                 )}
               </Tab.Panel>
             </Tab.Panels>
