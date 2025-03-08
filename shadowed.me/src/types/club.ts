@@ -47,6 +47,8 @@ export interface ClubListing {
   category: string;
   captain: string;
   sponsorEmail: string;
-  achievements: string[];
   createdAt: Date;
+  status?: 'pending' | 'approved' | 'rejected';
+  attributes?: string[];
+  image?: string;
 } 
