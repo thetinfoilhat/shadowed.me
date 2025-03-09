@@ -25,7 +25,6 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     meetingTimes: initialData?.meetingTimes || '',
     contactInfo: initialData?.contactInfo || '',
     category: initialData?.category || '',
-    achievements: initialData?.achievements || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 

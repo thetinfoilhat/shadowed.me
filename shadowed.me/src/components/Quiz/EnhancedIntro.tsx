@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -60,6 +61,24 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           </p>
         </motion.div>
         
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.47 }}
+          className="bg-gradient-to-r from-[#F0F7FF] to-blue-50 p-4 rounded-lg mb-8 max-w-lg mx-auto border border-blue-100"
+        >
+          <div className="flex items-start">
+            <div className="bg-[#3B82F6]/10 p-2 rounded-full mr-3 flex-shrink-0 mt-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#3B82F6]" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              <span className="font-semibold text-[#3B82F6]">Interactive features:</span> For slider questions, you can either drag the slider or directly type in your preferred value for a more precise selection.
+            </p>
+          </div>
+        </motion.div>
+        
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -105,23 +124,6 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
             <p className="text-sm leading-relaxed">
               <span className="font-semibold text-[#3B82F6]">Pro tip:</span>{" "}
               <span className="text-gray-700">The more questions you answer, the more accurate your matches will be. You can skip up to 20 questions if you&apos;re not sure.</span>
-            </p>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.65 }}
-          className="bg-gradient-to-r from-amber-50 to-[#FFF8E6] p-4 px-5 rounded-xl mb-10 max-w-md mx-auto shadow-sm border border-amber-100 flex items-center"
-        >
-          <div className="bg-amber-100 p-2 rounded-full mr-3 flex-shrink-0">
-            <span className="text-amber-500 text-lg">⚠️</span>
-          </div>
-          <div>
-            <p className="text-sm leading-relaxed">
-              <span className="font-semibold text-amber-600">Troubleshooting:</span>{" "}
-              <span className="text-gray-700">If you encounter any issues during the quiz, try refreshing the page and starting again. For best results, answer at least 10 questions.</span>
             </p>
           </div>
         </motion.div>

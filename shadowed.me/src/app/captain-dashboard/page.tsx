@@ -10,7 +10,6 @@ import { Club, CompletedVisit, ClubListing } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import ClubModal from '@/components/ClubModal';
 import { toast } from 'react-hot-toast';
 
 interface Applicant {
@@ -128,9 +127,7 @@ export default function CaptainDashboard() {
   }>({ isOpen: false, visit: null, completing: false });
   const [isAdmin, setIsAdmin] = useState(false);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-  const [isCreateClubModalOpen, setIsCreateClubModalOpen] = useState(false);
   const [captainClubs, setCaptainClubs] = useState<ClubListing[]>([]);
-  const [editingClub, setEditingClub] = useState<ClubListing | null>(null);
   const [confirmClubDelete, setConfirmClubDelete] = useState<{
     isOpen: boolean;
     clubId: string;
@@ -438,12 +435,6 @@ export default function CaptainDashboard() {
           <h1 className="text-3xl font-bold text-[#0A2540]">Captain Dashboard</h1>
           <div className="flex gap-4">
             <button
-              onClick={() => setIsCreateClubModalOpen(true)}
-              className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
-            >
-              Create New Club
-            </button>
-            <button
               onClick={() => setIsCreateModalOpen(true)}
               className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
             >
@@ -674,12 +665,6 @@ export default function CaptainDashboard() {
           confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
         />
 
-        <ClubModal
-          isOpen={isCreateClubModalOpen}
-          onCloseAction={() => setIsCreateClubModalOpen(false)}
-          onSubmitAction={fetchCaptainClubs}
-        />
-
         <div className="mt-12 bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
           <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
             Your Clubs ({captainClubs.length})
@@ -701,14 +686,6 @@ export default function CaptainDashboard() {
                 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setEditingClub(club)}
-                    className="p-2 text-gray-600 hover:text-[#38BFA1] transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  <button
                     onClick={() => setConfirmClubDelete({ isOpen: true, clubId: club.id })}
                     className="p-2 text-gray-600 hover:text-red-500 transition-colors"
                   >
@@ -721,13 +698,6 @@ export default function CaptainDashboard() {
             ))}
           </div>
         </div>
-
-        <ClubModal
-          isOpen={!!editingClub}
-          onCloseAction={() => setEditingClub(null)}
-          onSubmitAction={fetchCaptainClubs}
-          initialData={editingClub}
-        />
 
         <ConfirmDialog
           isOpen={confirmClubDelete.isOpen}
