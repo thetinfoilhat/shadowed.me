@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
@@ -9,7 +9,6 @@ import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon, TrophyIcon } from '@heroicons/react/24/outline';
-import { generateClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
@@ -17,8 +16,94 @@ const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & C
 // Common sense attributes for filtering
 const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 'Performance'] as const;
 
-// Use the generated club listings instead of placeholder data
-const PLACEHOLDER_CLUBS = generateClubListings();
+// Get category color function
+const getCategoryColor = (category: string): string => {
+  const colorMap: Record<string, string> = {
+    'STEM': '#4285F4',
+    'Business': '#34A853',
+    'Arts': '#FBBC05',
+    'Performing Arts': '#EA4335',
+    'Language & Culture': '#8E44AD',
+    'Community Service': '#3498DB',
+    'Humanities': '#E67E22',
+    'Medical': '#1ABC9C',
+    'Sports': '#2ECC71',
+    'Technology': '#9B59B6',
+    'Academic': '#F1C40F',
+    'Miscellaneous': '#95A5A6'
+  };
+  
+  return colorMap[category] || '#38BFA1'; // Default to theme color
+};
+
+// Generate a gradient based on category color
+const getCategoryGradient = (category: string): string => {
+  const baseColor = getCategoryColor(category);
+  return `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`;
+};
+
+// Sample clubs to add if none are found
+const SAMPLE_CLUBS = [
+  {
+    name: 'Physics Club',
+    description: 'Explore the fundamental laws of the universe through experiments and discussions.',
+    category: 'STEM',
+    mission: 'To foster a love for physics and scientific inquiry among students.',
+    meetingTimes: 'Tuesdays, 3:30 PM - 5:00 PM',
+    contactInfo: 'physics@school.edu',
+    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Research', 'Analytical'],
+    status: 'approved',
+    createdAt: new Date(),
+    bgColor: getCategoryColor('STEM'),
+    bgGradient: getCategoryGradient('STEM')
+  },
+  {
+    name: 'Debate Team',
+    description: 'Develop critical thinking and public speaking skills through competitive debate.',
+    category: 'Humanities',
+    mission: 'To empower students with effective communication and argumentation skills.',
+    meetingTimes: 'Mondays and Wednesdays, 4:00 PM - 6:00 PM',
+    contactInfo: 'debate@school.edu',
+    attributes: ['Competitive', 'Weekly', 'Tryout/Audition', 'Public Speaking', 'Critical Thinking'],
+    status: 'approved',
+    createdAt: new Date(),
+    bgColor: getCategoryColor('Humanities'),
+    bgGradient: getCategoryGradient('Humanities')
+  },
+  {
+    name: 'Art Collective',
+    description: 'Express yourself through various art forms and collaborate on creative projects.',
+    category: 'Arts',
+    mission: 'To provide a space for artistic expression and creative collaboration.',
+    meetingTimes: 'Fridays, 3:00 PM - 5:30 PM',
+    contactInfo: 'art@school.edu',
+    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Creative', 'Expressive'],
+    status: 'approved',
+    createdAt: new Date(),
+    bgColor: getCategoryColor('Arts'),
+    bgGradient: getCategoryGradient('Arts')
+  }
+];
+
+// Function to add sample clubs to Firebase
+const addSampleClubs = async () => {
+  try {
+    console.log('Adding sample clubs to Firebase...');
+    const clubsRef = collection(db, 'clubs');
+    
+    for (const club of SAMPLE_CLUBS) {
+      await addDoc(clubsRef, club);
+      console.log(`Added sample club: ${club.name}`);
+    }
+    
+    toast.success('Sample clubs added successfully');
+    return true;
+  } catch (error) {
+    console.error('Error adding sample clubs:', error);
+    toast.error('Failed to add sample clubs');
+    return false;
+  }
+};
 
 export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
@@ -37,19 +122,45 @@ export default function ClubListings() {
     try {
       setLoading(true);
       
-      // In development, use the generated club data
-      if (process.env.NODE_ENV === 'development') {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setClubs(PLACEHOLDER_CLUBS);
-        setLoading(false);
-        return;
-      }
-      
-      // In production, fetch from Firebase
-      // Fetch from the opportunities collection (same as school-clubs page)
-      const clubsRef = collection(db, 'opportunities');
+      // Fetch clubs from Firebase 'clubs' collection
+      const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
+      
+      console.log(`Found ${querySnapshot.docs.length} clubs in Firebase`);
+      
+      // If no clubs are found, add sample clubs
+      if (querySnapshot.docs.length === 0) {
+        console.log('No clubs found, adding sample clubs...');
+        const success = await addSampleClubs();
+        if (success) {
+          // Fetch clubs again after adding samples
+          const newQuerySnapshot = await getDocs(clubsRef);
+          const clubsData = newQuerySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || '',
+              description: data.description || '',
+              category: data.category || '',
+              captain: data.captain || '',
+              sponsorEmail: data.sponsorEmail || '',
+              mission: data.mission || '',
+              meetingTimes: data.meetingTimes || '',
+              contactInfo: data.contactInfo || '',
+              status: data.status || 'approved',
+              attributes: data.attributes || [],
+              image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              bgColor: data.bgColor,
+              bgGradient: data.bgGradient
+            } as ClubListing;
+          });
+          
+          setClubs(clubsData);
+          setLoading(false);
+          return;
+        }
+      }
       
       const clubsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -61,21 +172,22 @@ export default function ClubListings() {
           captain: data.captain || '',
           sponsorEmail: data.sponsorEmail || '',
           mission: data.mission || '',
-          meetingTimes: `${data.startTime || ''} - ${data.endTime || ''}`,
-          contactInfo: data.contactEmail || '',
-          status: data.status || 'pending',
-          attributes: data.categories || [],
+          meetingTimes: data.meetingTimes || '',
+          contactInfo: data.contactInfo || '',
+          status: data.status || 'approved', // Default to approved
+          attributes: data.attributes || [],
           image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
           createdAt: data.createdAt?.toDate() || new Date(),
-        };
-      }).filter(club => club.status === 'approved'); // Only show approved clubs
+          bgColor: data.bgColor,
+          bgGradient: data.bgGradient
+        } as ClubListing;
+      });
       
       setClubs(clubsData);
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast.error('Failed to load clubs');
-      // Fallback to placeholder data in case of error
-      setClubs(PLACEHOLDER_CLUBS);
+      setClubs([]);
     } finally {
       setLoading(false);
     }
@@ -98,9 +210,7 @@ export default function ClubListings() {
   const filteredClubs = useMemo(() => {
     return clubs
       .filter(club => club.status === 'approved')
-      .filter(club => 
-        selectedCategory === 'All' || club.category === selectedCategory
-      )
+      .filter(club => selectedCategory === 'All' || club.category === selectedCategory)
       .filter(club => {
         if (selectedAttributes.length === 0) return true;
         
@@ -121,26 +231,6 @@ export default function ClubListings() {
     setSelectedCategory('All');
     setSelectedAttributes([]);
     setSearchQuery('');
-  };
-
-  // Get category color function
-  const getCategoryColor = (category: string): string => {
-    const colorMap: Record<string, string> = {
-      'STEM': '#4285F4',
-      'Business': '#34A853',
-      'Arts': '#FBBC05',
-      'Performing Arts': '#EA4335',
-      'Language & Culture': '#8E44AD',
-      'Community Service': '#3498DB',
-      'Humanities': '#E67E22',
-      'Medical': '#1ABC9C',
-      'Sports': '#2ECC71',
-      'Technology': '#9B59B6',
-      'Academic': '#F1C40F',
-      'Miscellaneous': '#95A5A6'
-    };
-    
-    return colorMap[category] || '#38BFA1'; // Default to theme color
   };
 
   if (loading) {
@@ -231,18 +321,28 @@ export default function ClubListings() {
                   </button>
                   {CATEGORIES.filter(c => c !== 'All').map((category) => {
                     const categoryColor = getCategoryColor(category);
+                    const isSelected = selectedCategory === category;
+                    
                     return (
                       <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
-                        className={`px-3 py-1.5 rounded-full text-sm transition-colors`}
-                        style={
-                          selectedCategory === category
-                            ? { backgroundColor: categoryColor, color: 'white', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }
-                            : { backgroundColor: `${categoryColor}20`, color: categoryColor }
-                        }
+                        className="transition-colors"
                       >
-                        {category}
+                        <span 
+                          className="block"
+                          style={{
+                            backgroundColor: isSelected ? categoryColor : `${categoryColor}20`,
+                            color: isSelected ? 'white' : categoryColor,
+                            boxShadow: isSelected ? '0 1px 2px rgba(0, 0, 0, 0.1)' : 'none',
+                            padding: '0.375rem 0.75rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.875rem',
+                            lineHeight: '1.25rem'
+                          }}
+                        >
+                          {category}
+                        </span>
                       </button>
                     );
                   })}

@@ -8,6 +8,9 @@ import { Dialog, Tab } from '@headlessui/react';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ClubAssignmentModal from '@/components/ClubAssignmentModal';
+import ClubModal from '@/components/ClubModal';
+import Link from 'next/link';
 
 interface User {
   email: string;
@@ -45,8 +48,18 @@ interface ClubListing {
   id: string;
   name: string;
   description: string;
+  mission: string;
+  meetingTimes: string;
+  contactInfo: string;
   category: string;
   captain: string;
+  sponsorEmail: string;
+  createdAt: Date;
+  status?: 'pending' | 'approved' | 'rejected';
+  attributes?: string[];
+  image?: string;
+  bgColor?: string;
+  bgGradient?: string;
 }
 
 function formatDate(dateString: string) {
@@ -77,6 +90,10 @@ export default function AdminDashboard() {
   const [visits, setVisits] = useState<VisitData[]>([]);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
   const [allClubs, setAllClubs] = useState<ClubListing[]>([]);
+  const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showClubModal, setShowClubModal] = useState(false);
+  const [loadingClubs, setLoadingClubs] = useState(true);
 
   const fetchSponsorNames = useCallback(async (visits: VisitData[]) => {
     const emails = visits
@@ -151,8 +168,9 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const fetchAllClubs = async () => {
+  const fetchAllClubs = useCallback(async () => {
     try {
+      setLoadingClubs(true);
       const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
       
@@ -165,8 +183,10 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast.error('Failed to load clubs');
+    } finally {
+      setLoadingClubs(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -183,7 +203,7 @@ export default function AdminDashboard() {
         if (!isUserAdmin) {
           router.push('/');
         } else {
-          await Promise.all([fetchUsers(), fetchAllVisits()]);
+          await Promise.all([fetchUsers(), fetchAllVisits(), fetchAllClubs()]);
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -194,11 +214,7 @@ export default function AdminDashboard() {
     };
 
     checkAdminStatus();
-  }, [user, router, fetchAllVisits, fetchUsers]);
-
-  useEffect(() => {
-    fetchAllClubs();
-  }, []);
+  }, [user, router, fetchAllVisits, fetchUsers, fetchAllClubs]);
 
   const handleUpdateRole = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,14 +327,27 @@ export default function AdminDashboard() {
   };
 
   const handleClubDelete = async (clubId: string) => {
+    if (!confirm('Are you sure you want to delete this club? This action cannot be undone.')) {
+      return;
+    }
+    
     try {
       await deleteDoc(doc(db, 'clubs', clubId));
-      await fetchAllClubs();
       toast.success('Club deleted successfully');
+      fetchAllClubs();
     } catch (error) {
       console.error('Error deleting club:', error);
       toast.error('Failed to delete club');
     }
+  };
+
+  const handleAssignClub = (club: ClubListing) => {
+    setSelectedClub(club);
+    setShowAssignmentModal(true);
+  };
+
+  const handleAssignmentComplete = () => {
+    fetchAllClubs();
   };
 
   if (loading) {
@@ -722,42 +751,79 @@ export default function AdminDashboard() {
 
         {/* Club Management */}
         <div className="mt-12 bg-white rounded-xl p-8 shadow-sm">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
-            All Club Listings ({allClubs.length})
-          </h2>
-          
-          <div className="space-y-4">
-            {allClubs.map((club) => (
-              <div 
-                key={club.id}
-                className="flex items-center justify-between p-6 rounded-lg border border-gray-100"
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Clubs</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedClub(null);
+                  setShowClubModal(true);
+                }}
+                className="px-4 py-2 bg-[#38BFA1] text-white rounded-md hover:bg-[#2A8E9E]"
               >
-                <div>
-                  <h3 className="text-lg font-medium text-[#0A2540]">{club.name}</h3>
-                  <p className="text-gray-600 mt-1">{club.description}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="inline-block px-3 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
-                      {club.category}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Captain: {club.captain}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleClubDelete(club.id)}
-                    className="p-2 text-gray-600 hover:text-red-500 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
+                Add Club
+              </button>
+            </div>
           </div>
+          
+          {loadingClubs ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg overflow-hidden">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Captain</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sponsor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {allClubs.map((club) => (
+                    <tr key={club.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{club.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{club.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {club.captain || 'Not assigned'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {club.sponsorEmail || 'Not assigned'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleAssignClub(club)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Assign
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedClub(club);
+                              setShowClubModal(true);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleClubDelete(club.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
@@ -824,6 +890,24 @@ export default function AdminDashboard() {
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      {showAssignmentModal && selectedClub && (
+        <ClubAssignmentModal
+          isOpen={showAssignmentModal}
+          onClose={() => setShowAssignmentModal(false)}
+          club={selectedClub}
+          onAssignmentComplete={handleAssignmentComplete}
+        />
+      )}
+
+      {showClubModal && (
+        <ClubModal
+          isOpen={showClubModal}
+          onCloseAction={() => setShowClubModal(false)}
+          onSubmitAction={fetchAllClubs}
+          initialData={selectedClub}
+        />
+      )}
     </div>
   );
 } 

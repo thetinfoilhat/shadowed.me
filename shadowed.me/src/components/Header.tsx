@@ -367,6 +367,29 @@ export default function Header() {
                       )}
                     </div>
                   </>
+                ) : userRole === 'sponsor' ? (
+                  <>
+                    <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
+                      <span>Dashboard</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <Link 
+                        href="/my-visits"
+                        className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Student View
+                      </Link>
+                      <Link 
+                        href="/sponsor-dashboard"
+                        className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Sponsor Dashboard
+                      </Link>
+                    </div>
+                  </>
                 ) : null}
               </li>
               <li>
@@ -537,6 +560,27 @@ export default function Header() {
                       </Link>
                     </li>
                   )}
+                </>
+              ) : userRole === 'sponsor' ? (
+                <>
+                  <li>
+                    <Link 
+                      href="/my-visits"
+                      className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Student Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/sponsor-dashboard"
+                      className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Sponsor Dashboard
+                    </Link>
+                  </li>
                 </>
               ) : null}
               <li>
