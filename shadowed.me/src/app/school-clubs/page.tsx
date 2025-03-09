@@ -26,17 +26,6 @@ function formatDate(dateStr: string) {
   return format(date, "MMMM do yyyy");
 }
 
-function formatTime(timeStr: string) {
-  const [start, end] = timeStr.split(' - ').map(time => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  });
-  return `${start} - ${end}`;
-}
-
 function isUserRegistered(club: Club, userEmail?: string | null) {
   if (!userEmail || !club.applicants) return false;
   return club.applicants.some(applicant => applicant.email === userEmail);
@@ -460,8 +449,6 @@ export default function SchoolClubs() {
         title="Delete Visit"
         message="Are you sure you want to delete this visit? This action cannot be undone."
         confirmText="Delete"
-        cancelText="Cancel"
-        confirmButtonClass="bg-red-500 hover:bg-red-600"
       />
     </div>
   );

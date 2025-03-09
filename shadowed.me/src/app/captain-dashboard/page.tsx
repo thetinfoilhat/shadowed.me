@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit, ClubListing } from '@/types/club';
+import { Club, CompletedVisit } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -34,7 +34,7 @@ interface VisitData {
   id?: string;
   name: string;
   school?: string;
-  sponsorEmail: string;
+  sponsorEmail?: string;
   category: string;
   contactEmail: string;
   date: string;
@@ -49,40 +49,13 @@ interface VisitData {
 }
 
 function formatDate(dateStr: string) {
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    date.setDate(date.getDate() + 1);
-    return format(date, "MMMM do yyyy");
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid Date';
-  }
-}
-
-function formatDateForCircle(dateStr: string | undefined) {
-  if (!dateStr) return { month: '---', day: '--' };
-  
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return { month: '---', day: '--' };
-    }
-    date.setDate(date.getDate() + 1);
-    return {
-      month: format(date, 'MMM'),
-      day: format(date, 'd')
-    };
-  } catch (error) {
-    console.error('Error formatting date for circle:', error);
-    return { month: '---', day: '--' };
-  }
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return format(date, "MMMM do yyyy");
 }
 
 function formatTime(timeStr: string | undefined) {
-  if (!timeStr) return 'Time not set';
+  if (!timeStr) return '';
   
   try {
     const [start, end] = timeStr.split(' - ').map(time => {
@@ -128,11 +101,6 @@ export default function CaptainDashboard() {
   }>({ isOpen: false, visit: null, completing: false });
   const [isAdmin, setIsAdmin] = useState(false);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-  const [captainClubs, setCaptainClubs] = useState<ClubListing[]>([]);
-  const [confirmClubDelete, setConfirmClubDelete] = useState<{
-    isOpen: boolean;
-    clubId: string;
-  }>({ isOpen: false, clubId: '' });
   const [upcomingExpanded, setUpcomingExpanded] = useState(true);
   const [completedExpanded, setCompletedExpanded] = useState(false);
 
@@ -260,10 +228,6 @@ export default function CaptainDashboard() {
     }
   };
 
-  const handleDeleteClick = (visitId: string) => {
-    setConfirmDelete({ isOpen: true, visitId });
-  };
-
   const handleDelete = async (visitId: string) => {
     try {
       await deleteDoc(doc(db, 'opportunities', visitId));
@@ -340,43 +304,6 @@ export default function CaptainDashboard() {
       toast.error('Failed to update visit status');
     }
   };
-
-  // Add fetch function for clubs
-  const fetchCaptainClubs = useCallback(async () => {
-    if (!user?.email) return;
-    
-    try {
-      const clubsRef = collection(db, 'clubs');
-      const q = query(clubsRef, where('captain', '==', user.email));
-      const querySnapshot = await getDocs(q);
-      
-      const clubsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ClubListing[];
-      
-      setCaptainClubs(clubsData);
-    } catch (error) {
-      console.error('Error fetching clubs:', error);
-      toast.error('Failed to load clubs');
-    }
-  }, [user]);
-
-  // Add delete handler
-  const handleClubDelete = async (clubId: string) => {
-    try {
-      await deleteDoc(doc(db, 'clubs', clubId));
-      await fetchCaptainClubs();
-      toast.success('Club deleted successfully');
-    } catch (error) {
-      console.error('Error deleting club:', error);
-      toast.error('Failed to delete club');
-    }
-  };
-
-  useEffect(() => {
-    fetchCaptainClubs();
-  }, [fetchCaptainClubs]);
 
   if (loading) {
     return (
@@ -716,7 +643,23 @@ export default function CaptainDashboard() {
             setEditingVisit(null);
           }}
           onSubmitAction={saveVisit}
-          initialData={editingVisit}
+          initialData={editingVisit ? {
+            id: editingVisit.id,
+            name: editingVisit.name,
+            school: editingVisit.school,
+            sponsorEmail: editingVisit.sponsorEmail || '',
+            category: editingVisit.category,
+            contactEmail: editingVisit.contactEmail || '',
+            date: editingVisit.date,
+            startTime: editingVisit.startTime || '',
+            endTime: editingVisit.endTime || '',
+            slots: editingVisit.slots,
+            description: editingVisit.description,
+            status: editingVisit.status,
+            captain: editingVisit.captain,
+            applicants: editingVisit.applicants,
+            createdAt: editingVisit.createdAt
+          } : null}
         />
 
         {/* Applicants Dialog */}
@@ -734,17 +677,15 @@ export default function CaptainDashboard() {
           title="Delete Visit"
           message="Are you sure you want to delete this visit? This action cannot be undone."
           confirmText="Delete"
-          cancelText="Cancel"
-          confirmButtonClass="bg-red-500 hover:bg-red-600"
         />
 
         {/* Completion Confirmation Dialog */}
         <ConfirmDialog
           isOpen={confirmCompletion.isOpen}
           onClose={() => setConfirmCompletion({ isOpen: false, visit: null, completing: false })}
-          onConfirm={() => {
+          onConfirm={async () => {
             if (confirmCompletion.visit) {
-              handleMarkCompleted(confirmCompletion.visit, confirmCompletion.completing);
+              await handleMarkCompleted(confirmCompletion.visit, confirmCompletion.completing);
               setConfirmCompletion({ isOpen: false, visit: null, completing: false });
             }
           }}
@@ -754,7 +695,6 @@ export default function CaptainDashboard() {
             : "Are you sure you want to unmark this visit as completed? This will remove it from students' completed visits."
           }
           confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
-          cancelText="Cancel"
         />
       </div>
     </div>

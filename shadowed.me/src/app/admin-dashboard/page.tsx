@@ -10,7 +10,6 @@ import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ClubAssignmentModal from '@/components/ClubAssignmentModal';
 import ClubModal from '@/components/ClubModal';
-import Link from 'next/link';
 
 interface User {
   email: string;
