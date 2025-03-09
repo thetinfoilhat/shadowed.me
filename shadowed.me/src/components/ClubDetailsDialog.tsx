@@ -2,7 +2,7 @@
 import { Dialog, Tab } from '@headlessui/react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubListing } from '@/types/club';
 import { Club } from '@/types/club';
@@ -18,24 +18,39 @@ interface ClubDetailsProps {
 export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubDetailsProps) {
   const [visits, setVisits] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   useEffect(() => {
     const fetchVisits = async () => {
       try {
         setLoading(true);
         const visitsRef = collection(db, 'opportunities');
-        const q = query(
-          visitsRef,
-          where('captain', '==', club.captain)
-        );
-        const querySnapshot = await getDocs(q);
         
-        const visitsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Club[];
+        // Fetch all opportunities
+        const querySnapshot = await getDocs(visitsRef);
+        
+        // Filter by club name and approved status
+        const visitsData = querySnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(visit => {
+            const visitData = visit as Partial<Club>;
+            return visitData.name === club.name && 
+                  visitData.status === 'approved';
+          }) as Club[];
 
         setVisits(visitsData);
+        
+        // Check if there are upcoming visits and automatically select that tab
+        const hasUpcomingVisits = visitsData.some(
+          visit => new Date(visit.date) >= new Date() && !visit.completed
+        );
+        
+        if (hasUpcomingVisits) {
+          setSelectedTab(1); // Set to Upcoming Visits tab
+        }
       } catch (error) {
         console.error('Error fetching visits:', error);
       } finally {
@@ -46,7 +61,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
     if (isOpen) {
       fetchVisits();
     }
-  }, [isOpen, club.captain]);
+  }, [isOpen, club.name]);
 
   const upcomingVisits = visits.filter(
     visit => new Date(visit.date) >= new Date() && !visit.completed
@@ -88,7 +103,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
           </div>
           
           <div className="overflow-y-auto p-6">
-            <Tab.Group>
+            <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
               <Tab.List className="flex space-x-1 rounded-xl bg-[#38BFA1]/10 p-1 mb-6">
                 <Tab className={({ selected }) =>
                   `w-full py-2.5 text-sm font-medium leading-5 rounded-lg

@@ -320,7 +320,14 @@ export default function Header() {
               
               {/* Combined Dashboard Menu */}
               <li className="relative group">
-                {userRole === 'student' ? (
+                {!user ? (
+                  <Link 
+                    href="/my-visits"
+                    className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                  >
+                    My Visits
+                  </Link>
+                ) : userRole === 'student' ? (
                   <Link 
                     href="/my-visits"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
@@ -479,7 +486,17 @@ export default function Header() {
                   Club Visits
                 </Link>
               </li>
-              {userRole === 'student' ? (
+              {!user ? (
+                <li>
+                  <Link 
+                    href="/my-visits"
+                    className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Visits
+                  </Link>
+                </li>
+              ) : userRole === 'student' ? (
                 <li>
                   <Link 
                     href="/my-visits"
