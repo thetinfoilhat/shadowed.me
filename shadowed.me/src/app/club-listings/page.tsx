@@ -10,9 +10,10 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
+import { generateClubListings } from '@/data/clubData';
 
 // Enhanced categories and attributes for filtering
-const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Miscellaneous'] as const;
+const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
 
 const ATTRIBUTES = [
   'Competitive', 
@@ -24,132 +25,18 @@ const ATTRIBUTES = [
   'Research',
   'Entrepreneurship',
   'Networking',
-  'Experiments'
+  'Weekly',
+  'Monthly',
+  'Bi-weekly',
+  'Open Membership',
+  'Application Required',
+  'Tryout/Audition',
+  'Year-round',
+  'Seasonal'
 ] as const;
 
-// Sample placeholder clubs data
-const PLACEHOLDER_CLUBS: ClubListing[] = [
-  {
-    id: '1',
-    name: "Science Olympiad",
-    category: "STEM",
-    attributes: ["Competitive", "Teamwork", "Experiments"],
-    description: "A competition-focused club for students passionate about science.",
-    image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To promote science education through competition",
-    meetingTimes: "Mondays and Wednesdays, 3:30-5:00 PM",
-    contactInfo: "scienceolympiad@school.edu",
-    captain: "Jane Smith",
-    sponsorEmail: "science.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '2',
-    name: "DECA",
-    category: "Business",
-    attributes: ["Entrepreneurship", "Public Speaking", "Networking"],
-    description: "A club for students interested in business, marketing, and finance.",
-    image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To prepare future business leaders",
-    meetingTimes: "Tuesdays, 4:00-5:30 PM",
-    contactInfo: "deca@school.edu",
-    captain: "John Doe",
-    sponsorEmail: "business.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '3',
-    name: "Art Club",
-    category: "Arts",
-    attributes: ["Creative", "Hands-on"],
-    description: "Express yourself through various art forms and techniques.",
-    image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To foster creativity and artistic expression",
-    meetingTimes: "Thursdays, 3:30-5:00 PM",
-    contactInfo: "artclub@school.edu",
-    captain: "Emma Johnson",
-    sponsorEmail: "art.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '4',
-    name: "Debate Team",
-    category: "Humanities",
-    attributes: ["Public Speaking", "Research", "Competitive"],
-    description: "Develop critical thinking and public speaking skills through structured debates.",
-    image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To develop critical thinking and public speaking skills",
-    meetingTimes: "Fridays, 3:30-5:30 PM",
-    contactInfo: "debate@school.edu",
-    captain: "Michael Brown",
-    sponsorEmail: "english.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '5',
-    name: "Robotics Club",
-    category: "STEM",
-    attributes: ["Teamwork", "Hands-on", "Research"],
-    description: "Design, build, and program robots for competitions and exhibitions.",
-    image: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To explore robotics and engineering principles",
-    meetingTimes: "Mondays and Fridays, 4:00-6:00 PM",
-    contactInfo: "robotics@school.edu",
-    captain: "David Wilson",
-    sponsorEmail: "engineering.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '6',
-    name: "Drama Club",
-    category: "Performing Arts",
-    attributes: ["Creative", "Public Speaking", "Teamwork"],
-    description: "Explore acting, directing, and stagecraft through performances.",
-    image: "https://images.unsplash.com/photo-1503095396549-807759245b35?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To develop theatrical skills and produce quality performances",
-    meetingTimes: "Tuesdays and Thursdays, 3:30-5:30 PM",
-    contactInfo: "drama@school.edu",
-    captain: "Sophia Martinez",
-    sponsorEmail: "theater.teacher@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '7',
-    name: "Volunteer Corps",
-    category: "Community Service",
-    attributes: ["Leadership", "Teamwork"],
-    description: "Make a difference in your community through organized volunteer activities.",
-    image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To serve the community and develop leadership skills",
-    meetingTimes: "Every other Wednesday, 3:30-4:30 PM",
-    contactInfo: "volunteers@school.edu",
-    captain: "Olivia Garcia",
-    sponsorEmail: "service.coordinator@school.edu",
-    createdAt: new Date()
-  },
-  {
-    id: '8',
-    name: "Spanish Club",
-    category: "Language & Culture",
-    attributes: ["Creative", "Public Speaking"],
-    description: "Immerse yourself in Spanish language and Hispanic cultures.",
-    image: "https://images.unsplash.com/photo-1551966775-a4ddc8df052b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-    status: "approved",
-    mission: "To explore and celebrate Hispanic cultures and language",
-    meetingTimes: "Wednesdays, 3:30-4:30 PM",
-    contactInfo: "spanishclub@school.edu",
-    captain: "Isabella Lopez",
-    sponsorEmail: "spanish.teacher@school.edu",
-    createdAt: new Date()
-  }
-];
+// Use the generated club listings instead of placeholder data
+const PLACEHOLDER_CLUBS = generateClubListings();
 
 export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
@@ -168,9 +55,8 @@ export default function ClubListings() {
     try {
       setLoading(true);
       
-      // In a real implementation, fetch from Firebase
-      // For now, use placeholder data
-      if (process.env.NODE_ENV === 'development' && false) { // Set to false to use real data
+      // In development, use the generated club data
+      if (process.env.NODE_ENV === 'development') {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 800));
         setClubs(PLACEHOLDER_CLUBS);
@@ -178,6 +64,7 @@ export default function ClubListings() {
         return;
       }
       
+      // In production, fetch from Firebase
       // Fetch from the opportunities collection (same as school-clubs page)
       const clubsRef = collection(db, 'opportunities');
       const querySnapshot = await getDocs(clubsRef);
@@ -197,7 +84,7 @@ export default function ClubListings() {
           status: data.status || 'pending',
           attributes: data.categories || [],
           image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
-          createdAt: data.createdAt?.toDate() || new Date()
+          createdAt: data.createdAt?.toDate() || new Date(),
         };
       }).filter(club => club.status === 'approved'); // Only show approved clubs
       
