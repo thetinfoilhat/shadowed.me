@@ -1,22 +1,25 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import EnhancedIntro from './EnhancedIntro';
 
-// Types
+// Define Club type
 type Club = {
   name: string;
   attributes: string[];
   description?: string;
 };
 
+// Define question types
 type QuestionType = 'yes-no' | 'multiple-choice' | 'slider';
 
+// Define option type
 type Option = {
   label: string;
   value: string;
   attributes: string[];
 };
 
+// Define question type
 type Question = {
   id: number;
   text: string;
@@ -29,12 +32,14 @@ type Question = {
   attributes?: Record<number, string[]>; // For slider questions, map slider values to attributes
 };
 
+// Define answer type
 type Answer = {
   questionId: number;
   selectedOptions?: string[];
   sliderValue?: number;
 };
 
+// Define club match type
 type ClubMatch = {
   club: Club;
   score: number;
@@ -45,177 +50,997 @@ type ClubMatch = {
   categoryMatch?: string | null;
 };
 
-// Sample club data (you can replace this later)
+// Define clubs with detailed attributes
 const clubs: Club[] = [
-  // 🎨 Art Clubs
   {
     name: "Art Club",
-    attributes: ["creativity", "painting", "drawing", "self-expression", "collaboration", "design", "visual storytelling", "artistic"],
-    description: "A club for students interested in exploring different forms of visual art and creative expression."
+    attributes: [
+      "creative", "artistic", "visual arts", "drawing", "painting", "sculpture", 
+      "self-expression", "design", "art exhibitions", "collaborative", "inclusive",
+      "creative thinking", "color theory", "composition", "art history", "mixed media"
+    ],
+    description: "Art Club provides a creative space for students to explore various artistic mediums, develop their skills, and express themselves through visual arts."
   },
   {
-    name: "Ceramics Society",
-    attributes: ["pottery", "hands-on", "sculpting", "creativity", "design", "craftsmanship", "tactile", "DIY"],
-    description: "A club dedicated to ceramics and sculpting for those who love working with clay."
+    name: "ASL (American Sign Language) Club",
+    attributes: [
+      "language learning", "sign language", "deaf culture", "communication", "inclusive", 
+      "accessibility", "cultural awareness", "visual learning", "expressive", "community service",
+      "language skills", "diversity", "social awareness", "interpretation"
+    ],
+    description: "ASL Club offers students the opportunity to learn and practice American Sign Language, understand Deaf culture, and promote accessibility and inclusion."
   },
-  {
-    name: "Photography Club",
-    attributes: ["photography", "editing", "visual storytelling", "composition", "technology", "media", "graphic design", "creativity"],
-    description: "A club focused on learning photography techniques, photo editing, and composition."
-  },
-
-  // 🌎 Language & Culture Clubs
-  {
-    name: "ASL (American Sign Language & Culture) Club",
-    attributes: ["language", "cultural awareness", "sign language", "communication", "accessibility", "global awareness", "inclusivity"],
-    description: "A club for students interested in learning ASL and engaging with Deaf culture."
-  },
-  {
-    name: "French Club",
-    attributes: ["language", "cultural awareness", "travel", "conversation", "community", "history", "global issues", "social"],
-    description: "A club for students interested in French language, culture, and traditions."
-  },
-  {
-    name: "Spanish Club",
-    attributes: ["language", "cultural awareness", "communication", "travel", "conversation", "global awareness", "public speaking"],
-    description: "A club for students interested in Spanish language and Hispanic cultures."
-  },
-  {
-    name: "German Club",
-    attributes: ["language", "cultural awareness", "communication", "global awareness", "history"],
-    description: "A club dedicated to learning German language and culture through activities and discussions."
-  },
-  {
-    name: "Korean Club",
-    attributes: ["language", "cultural awareness", "community", "tradition", "communication", "global awareness"],
-    description: "A club for students interested in Korean language, culture, and traditions."
-  },
-  {
-    name: "Henna Club",
-    attributes: ["art", "cultural awareness", "self-expression", "design", "creativity", "tradition", "history", "hands-on"],
-    description: "A club that explores the cultural significance and art of henna designs."
-  },
-
-  // 🔬 STEM Clubs
   {
     name: "Astronomy Club",
-    attributes: ["space", "science", "experiments", "exploration", "critical thinking", "problem-solving", "innovation", "research"],
-    description: "A club for students fascinated by the universe, space exploration, and astronomy."
+    attributes: [
+      "science", "space", "stars", "planets", "telescopes", "night observation", 
+      "physics", "research", "analytical", "curiosity", "exploration", "cosmos",
+      "astrophysics", "celestial objects", "astronomy", "scientific method"
+    ],
+    description: "Astronomy Club explores the wonders of the universe through stargazing sessions, telescope observations, and discussions about cosmic phenomena."
+  },
+  {
+    name: "Auto Club",
+    attributes: [
+      "mechanics", "cars", "engines", "technical", "hands-on", "engineering", 
+      "problem-solving", "automotive", "maintenance", "design", "practical skills",
+      "tools", "vehicle systems", "diagnostics", "teamwork", "technical knowledge"
+    ],
+    description: "Auto Club brings together students interested in automotive technology, mechanics, and car culture through hands-on projects and learning experiences."
+  },
+  {
+    name: "Aviation Club",
+    attributes: [
+      "flying", "aircraft", "aeronautics", "engineering", "physics", "technical", 
+      "navigation", "aerospace", "simulation", "aviation history", "flight principles",
+      "aerodynamics", "pilot skills", "air traffic control", "aviation careers"
+    ],
+    description: "Aviation Club introduces students to the principles of flight, aircraft systems, and careers in aviation through interactive activities and learning experiences."
+  },
+  {
+    name: "Bass Fishing Team",
+    attributes: [
+      "fishing", "outdoors", "nature", "competition", "patience", "environmental awareness", 
+      "conservation", "teamwork", "strategy", "technique", "water ecosystems", "sportsmanship",
+      "recreational", "wildlife", "natural resources", "seasonal activities"
+    ],
+    description: "Bass Fishing Team combines outdoor recreation with competitive fishing, developing skills while learning about aquatic ecosystems and conservation."
+  },
+  {
+    name: "Bella Corda",
+    attributes: [
+      "music", "string instruments", "performance", "classical", "ensemble", "artistic", 
+      "practice", "dedication", "harmony", "musical theory", "composition", "interpretation",
+      "concerts", "musical technique", "collaboration", "orchestral"
+    ],
+    description: "Bella Corda is a select string ensemble that performs classical and contemporary music, refining instrumental skills through collaborative performances."
+  },
+  {
+    name: "Best Buddies",
+    attributes: [
+      "inclusion", "friendship", "community service", "empathy", "social awareness", "volunteering", 
+      "disability awareness", "leadership", "compassion", "social skills", "mentoring", "advocacy",
+      "diversity", "acceptance", "relationship building", "social events"
+    ],
+    description: "Best Buddies creates opportunities for one-to-one friendships between students with and without intellectual and developmental disabilities."
   },
   {
     name: "Biochemistry Club",
-    attributes: ["science", "experiments", "healthcare", "research", "lab work", "medicine", "problem-solving", "critical thinking"],
-    description: "A club focused on the intersection of biology and chemistry through experiments and discussions."
-  },
-  {
-    name: "Computer Science Club",
-    attributes: ["coding", "technology", "problem-solving", "teamwork", "algorithms", "engineering", "AI", "automation"],
-    description: "A club for students interested in software development, algorithms, and coding competitions."
-  },
-  {
-    name: "Math Team",
-    attributes: ["math", "competitive", "problem-solving", "logical thinking", "strategy", "teamwork", "analysis", "precision"],
-    description: "A competitive team for students who love challenging math problems and competitions."
-  },
-  {
-    name: "Robotics Team (FIRST Robotics)",
-    attributes: ["engineering", "teamwork", "problem-solving", "coding", "hands-on", "competitive", "technology", "innovation"],
-    description: "A hands-on club where students design, build, and program robots for competitions."
-  },
-  {
-    name: "Science Olympiad",
-    attributes: ["science", "experiments", "competitive", "teamwork", "innovation", "critical thinking", "problem-solving"],
-    description: "A team-based competition club for students passionate about science and engineering."
-  },
-
-  // 🎭 Performing Arts Clubs
-  {
-    name: "Drama Club",
-    attributes: ["acting", "performance", "public speaking", "creativity", "teamwork", "improvisation", "confidence", "stage presence"],
-    description: "A club for students passionate about theater, performing plays, and improving public speaking skills."
-  },
-  {
-    name: "Marching Band",
-    attributes: ["music", "performance", "teamwork", "discipline", "coordination", "musicality", "rhythm"],
-    description: "A club for students interested in performing music in a marching band setting."
-  },
-  {
-    name: "Show Choir",
-    attributes: ["singing", "performance", "teamwork", "dance", "stage presence", "expression", "musicality", "discipline"],
-    description: "A competitive choir that combines singing with choreographed dance routines."
-  },
-  {
-    name: "Orchesis",
-    attributes: ["dance", "performance", "creativity", "expression", "fitness", "choreography", "movement", "artistic"],
-    description: "A dance-focused club that explores different styles and puts on performances."
-  },
-
-  // 💼 Business Clubs
-  {
-    name: "DECA",
-    attributes: ["business", "competitive", "teamwork", "public speaking", "leadership", "marketing", "entrepreneurship", "networking"],
-    description: "A club focused on business, marketing, and entrepreneurship through competitions."
+    attributes: [
+      "science", "chemistry", "biology", "research", "laboratory", "experiments", 
+      "analytical", "problem-solving", "molecular biology", "scientific method", "data analysis",
+      "healthcare applications", "enzymes", "cellular processes", "organic chemistry"
+    ],
+    description: "Biochemistry Club explores the intersection of biology and chemistry through laboratory experiments, research discussions, and scientific investigations."
   },
   {
     name: "BPA (Business Professionals of America)",
-    attributes: ["business", "leadership", "networking", "public speaking", "finance", "competitive", "professional development"],
-    description: "A club that prepares students for business careers through competitions and networking."
+    attributes: [
+      "business", "professional development", "leadership", "competition", "networking", "career preparation", 
+      "public speaking", "entrepreneurship", "finance", "marketing", "management", "technology",
+      "presentation skills", "teamwork", "problem-solving", "workplace skills"
+    ],
+    description: "BPA prepares students for careers in business and information technology through competitive events, leadership development, and professional growth programs."
   },
   {
-    name: "Investment Club",
-    attributes: ["finance", "business", "economics", "investing", "strategy", "critical thinking", "wealth management", "decision making"],
-    description: "A club for students interested in learning about the stock market and financial literacy."
-  },
-
-  // ❤️ Community Service Clubs
-  {
-    name: "Girl Up",
-    attributes: ["volunteering", "advocacy", "leadership", "community", "global awareness", "gender equality", "social impact"],
-    description: "A club dedicated to empowering young women and advocating for gender equality."
+    name: "BSLA (Black Student Leadership Assoc.)",
+    attributes: [
+      "leadership", "cultural awareness", "diversity", "community building", "advocacy", "empowerment", 
+      "social justice", "mentoring", "identity", "inclusion", "history", "representation",
+      "community service", "networking", "personal development", "cultural celebration"
+    ],
+    description: "BSLA empowers Black students through leadership development, cultural celebration, community service, and creating a supportive network for academic and personal success."
   },
   {
-    name: "Interact Club",
-    attributes: ["volunteering", "community service", "leadership", "fundraising", "teamwork", "event planning", "outreach", "collaboration"],
-    description: "A Rotary-sponsored club focused on service projects and leadership development."
+    name: "Caregiver Club",
+    attributes: [
+      "community service", "healthcare", "empathy", "support", "volunteering", "compassion", 
+      "elder care", "family support", "mental health awareness", "resources", "self-care",
+      "advocacy", "social awareness", "helping others", "wellness", "education"
+    ],
+    description: "Caregiver Club provides support, resources, and community for student caregivers while raising awareness about caregiving challenges and promoting self-care."
   },
   {
-    name: "UNICEF Club",
-    attributes: ["volunteering", "global awareness", "advocacy", "fundraising", "teamwork", "policy change", "public health", "education"],
-    description: "A club dedicated to helping children around the world through advocacy and fundraising."
-  },
-
-  // 📚 Academic & Humanities Clubs
-  {
-    name: "Debate",
-    attributes: ["public speaking", "debate", "critical thinking", "argumentation", "competition", "logic", "persuasion", "research"],
-    description: "A club for students who enjoy structured arguments, competitions, and discussing important issues."
+    name: "Ceramics Society",
+    attributes: [
+      "art", "pottery", "sculpture", "creative", "hands-on", "design", 
+      "3D art", "clay work", "artistic expression", "craftsmanship", "glazing techniques",
+      "kiln firing", "traditional techniques", "functional art", "decorative art"
+    ],
+    description: "Ceramics Society offers hands-on experience with clay, teaching pottery techniques, sculpture methods, and the artistic process from concept to finished ceramic pieces."
   },
   {
-    name: "Model UN",
-    attributes: ["public speaking", "debate", "global issues", "teamwork", "policy analysis", "diplomacy", "critical thinking", "advocacy"],
-    description: "A club where students simulate United Nations conferences, debating global policies and current events."
+    name: "Cheerleading, Adaptive",
+    attributes: [
+      "inclusive", "adaptive sports", "teamwork", "performance", "school spirit", "physical activity", 
+      "accessibility", "support", "coordination", "enthusiasm", "community building",
+      "confidence building", "social inclusion", "modified techniques", "encouragement"
+    ],
+    description: "Adaptive Cheerleading creates an inclusive environment where students of all abilities can participate in cheerleading activities, building school spirit and community."
   },
   {
-    name: "Huskie Book Club",
-    attributes: ["reading", "literature", "discussion", "analysis", "critical thinking", "storytelling"],
-    description: "A club for students who love reading and discussing books with peers."
+    name: "Chemistry Club",
+    attributes: [
+      "science", "chemistry", "experiments", "laboratory", "analytical", "research", 
+      "problem-solving", "elements", "compounds", "reactions", "scientific method",
+      "data analysis", "molecular structures", "chemical properties", "hands-on learning"
+    ],
+    description: "Chemistry Club engages students in hands-on experiments, demonstrations, and discussions about chemical principles and their real-world applications."
   },
-
-  // 🏆 Miscellaneous Clubs
   {
     name: "Chess Club & Team",
-    attributes: ["strategy", "problem-solving", "competition", "critical thinking", "gameplay", "logic", "concentration", "patience"],
-    description: "A club for students who enjoy chess and want to improve their strategic thinking."
+    attributes: [
+      "strategy", "critical thinking", "competition", "problem-solving", "concentration", "patience", 
+      "analytical skills", "planning", "decision making", "logic", "pattern recognition",
+      "tournaments", "mental challenge", "tactical thinking", "game theory", "focus"
+    ],
+    description: "Chess Club & Team develops strategic thinking and analytical skills through chess practice, tournaments, and collaborative problem-solving of complex chess positions."
+  },
+  {
+    name: "Children's Show",
+    attributes: [
+      "performance", "theater", "acting", "production", "creativity", "community service", 
+      "storytelling", "entertainment", "children's literature", "directing", "set design",
+      "costumes", "audience engagement", "character development", "family-friendly"
+    ],
+    description: "Children's Show produces theatrical performances designed for young audiences, combining creative storytelling, acting, and production to entertain and inspire children."
+  },
+  {
+    name: "Chinese Yo-Yo Club",
+    attributes: [
+      "cultural", "performance", "skill development", "coordination", "Chinese culture", "artistic", 
+      "dexterity", "balance", "traditional arts", "performance art", "hand-eye coordination",
+      "rhythm", "precision", "cultural heritage", "demonstration", "physical activity"
+    ],
+    description: "Chinese Yo-Yo Club teaches the traditional art of Chinese yo-yo (diabolo), combining cultural learning with the development of coordination, performance, and artistic skills."
+  },
+  {
+    name: "Civil Leaders of America (formerly JSA)",
+    attributes: [
+      "leadership", "civic engagement", "debate", "politics", "public speaking", "critical thinking", 
+      "current events", "government", "policy analysis", "advocacy", "democratic principles",
+      "constitutional knowledge", "civil discourse", "political awareness", "community involvement"
+    ],
+    description: "Civil Leaders of America engages students in civil discourse, debate, and democratic processes, developing leadership skills and knowledge of governmental systems."
+  },
+  {
+    name: "Color Guard (Fall Flags)",
+    attributes: [
+      "performance", "dance", "visual arts", "coordination", "teamwork", "music", 
+      "choreography", "precision", "expression", "marching", "flag technique",
+      "rhythm", "performance art", "synchronization", "school spirit", "discipline"
+    ],
+    description: "Color Guard combines dance, flag technique, and visual performance to create artistic interpretations of music alongside the marching band during fall season."
+  },
+  {
+    name: "Computer Science Club",
+    attributes: [
+      "coding", "programming", "technology", "software development", "problem-solving", "algorithms", 
+      "computer languages", "web development", "app development", "technical skills", "logical thinking",
+      "hackathons", "project-based", "innovation", "digital literacy", "computational thinking"
+    ],
+    description: "Computer Science Club explores programming languages, software development, and computational problem-solving through coding projects, hackathons, and tech discussions."
+  },
+  {
+    name: "Costume Crew",
+    attributes: [
+      "theater", "design", "sewing", "creativity", "fashion", "production", 
+      "costume history", "character development", "teamwork", "attention to detail", "craftsmanship",
+      "backstage work", "visual storytelling", "technical theater", "collaborative", "hands-on"
+    ],
+    description: "Costume Crew designs and creates costumes for theatrical productions, developing skills in design, sewing, and visual storytelling while supporting performing arts."
+  },
+  {
+    name: "Creative Writing Club",
+    attributes: [
+      "writing", "storytelling", "poetry", "fiction", "creative expression", "literary", 
+      "imagination", "narrative", "editing", "publishing", "workshopping",
+      "self-expression", "language arts", "composition", "literary techniques", "peer review"
+    ],
+    description: "Creative Writing Club nurtures literary expression through writing workshops, peer feedback sessions, and opportunities to explore various genres and publishing platforms."
+  },
+  {
+    name: "Dawg Pound",
+    attributes: [
+      "school spirit", "sports", "community", "enthusiasm", "social", "events", 
+      "cheering", "student section", "athletics support", "traditions", "camaraderie",
+      "leadership", "school pride", "game attendance", "energy", "school unity"
+    ],
+    description: "Dawg Pound is the student spirit section that builds school pride and community through organized cheering, themed events, and enthusiastic support at athletic competitions."
+  },
+  {
+    name: "Debate",
+    attributes: [
+      "public speaking", "argumentation", "research", "critical thinking", "competition", "persuasion", 
+      "current events", "logic", "analysis", "policy", "communication skills",
+      "tournaments", "rhetoric", "evidence-based reasoning", "quick thinking", "formal debate"
+    ],
+    description: "Debate develops public speaking, critical thinking, and persuasive argumentation through competitive debate tournaments, research, and structured argumentation practice."
+  },
+  {
+    name: "DECA",
+    attributes: [
+      "business", "marketing", "entrepreneurship", "competition", "leadership", "professional development", 
+      "case studies", "presentation skills", "career preparation", "networking", "finance",
+      "management", "problem-solving", "business strategy", "industry knowledge", "conferences"
+    ],
+    description: "DECA prepares emerging leaders and entrepreneurs in marketing, finance, hospitality, and management through competitive events, conferences, and real-world business experiences."
+  },
+  {
+    name: "Environmental Science Club",
+    attributes: [
+      "environment", "sustainability", "conservation", "science", "activism", "nature", 
+      "ecology", "climate change", "recycling", "outdoor activities", "research",
+      "community projects", "environmental awareness", "field studies", "green initiatives", "stewardship"
+    ],
+    description: "Environmental Science Club promotes ecological awareness through conservation projects, sustainability initiatives, and scientific exploration of environmental issues and solutions."
   },
   {
     name: "Esports Club",
-    attributes: ["gaming", "strategy", "teamwork", "competitive", "tournament play", "technology", "coordination", "communication"],
-    description: "A club for students interested in competitive gaming and team-based esports tournaments."
+    attributes: [
+      "gaming", "competition", "technology", "teamwork", "strategy", "digital", 
+      "video games", "tournaments", "technical skills", "coordination", "community",
+      "communication", "problem-solving", "digital literacy", "competitive gaming", "entertainment"
+    ],
+    description: "Esports Club brings together gaming enthusiasts to develop teamwork, strategy, and technical skills through organized video game competitions and collaborative play."
+  },
+  {
+    name: "Esports Competitive Teams",
+    attributes: [
+      "gaming", "competition", "technology", "teamwork", "strategy", "digital", 
+      "video games", "tournaments", "technical skills", "coordination", "competitive",
+      "communication", "problem-solving", "digital literacy", "high-level play", "team-based"
+    ],
+    description: "Esports Competitive Teams represent the school in organized video game competitions, developing high-level gaming skills, strategic teamwork, and competitive excellence."
+  },
+  {
+    name: "Fall Play",
+    attributes: [
+      "theater", "acting", "performance", "drama", "production", "creative", 
+      "stage", "character development", "public speaking", "teamwork", "memorization",
+      "rehearsal", "theatrical arts", "storytelling", "stage presence", "production design"
+    ],
+    description: "Fall Play produces a theatrical production during the fall semester, offering opportunities in acting, stage management, and technical theater while developing performance skills."
+  },
+  {
+    name: "FFA (Future Farmers of America)",
+    attributes: [
+      "agriculture", "leadership", "career development", "science", "hands-on", "community", 
+      "farming", "animal science", "plant science", "agricultural business", "environmental",
+      "technical skills", "competitions", "rural development", "sustainability", "practical skills"
+    ],
+    description: "FFA develops leadership, personal growth, and career success through agricultural education, hands-on projects, competitions, and community involvement in agricultural sciences."
+  },
+  {
+    name: "Field Hockey",
+    attributes: [
+      "sports", "teamwork", "physical activity", "competition", "athletics", "outdoor", 
+      "coordination", "strategy", "endurance", "skill development", "sportsmanship",
+      "field sports", "stick skills", "team strategy", "conditioning", "competitive"
+    ],
+    description: "Field Hockey develops athletic skills, teamwork, and strategic thinking through competitive play, training, and tournaments in this fast-paced field sport."
+  },
+  {
+    name: "Filipino Culture Club",
+    attributes: [
+      "cultural", "heritage", "diversity", "community", "international", "language", 
+      "traditions", "celebrations", "food", "history", "arts",
+      "cultural awareness", "identity", "inclusion", "global perspective", "cultural exchange"
+    ],
+    description: "Filipino Culture Club celebrates Filipino heritage through cultural events, traditional celebrations, language learning, and community building activities that share Filipino culture."
+  },
+  {
+    name: "French Club",
+    attributes: [
+      "language learning", "cultural", "international", "French", "global", "communication", 
+      "European culture", "francophone", "language skills", "cultural awareness", "traditions",
+      "food", "travel", "history", "arts", "global perspective"
+    ],
+    description: "French Club explores French language and francophone cultures through conversation practice, cultural celebrations, film screenings, and activities that develop language skills and cultural understanding."
+  },
+  {
+    name: "Fresh/Soph Wheel Dawgs",
+    attributes: [
+      "wheelchair sports", "adaptive athletics", "inclusion", "teamwork", "physical activity", "sports", 
+      "wheelchair basketball", "adaptive recreation", "skill development", "competition", "sportsmanship",
+      "coordination", "strength building", "accessibility", "community", "underclassmen"
+    ],
+    description: "Fresh/Soph Wheel Dawgs introduces freshmen and sophomores to wheelchair sports, promoting inclusive athletics, skill development, and teamwork through adaptive sports activities."
+  },
+  {
+    name: "Frosh/Soph Play",
+    attributes: [
+      "theater", "acting", "performance", "underclassmen", "drama", "creative", 
+      "stage experience", "character development", "public speaking", "teamwork", "entry-level",
+      "theatrical arts", "storytelling", "stage presence", "beginner-friendly", "performance skills"
+    ],
+    description: "Frosh/Soph Play provides freshmen and sophomores with theatrical opportunities through a dedicated production that develops acting skills, stage presence, and theatrical knowledge."
+  },
+  {
+    name: "GEMS (Girls in Engineering, Math & Science)",
+    attributes: [
+      "STEM", "women in STEM", "engineering", "mathematics", "science", "technology", 
+      "gender equity", "career exploration", "mentorship", "problem-solving", "technical skills",
+      "female empowerment", "hands-on learning", "innovation", "research", "collaboration"
+    ],
+    description: "GEMS encourages and supports female students in STEM fields through mentorship, hands-on projects, guest speakers, and exploration of career opportunities in engineering, math, and science."
+  },
+  {
+    name: "German Club",
+    attributes: [
+      "language learning", "cultural", "international", "German", "global", "communication", 
+      "European culture", "language skills", "cultural awareness", "traditions", "food",
+      "travel", "history", "arts", "global perspective", "German-speaking countries"
+    ],
+    description: "German Club explores German language and culture through conversation practice, cultural celebrations, film screenings, and activities that develop language skills and cultural understanding."
+  },
+  {
+    name: "Girl Up",
+    attributes: [
+      "gender equality", "advocacy", "leadership", "social justice", "global issues", "empowerment", 
+      "women's rights", "community service", "activism", "awareness", "education",
+      "global perspective", "female leadership", "social impact", "international", "United Nations"
+    ],
+    description: "Girl Up, an initiative of the United Nations Foundation, develops leadership skills while advocating for gender equality through awareness campaigns, fundraising, and community action projects."
+  },
+  {
+    name: "Gourmet and Good Living Club",
+    attributes: [
+      "culinary arts", "cooking", "food culture", "nutrition", "wellness", "lifestyle", 
+      "recipe development", "cultural cuisine", "food science", "hospitality", "health",
+      "sustainable living", "meal planning", "social dining", "food appreciation", "life skills"
+    ],
+    description: "Gourmet and Good Living Club explores culinary arts, nutrition, and wellness through cooking demonstrations, recipe sharing, cultural food exploration, and discussions about healthy lifestyle choices."
+  },
+  {
+    name: "GSA (Gender-Sexuality Alliance)",
+    attributes: [
+      "LGBTQ+", "inclusion", "advocacy", "support", "diversity", "social justice", 
+      "community building", "awareness", "education", "acceptance", "identity",
+      "allyship", "safe space", "equality", "gender issues", "self-expression"
+    ],
+    description: "GSA provides a safe, supportive environment for LGBTQ+ students and allies, promoting inclusion through education, advocacy, community building, and social events that celebrate diversity."
+  },
+  {
+    name: "Health Occupations Students of America (HOSA)",
+    attributes: [
+      "healthcare", "medicine", "career preparation", "medical knowledge", "competition", "professional development", 
+      "clinical skills", "health science", "leadership", "biology", "anatomy",
+      "medical ethics", "patient care", "health education", "medical terminology", "healthcare industry"
+    ],
+    description: "HOSA prepares students for careers in healthcare through skill development, competitive events, leadership opportunities, and connections with health professionals and medical institutions."
+  },
+  {
+    name: "Helping Hands Club",
+    attributes: [
+      "community service", "volunteering", "charity", "social impact", "empathy", "outreach", 
+      "humanitarian", "giving back", "local community", "service projects", "fundraising",
+      "social awareness", "helping others", "compassion", "community building", "philanthropy"
+    ],
+    description: "Helping Hands Club coordinates volunteer opportunities and service projects that address community needs, developing leadership, empathy, and social responsibility through hands-on community service."
+  },
+  {
+    name: "Henna Club",
+    attributes: [
+      "art", "cultural", "creative", "design", "body art", "traditional", 
+      "South Asian culture", "Middle Eastern culture", "artistic expression", "patterns", "cultural appreciation",
+      "hand-drawn", "temporary art", "cultural heritage", "artistic technique", "decorative arts"
+    ],
+    description: "Henna Club explores the traditional art of henna design, teaching techniques, patterns, and cultural significance while creating beautiful temporary body art and celebrating cultural diversity."
+  },
+  {
+    name: "Hockey",
+    attributes: [
+      "sports", "teamwork", "physical activity", "competition", "ice skating", "winter sports", 
+      "athletics", "strategy", "coordination", "endurance", "sportsmanship",
+      "stick handling", "team strategy", "physical fitness", "competitive", "speed"
+    ],
+    description: "Hockey develops athletic skills, teamwork, and strategic thinking through competitive play, training, and tournaments in this fast-paced ice sport requiring coordination and endurance."
+  },
+  {
+    name: "Humane Huskies",
+    attributes: [
+      "animal welfare", "advocacy", "volunteering", "compassion", "community service", "education", 
+      "animal rights", "environmental awareness", "fundraising", "shelter support", "pet adoption",
+      "wildlife conservation", "ethical treatment", "awareness campaigns", "empathy", "activism"
+    ],
+    description: "Humane Huskies advocates for animal welfare through volunteer work with local shelters, educational campaigns about responsible pet ownership, and fundraising for animal protection organizations."
+  },
+  {
+    name: "Huskie Book Club",
+    attributes: [
+      "reading", "literature", "discussion", "critical thinking", "analysis", "diverse perspectives", 
+      "fiction", "non-fiction", "literary appreciation", "communication skills", "intellectual",
+      "book recommendations", "author studies", "genre exploration", "reading comprehension", "social"
+    ],
+    description: "Huskie Book Club brings together students who enjoy reading to discuss diverse literature, share perspectives, develop critical thinking skills, and foster a love of reading through regular book discussions."
+  },
+  {
+    name: "Huskie Crew",
+    attributes: [
+      "school spirit", "event planning", "leadership", "community building", "organization", "teamwork", 
+      "school pride", "social", "event coordination", "promotion", "enthusiasm",
+      "school culture", "student involvement", "communication", "collaboration", "school events"
+    ],
+    description: "Huskie Crew organizes and promotes school events, builds school spirit, and creates a positive school culture through student-led initiatives, event planning, and community building activities."
+  },
+  {
+    name: "Improv Club",
+    attributes: [
+      "theater", "comedy", "performance", "creativity", "spontaneity", "public speaking", 
+      "acting", "thinking on your feet", "teamwork", "confidence building", "entertainment",
+      "stage presence", "humor", "storytelling", "character development", "audience interaction"
+    ],
+    description: "Improv Club develops performance skills, creativity, and quick thinking through improvisational theater games, comedy exercises, and performances that build confidence and stage presence."
+  },
+  {
+    name: "Interact Club",
+    attributes: [
+      "community service", "leadership", "international", "volunteering", "social impact", "Rotary", 
+      "global citizenship", "service projects", "fundraising", "humanitarian", "local community",
+      "global awareness", "civic engagement", "teamwork", "project management", "social responsibility"
+    ],
+    description: "Interact Club, affiliated with Rotary International, develops leadership through community service, international awareness projects, and initiatives that address local and global challenges."
+  },
+  {
+    name: "International Thespian Society",
+    attributes: [
+      "theater", "performance", "acting", "drama", "recognition", "arts", 
+      "stage production", "theatrical excellence", "honor society", "performance arts", "dedication",
+      "theatrical scholarship", "dramatic arts", "stage management", "theatrical community", "achievement"
+    ],
+    description: "International Thespian Society recognizes student achievement in theater arts, providing opportunities for theatrical growth, performance excellence, and connection to the broader theatrical community."
+  },
+  {
+    name: "Investment Club",
+    attributes: [
+      "finance", "economics", "business", "stock market", "investing", "financial literacy", 
+      "portfolio management", "market analysis", "wealth building", "entrepreneurship", "research",
+      "risk assessment", "economic trends", "financial planning", "business strategy", "analytical thinking"
+    ],
+    description: "Investment Club teaches financial literacy and investment strategies through stock market simulations, portfolio management practice, market analysis, and discussions with finance professionals."
+  },
+  {
+    name: "ISA (Indian Students Association)",
+    attributes: [
+      "cultural", "heritage", "diversity", "community", "Indian culture", "traditions", 
+      "celebrations", "language", "food", "arts", "music",
+      "dance", "festivals", "cultural awareness", "identity", "cultural exchange"
+    ],
+    description: "ISA celebrates Indian culture and heritage through traditional celebrations, cultural performances, language sharing, cuisine exploration, and community-building activities that promote cultural understanding."
+  },
+  {
+    name: "Jazz Band",
+    attributes: [
+      "music", "performance", "jazz", "instrumental", "ensemble", "improvisation", 
+      "musical technique", "rhythm", "harmony", "creativity", "collaboration",
+      "musical theory", "performance skills", "musical expression", "concerts", "swing"
+    ],
+    description: "Jazz Band develops musical skills through the study and performance of jazz music, focusing on improvisation, ensemble playing, and the rich traditions of jazz across various styles and eras."
+  },
+  {
+    name: "Junior Board",
+    attributes: [
+      "leadership", "class representation", "event planning", "student government", "organization", "teamwork", 
+      "school spirit", "fundraising", "communication", "project management", "class unity",
+      "student voice", "advocacy", "decision making", "community building", "junior class"
+    ],
+    description: "Junior Board represents the junior class in student government, organizing class events, fundraising for prom and senior year activities, and advocating for junior class interests in school decisions."
+  },
+  {
+    name: "Korean Club",
+    attributes: [
+      "language learning", "cultural", "international", "Korean", "global", "communication", 
+      "Asian culture", "K-pop", "Korean cuisine", "language skills", "cultural awareness",
+      "traditions", "media", "history", "arts", "global perspective"
+    ],
+    description: "Korean Club explores Korean language and culture through conversation practice, K-pop and media discussions, traditional celebrations, cuisine exploration, and activities that develop cultural understanding."
+  },
+  {
+    name: "LASA (Latin American Student Assn)",
+    attributes: [
+      "cultural", "heritage", "diversity", "community", "Latin American culture", "Spanish", 
+      "traditions", "celebrations", "food", "music", "dance",
+      "cultural awareness", "identity", "inclusion", "global perspective", "cultural exchange"
+    ],
+    description: "LASA celebrates Latin American cultures through traditional celebrations, language sharing, cuisine exploration, music and dance events, and community-building activities that promote cultural understanding."
+  },
+  {
+    name: "Mandarin Club",
+    attributes: [
+      "language learning", "cultural", "international", "Chinese", "global", "communication", 
+      "Asian culture", "Mandarin language", "Chinese traditions", "language skills", "cultural awareness",
+      "calligraphy", "cuisine", "history", "arts", "global perspective"
+    ],
+    description: "Mandarin Club explores Chinese language and culture through conversation practice, calligraphy, traditional celebrations, cuisine exploration, and activities that develop language skills and cultural understanding."
+  },
+  {
+    name: "Marching Band",
+    attributes: [
+      "music", "performance", "marching", "instrumental", "teamwork", "discipline", 
+      "coordination", "rhythm", "outdoor performance", "musical technique", "precision",
+      "school spirit", "competitions", "choreography", "dedication", "ensemble playing"
+    ],
+    description: "Marching Band combines musical performance with choreographed movement, performing at football games, parades, and competitions while developing musicianship, coordination, and teamwork."
+  },
+  {
+    name: "Math Team",
+    attributes: [
+      "mathematics", "problem-solving", "competition", "analytical thinking", "logic", "academic", 
+      "numerical reasoning", "mathematical theory", "critical thinking", "patterns", "equations",
+      "mathematical contests", "collaborative problem-solving", "mental math", "mathematical concepts", "academic excellence"
+    ],
+    description: "Math Team challenges students with advanced mathematical problems, preparing for competitions through collaborative problem-solving, mathematical theory exploration, and development of analytical skills."
+  },
+  {
+    name: "MENA Club",
+    attributes: [
+      "cultural", "Middle Eastern", "North African", "heritage", "diversity", "international", 
+      "traditions", "language", "food", "history", "arts",
+      "cultural awareness", "identity", "global perspective", "cultural exchange", "community building"
+    ],
+    description: "MENA Club celebrates Middle Eastern and North African cultures through traditional celebrations, language sharing, cuisine exploration, and community-building activities that promote cultural understanding."
+  },
+  {
+    name: "Model UN",
+    attributes: [
+      "international relations", "diplomacy", "debate", "public speaking", "research", "global issues", 
+      "negotiation", "policy analysis", "current events", "leadership", "critical thinking",
+      "United Nations", "global citizenship", "political awareness", "conflict resolution", "international organizations"
+    ],
+    description: "Model UN simulates United Nations committees, developing research, public speaking, and diplomatic skills as students represent countries in debates on global issues and international relations."
+  },
+  {
+    name: "MSA (Muslim Student Association)",
+    attributes: [
+      "cultural", "religious", "community", "Islamic traditions", "diversity", "support", 
+      "spiritual growth", "education", "interfaith dialogue", "cultural awareness", "identity",
+      "celebrations", "service", "inclusion", "heritage", "community building"
+    ],
+    description: "MSA provides a supportive community for Muslim students and those interested in Islamic culture, offering religious and cultural activities, educational events, and interfaith dialogue opportunities."
+  },
+  {
+    name: "Musical Director",
+    attributes: [
+      "theater", "music", "leadership", "production", "directing", "performance", 
+      "musical theater", "artistic vision", "collaboration", "conducting", "musical arrangement",
+      "rehearsal management", "creative direction", "performance arts", "musical interpretation", "production planning"
+    ],
+    description: "Musical Director leads the musical aspects of theatrical productions, conducting the orchestra, coaching vocalists, arranging music, and collaborating with the director to create cohesive musical performances."
+  },
+  {
+    name: "Musical Pit Director",
+    attributes: [
+      "music", "orchestra", "conducting", "theater", "leadership", "ensemble", 
+      "musical accompaniment", "score reading", "musical theater", "collaboration", "instrumental direction",
+      "performance coordination", "musical interpretation", "rehearsal management", "timing", "musical production"
+    ],
+    description: "Musical Pit Director conducts and coordinates the orchestra for musical theater productions, ensuring musical accompaniment aligns with stage performances through rehearsals and performance coordination."
+  },
+  {
+    name: "New Generation Club",
+    attributes: [
+      "leadership", "innovation", "social change", "community service", "activism", "youth empowerment", 
+      "future planning", "social awareness", "project development", "teamwork", "civic engagement",
+      "problem-solving", "community impact", "social entrepreneurship", "mentorship", "collaboration"
+    ],
+    description: "New Generation Club empowers students to create positive social change through leadership development, community service projects, social entrepreneurship, and initiatives addressing contemporary issues."
+  },
+  {
+    name: "NFHS (National French Honor Society)",
+    attributes: [
+      "French language", "academic excellence", "cultural", "honor society", "recognition", "international", 
+      "language proficiency", "French culture", "scholarship", "achievement", "global perspective",
+      "language learning", "francophone", "academic distinction", "cultural awareness", "language arts"
+    ],
+    description: "NFHS recognizes academic achievement in French language studies, promoting French culture, language excellence, and cultural understanding through service projects and cultural activities."
+  },
+  {
+    name: "NHS (National Honor Society)",
+    attributes: [
+      "academic excellence", "leadership", "service", "character", "honor society", "recognition", 
+      "scholarship", "achievement", "community service", "ethics", "academic distinction",
+      "college preparation", "volunteer work", "personal development", "prestigious", "well-rounded"
+    ],
+    description: "NHS recognizes outstanding high school students who demonstrate excellence in scholarship, leadership, service, and character, providing opportunities for continued growth and community service."
+  },
+  {
+    name: "NNHS Ambassadors",
+    attributes: [
+      "leadership", "school representation", "communication", "public speaking", "hospitality", "community building", 
+      "school pride", "tour guides", "event hosting", "interpersonal skills", "school knowledge",
+      "welcoming committee", "school culture", "student leadership", "positive representation", "mentoring"
+    ],
+    description: "NNHS Ambassadors represent the school to visitors, new students, and the community, providing tours, hosting events, and serving as the welcoming face of the school at various functions."
+  },
+  {
+    name: "NNHS Medical Club (NNMC)",
+    attributes: [
+      "healthcare", "medicine", "science", "career exploration", "biology", "anatomy", 
+      "medical knowledge", "health education", "professional development", "medical ethics", "research",
+      "healthcare careers", "clinical exposure", "medical speakers", "health science", "pre-med"
+    ],
+    description: "NNHS Medical Club explores healthcare careers through guest speakers, medical facility tours, health education projects, and discussions about current medical issues and advancements."
+  },
+  {
+    name: "North Star (Newspaper)",
+    attributes: [
+      "journalism", "writing", "reporting", "media", "communication", "current events", 
+      "editing", "publishing", "interviewing", "photography", "layout design",
+      "news literacy", "investigative skills", "deadline management", "media ethics", "storytelling"
+    ],
+    description: "North Star produces the school newspaper, developing journalistic skills through reporting, writing, editing, and publishing stories about school events, student achievements, and relevant issues."
+  },
+  {
+    name: "Northern Lights (Winter Flags)",
+    attributes: [
+      "performance", "dance", "visual arts", "coordination", "teamwork", "winter season", 
+      "choreography", "precision", "expression", "indoor performance", "flag technique",
+      "rhythm", "performance art", "synchronization", "artistic interpretation", "discipline"
+    ],
+    description: "Northern Lights performs indoor color guard routines during winter season, combining dance, flag technique, and visual performance to create artistic interpretations of music in competitive events."
+  },
+  {
+    name: "NSHS (National Spanish Honor Society)",
+    attributes: [
+      "Spanish language", "academic excellence", "cultural", "honor society", "recognition", "international", 
+      "language proficiency", "Hispanic culture", "scholarship", "achievement", "global perspective",
+      "language learning", "Spanish-speaking world", "academic distinction", "cultural awareness", "language arts"
+    ],
+    description: "NSHS recognizes academic achievement in Spanish language studies, promoting Hispanic culture, language excellence, and cultural understanding through service projects and cultural activities."
+  },
+  {
+    name: "OASIS",
+    attributes: [
+      "support", "mental health", "wellness", "community", "self-care", "resources", 
+      "peer support", "stress management", "emotional well-being", "mindfulness", "personal growth",
+      "coping skills", "resilience building", "safe space", "health education", "balance"
+    ],
+    description: "OASIS provides a supportive environment focused on mental health and wellness, offering resources, peer support, stress management techniques, and activities promoting emotional well-being."
+  },
+  {
+    name: "Orchesis",
+    attributes: [
+      "dance", "performance", "choreography", "artistic expression", "movement", "creativity", 
+      "technique", "rhythm", "flexibility", "coordination", "stage presence",
+      "modern dance", "jazz", "contemporary", "composition", "performance arts"
+    ],
+    description: "Orchesis is a dance company that develops technical and creative dance skills through choreography, rehearsals, and performances in various styles including modern, jazz, and contemporary dance."
+  },
+  {
+    name: "Orchestra Council",
+    attributes: [
+      "music", "leadership", "orchestra", "event planning", "organization", "advocacy", 
+      "classical music", "ensemble management", "fundraising", "musical community", "student voice",
+      "performance coordination", "musical leadership", "program development", "instrumental music", "representation"
+    ],
+    description: "Orchestra Council provides leadership for the orchestra program, organizing events, advocating for orchestral music, planning performances, and representing orchestra students in school decisions."
+  },
+  {
+    name: "Pep Band",
+    attributes: [
+      "music", "performance", "school spirit", "sports events", "instrumental", "energy", 
+      "entertainment", "rhythm", "teamwork", "musical technique", "enthusiasm",
+      "crowd engagement", "game day atmosphere", "musical repertoire", "school pride", "live performance"
+    ],
+    description: "Pep Band performs energetic music at sporting events and pep rallies, building school spirit through lively instrumental performances that enhance the game day atmosphere."
+  },
+  {
+    name: "Photography Club",
+    attributes: [
+      "visual arts", "photography", "creative expression", "composition", "technical skills", "artistic", 
+      "digital media", "camera techniques", "visual storytelling", "editing", "portfolio development",
+      "photo shoots", "visual literacy", "artistic vision", "digital editing", "exhibition"
+    ],
+    description: "Photography Club develops camera skills, composition techniques, and artistic vision through photo shoots, editing workshops, portfolio development, and photography exhibitions."
+  },
+  {
+    name: "Pickleball Club",
+    attributes: [
+      "sports", "physical activity", "racket sports", "teamwork", "coordination", "recreation", 
+      "strategy", "hand-eye coordination", "social", "competitive", "fitness",
+      "agility", "reflexes", "game skills", "sportsmanship", "active lifestyle"
+    ],
+    description: "Pickleball Club introduces students to this popular paddle sport, developing coordination, strategy, and fitness through regular play, friendly competitions, and skill development."
+  },
+  {
+    name: "Project Positivity NNHS",
+    attributes: [
+      "mental health", "wellness", "positivity", "community building", "support", "awareness", 
+      "kindness initiatives", "stress reduction", "school culture", "emotional well-being", "mindfulness",
+      "anti-bullying", "inclusion", "self-care", "encouragement", "social-emotional learning"
+    ],
+    description: "Project Positivity promotes mental wellness and positive school culture through kindness initiatives, stress reduction activities, and awareness campaigns that foster a supportive community."
+  },
+  {
+    name: "Red Cross Club",
+    attributes: [
+      "community service", "humanitarian", "health", "disaster preparedness", "first aid", "volunteering", 
+      "blood drives", "emergency response", "public health", "service learning", "global issues",
+      "safety education", "fundraising", "community outreach", "leadership", "social impact"
+    ],
+    description: "Red Cross Club supports humanitarian efforts through blood drives, disaster preparedness education, first aid training, and fundraising for local and international Red Cross initiatives."
+  },
+  {
+    name: "Red Ribbon Club",
+    attributes: [
+      "drug prevention", "health awareness", "peer education", "community service", "advocacy", "wellness", 
+      "substance abuse prevention", "health education", "leadership", "awareness campaigns", "positive choices",
+      "peer influence", "community outreach", "health promotion", "social responsibility", "education"
+    ],
+    description: "Red Ribbon Club promotes drug prevention and healthy lifestyle choices through peer education, awareness campaigns, and community outreach focused on substance abuse prevention."
+  },
+  {
+    name: "Robotics Team (FIRST Robotics)",
+    attributes: [
+      "engineering", "technology", "robotics", "programming", "design", "competition", 
+      "problem-solving", "teamwork", "STEM", "mechanical skills", "electrical engineering",
+      "computer science", "innovation", "project management", "technical writing", "hands-on"
+    ],
+    description: "Robotics Team designs, builds, and programs robots for FIRST Robotics competitions, developing engineering skills, teamwork, and problem-solving through hands-on technical challenges."
+  },
+  {
+    name: "Rocketry Club",
+    attributes: [
+      "aerospace", "engineering", "physics", "design", "hands-on", "STEM", 
+      "rocket building", "aerodynamics", "technical skills", "scientific method", "competition",
+      "flight principles", "data analysis", "safety protocols", "project-based", "technical design"
+    ],
+    description: "Rocketry Club designs, builds, and launches model rockets, exploring principles of physics, engineering, and aerodynamics through hands-on projects and competitive launches."
+  },
+  {
+    name: "Scholastic Bowl",
+    attributes: [
+      "academic competition", "knowledge", "quick recall", "trivia", "teamwork", "intellectual", 
+      "general knowledge", "academic subjects", "critical thinking", "fast-paced", "quiz bowl",
+      "academic excellence", "interdisciplinary", "competitive academics", "mental agility", "scholarly"
+    ],
+    description: "Scholastic Bowl competes in academic quiz competitions covering a wide range of subjects, developing quick recall, broad knowledge base, and teamwork through practice and tournaments."
+  },
+  {
+    name: "Science Bowl",
+    attributes: [
+      "science", "academic competition", "STEM", "knowledge", "quick recall", "teamwork", 
+      "scientific concepts", "physics", "chemistry", "biology", "earth science",
+      "mathematics", "competitive academics", "scientific literacy", "problem-solving", "academic excellence"
+    ],
+    description: "Science Bowl competes in fast-paced science and math competitions, developing in-depth knowledge of scientific concepts, quick thinking, and teamwork through practice and tournaments."
+  },
+  {
+    name: "Science Olympiad",
+    attributes: [
+      "science", "competition", "STEM", "hands-on", "teamwork", "research", 
+      "engineering", "laboratory skills", "scientific method", "problem-solving", "technical design",
+      "biology", "chemistry", "physics", "earth science", "interdisciplinary"
+    ],
+    description: "Science Olympiad prepares for competitions in various scientific disciplines, developing laboratory skills, research abilities, and collaborative problem-solving through hands-on science and engineering challenges."
+  },
+  {
+    name: "Senior Board - Class of 2025",
+    attributes: [
+      "leadership", "class representation", "event planning", "senior activities", "organization", "teamwork", 
+      "school spirit", "fundraising", "graduation planning", "class unity", "student voice",
+      "senior traditions", "legacy projects", "communication", "project management", "senior class"
+    ],
+    description: "Senior Board represents the senior class, organizing graduation activities, senior traditions, fundraising events, and creating memorable experiences for the Class of 2025."
+  },
+  {
+    name: "Seva Circle",
+    attributes: [
+      "community service", "volunteering", "cultural", "South Asian", "charity", "leadership", 
+      "humanitarian", "giving back", "cultural awareness", "service projects", "fundraising",
+      "social impact", "compassion", "outreach", "cultural heritage", "selfless service"
+    ],
+    description: "Seva Circle organizes service projects based on the South Asian concept of selfless service, combining cultural awareness with community outreach, volunteering, and humanitarian initiatives."
+  },
+  {
+    name: "Show Choir",
+    attributes: [
+      "music", "vocal performance", "dance", "choreography", "performance", "ensemble", 
+      "singing", "stage presence", "musical theater", "competition", "harmony",
+      "showmanship", "vocal technique", "performance skills", "musical expression", "entertainment"
+    ],
+    description: "Show Choir combines vocal music with choreographed movement, performing popular and show tunes in competitive and showcase events while developing vocal technique and performance skills."
+  },
+  {
+    name: "Ski & Snowboard Club",
+    attributes: [
+      "winter sports", "outdoor recreation", "skiing", "snowboarding", "physical activity", "social", 
+      "mountain sports", "adventure", "snow sports", "seasonal", "skill development",
+      "outdoor skills", "winter recreation", "active lifestyle", "nature appreciation", "trips"
+    ],
+    description: "Ski & Snowboard Club organizes trips to ski resorts, developing winter sports skills, outdoor appreciation, and social connections through recreational skiing and snowboarding activities."
+  },
+  {
+    name: "Spanish Club",
+    attributes: [
+      "language learning", "cultural", "international", "Spanish", "global", "communication", 
+      "Hispanic culture", "language skills", "cultural awareness", "traditions", "food",
+      "travel", "history", "arts", "global perspective", "Spanish-speaking countries"
+    ],
+    description: "Spanish Club explores Spanish language and Hispanic cultures through conversation practice, cultural celebrations, film screenings, and activities that develop language skills and cultural understanding."
+  },
+  {
+    name: "Spectrum",
+    attributes: [
+      "diversity", "inclusion", "cultural awareness", "social justice", "community building", "education", 
+      "multicultural", "identity", "global perspective", "cross-cultural", "dialogue",
+      "heritage celebration", "equity", "cultural exchange", "awareness", "acceptance"
+    ],
+    description: "Spectrum promotes cultural diversity and inclusion through multicultural events, educational workshops, dialogue sessions, and celebrations that foster understanding and appreciation of different identities."
+  },
+  {
+    name: "Speech Team (Forensics)",
+    attributes: [
+      "public speaking", "performance", "competition", "communication skills", "debate", "oratory", 
+      "interpretation", "persuasion", "critical thinking", "presentation", "rhetoric",
+      "literary analysis", "confidence building", "articulation", "competitive speaking", "research"
+    ],
+    description: "Speech Team competes in various public speaking and performance events, developing communication skills, confidence, and critical thinking through competitive forensics tournaments."
+  },
+  {
+    name: "Spring Play",
+    attributes: [
+      "theater", "acting", "performance", "drama", "production", "creative", 
+      "stage", "character development", "public speaking", "teamwork", "memorization",
+      "rehearsal", "theatrical arts", "storytelling", "stage presence", "spring season"
+    ],
+    description: "Spring Play produces a theatrical production during the spring semester, offering opportunities in acting, stage management, and technical theater while developing performance skills."
+  },
+  {
+    name: "Statistics & Card Game Club",
+    attributes: [
+      "mathematics", "games", "strategy", "probability", "analytical thinking", "social", 
+      "card games", "data analysis", "logical reasoning", "recreational math", "game theory",
+      "statistical concepts", "pattern recognition", "decision making", "mathematical applications", "recreational"
+    ],
+    description: "Statistics & Card Game Club explores mathematical concepts through card games, developing statistical thinking, probability understanding, and strategic skills in a social, game-based environment."
+  },
+  {
+    name: "Student Government, Head",
+    attributes: [
+      "leadership", "student representation", "school policy", "event planning", "advocacy", "organization", 
+      "student voice", "decision making", "communication", "project management", "school improvement",
+      "civic engagement", "public speaking", "collaboration", "school culture", "governance"
+    ],
+    description: "Student Government represents the student body in school decisions, organizes school-wide events, advocates for student interests, and develops leadership through democratic processes and community building."
+  },
+  {
+    name: "Table Tennis Team & Club",
+    attributes: [
+      "sports", "table tennis", "hand-eye coordination", "reflexes", "strategy", "competition", 
+      "precision", "focus", "individual sport", "teamwork", "technique",
+      "agility", "mental sharpness", "game skills", "recreational", "competitive"
+    ],
+    description: "Table Tennis Team & Club develops skills in this fast-paced sport through regular practice, technique development, competitive play, and tournaments that build coordination and strategic thinking."
+  },
+  {
+    name: "Table Top Game Club",
+    attributes: [
+      "games", "strategy", "social", "board games", "card games", "role-playing games", 
+      "problem-solving", "critical thinking", "creativity", "competition", "collaboration",
+      "game design", "logical reasoning", "storytelling", "recreational", "community building"
+    ],
+    description: "Table Top Game Club brings together students interested in board games, card games, and role-playing games, developing strategic thinking, social skills, and creativity through regular gaming sessions."
+  },
+  {
+    name: "Tech Crew",
+    attributes: [
+      "theater", "technical production", "lighting", "sound", "backstage", "production", 
+      "stage management", "technical skills", "design", "teamwork", "problem-solving",
+      "equipment operation", "theatrical technology", "production support", "hands-on", "technical theater"
+    ],
+    description: "Tech Crew manages the technical aspects of theatrical productions, developing skills in lighting, sound, stage management, and production design while supporting performances behind the scenes."
+  },
+  {
+    name: "Theatre Club",
+    attributes: [
+      "theater", "acting", "performance", "drama", "creative expression", "stage", 
+      "character development", "public speaking", "theatrical arts", "production", "collaboration",
+      "improvisation", "script analysis", "stage presence", "performance skills", "storytelling"
+    ],
+    description: "Theatre Club explores various aspects of theatrical arts through workshops, performances, theater games, and production involvement, developing acting skills and theatrical knowledge."
+  },
+  {
+    name: "Top Dawgs",
+    attributes: [
+      "leadership", "mentoring", "peer support", "school culture", "role models", "community building", 
+      "student leadership", "guidance", "new student support", "school pride", "positive influence",
+      "orientation", "school transition", "interpersonal skills", "communication", "responsibility"
+    ],
+    description: "Top Dawgs provides peer mentoring and leadership for new and underclassmen students, creating a positive school culture through orientation activities, ongoing support, and community building."
+  },
+  {
+    name: "Tutors for the Future",
+    attributes: [
+      "tutoring", "academic support", "teaching", "mentoring", "community service", "education", 
+      "subject expertise", "helping others", "leadership", "communication skills", "patience",
+      "educational outreach", "knowledge sharing", "academic excellence", "service learning", "peer education"
+    ],
+    description: "Tutors for the Future provides academic support to fellow students and community members, developing teaching skills, subject mastery, and leadership through peer tutoring and educational outreach."
+  },
+  {
+    name: "Ultimate Frisbee Club",
+    attributes: [
+      "sports", "teamwork", "physical activity", "outdoor recreation", "strategy", "competition", 
+      "disc sports", "athleticism", "coordination", "sportsmanship", "endurance",
+      "field sports", "active lifestyle", "game skills", "recreational", "self-officiated"
+    ],
+    description: "Ultimate Frisbee Club develops athletic skills, teamwork, and sportsmanship through this self-officiated team sport that combines elements of football, soccer, and basketball with a flying disc."
+  },
+  {
+    name: "UNICEF Club",
+    attributes: [
+      "global issues", "humanitarian", "children's rights", "advocacy", "fundraising", "international", 
+      "social impact", "awareness campaigns", "global citizenship", "service", "education",
+      "United Nations", "community outreach", "global health", "human rights", "social justice"
+    ],
+    description: "UNICEF Club raises awareness and funds for children's rights worldwide, developing global citizenship through advocacy campaigns, fundraising events, and educational initiatives about international issues."
+  },
+  {
+    name: "Veterans Club",
+    attributes: [
+      "military appreciation", "patriotism", "community service", "history", "civic engagement", "support", 
+      "veterans affairs", "remembrance", "service projects", "awareness", "recognition",
+      "military history", "national service", "community outreach", "appreciation events", "civic duty"
+    ],
+    description: "Veterans Club honors military service through veteran appreciation events, service projects supporting veterans, and educational initiatives about military history and service."
+  },
+  {
+    name: "Vertigo (Literary Magazine)",
+    attributes: [
+      "creative writing", "literature", "publishing", "editing", "artistic expression", "poetry", 
+      "fiction", "literary arts", "design", "creative collaboration", "publication",
+      "editorial skills", "literary analysis", "visual arts", "student writing", "creative showcase"
+    ],
+    description: "Vertigo publishes student creative writing and artwork in a literary magazine, developing skills in writing, editing, design, and publication while showcasing student creative expression."
   },
   {
     name: "Yearbook",
-    attributes: ["photography", "writing", "design", "teamwork", "publishing", "journalism", "editing", "creativity"],
-    description: "A club where students work together to create and design the school's yearbook."
+    attributes: [
+      "journalism", "photography", "design", "publishing", "documentation", "layout", 
+      "writing", "editing", "visual storytelling", "school history", "collaboration",
+      "deadline management", "interviewing", "graphic design", "memory preservation", "publication"
+    ],
+    description: "Yearbook documents the school year through photography, writing, and design, creating a permanent record of school events, student life, and achievements in a professionally published book."
+  },
+  {
+    name: "Yoga Club",
+    attributes: [
+      "wellness", "physical activity", "mindfulness", "flexibility", "stress reduction", "balance", 
+      "meditation", "mental health", "fitness", "self-care", "breathing techniques",
+      "relaxation", "mind-body connection", "strength building", "holistic health", "centering"
+    ],
+    description: "Yoga Club practices physical postures, breathing techniques, and mindfulness, promoting physical and mental wellness through regular yoga sessions focused on flexibility, strength, and stress reduction."
+  },
+  {
+    name: "Youth and Government",
+    attributes: [
+      "government", "politics", "civic engagement", "leadership", "public policy", "debate", 
+      "mock government", "legislation", "public speaking", "current events", "democracy",
+      "political process", "bill writing", "parliamentary procedure", "advocacy", "citizenship"
+    ],
+    description: "Youth and Government simulates state government processes, developing civic knowledge, leadership, and policy skills through mock legislative sessions, court proceedings, and political debate."
   }
 ];
 
@@ -749,6 +1574,17 @@ const ClubQuiz: React.FC = () => {
         23: 1.5  // Medical/health
       };
 
+      // Define category mappings (for better organization in results)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const categoryMapping: Record<string, string[]> = {
+        "Arts": ["art", "creative", "design", "music", "theater", "dance", "film", "photography", "writing", "poetry"],
+        "Language & Culture": ["language", "culture", "international", "global", "diversity", "heritage", "ethnic", "multicultural"],
+        "STEM": ["science", "technology", "engineering", "math", "coding", "robotics", "research", "academic", "medicine", "health"],
+        "Business & Entrepreneurship": ["business", "entrepreneurship", "finance", "economics", "marketing", "leadership", "management"],
+        "Social Impact": ["volunteer", "service", "community", "activism", "advocacy", "social justice", "environment", "sustainability"],
+        "Sports & Recreation": ["sports", "athletics", "fitness", "outdoor", "recreation", "games", "competition"]
+      };
+
       // Define attribute weights (higher = more important for matching)
       const attributeWeights: Record<string, number> = {
         // Core interests and skills (highest weight)
@@ -1271,8 +2107,10 @@ const ClubQuiz: React.FC = () => {
       // Return top matches (clubs with at least 20% match)
       const topMatches = results.filter(result => result.matchPercentage >= 20);
       
-      // Group matches by category for better organization
-      const categorizedMatches = topMatches.length > 0 ? topMatches : results.slice(0, 5);
+      // Group matches by category for better organization and limit to 11 results
+      const categorizedMatches = topMatches.length > 0 
+        ? topMatches.slice(0, 11) 
+        : results.slice(0, 5);
       
       return categorizedMatches;
     } catch (error) {
@@ -1325,7 +2163,8 @@ const ClubQuiz: React.FC = () => {
           categoryMatch: null
         })));
       } else {
-        setClubMatches(matches);
+        // Limit results to a maximum of 11 clubs
+        setClubMatches(matches.slice(0, 11));
       }
       
       setShowResults(true);
@@ -1371,7 +2210,7 @@ const ClubQuiz: React.FC = () => {
       return answer?.sliderValue !== undefined ? answer.sliderValue : 3; // Default to middle value
     } catch (error) {
       console.error("Error getting slider value:", error);
-      return 3; // Safe default
+      return 3; // Default to middle value in case of error
     }
   };
 
@@ -1508,23 +2347,61 @@ const ClubQuiz: React.FC = () => {
                       <span>{currentQuestion.minLabel}</span>
                       <span>{currentQuestion.maxLabel}</span>
                     </div>
+                    
+                    {/* Enhanced slider with better visual feedback */}
+                    <div className="relative mb-6">
                     <input
                       type="range"
                       min={currentQuestion.min || 1}
                       max={currentQuestion.max || 5}
                       value={getSliderValue(currentQuestion.id)}
                       onChange={(e) => handleSliderChange(currentQuestion.id, parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3B82F6]"
-                    />
-                    <div className="mt-6 text-center">
-                      <motion.span 
+                        className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3B82F6]"
+                      />
+                      
+                      {/* Tick marks for slider values */}
+                      <div className="flex justify-between w-full px-1 mt-1">
+                        {Array.from({ length: (currentQuestion.max || 5) - (currentQuestion.min || 1) + 1 }, 
+                          (_, i) => i + (currentQuestion.min || 1)).map(tick => (
+                          <div 
+                            key={tick} 
+                            className={`h-2 w-0.5 ${
+                              tick === getSliderValue(currentQuestion.id) 
+                                ? 'bg-[#3B82F6]' 
+                                : 'bg-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center items-center">
+                      <motion.div 
                         key={getSliderValue(currentQuestion.id)}
-                        initial={{ scale: 0.8 }}
+                        initial={{ scale: 0.9 }}
                         animate={{ scale: 1 }}
-                        className="inline-block px-6 py-3 bg-gradient-to-r from-[#3B82F6]/20 to-[#38BFA1]/20 rounded-full font-medium text-[#3B82F6] shadow-sm"
+                        className="flex items-center justify-center bg-white rounded-xl p-3 shadow-sm border border-gray-200"
                       >
-                        {getSliderValue(currentQuestion.id)}
-                      </motion.span>
+                        {/* Value display with input option */}
+                        <div className="flex items-center">
+                          <input
+                            type="number"
+                            min={currentQuestion.min || 1}
+                            max={currentQuestion.max || 5}
+                            value={getSliderValue(currentQuestion.id)}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 
+                                (currentQuestion.min || 1) : 
+                                parseInt(e.target.value);
+                              handleSliderChange(currentQuestion.id, val);
+                            }}
+                            className="w-14 h-10 text-center bg-white border border-gray-300 rounded-lg text-[#3B82F6] font-medium text-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                          />
+                          <span className="ml-2 text-gray-600">
+                            / {currentQuestion.max || 5}
+                          </span>
+                        </div>
+                      </motion.div>
                     </div>
                   </div>
                 )}
