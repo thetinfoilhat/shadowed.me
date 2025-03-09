@@ -2,7 +2,7 @@
 import { Dialog, Tab } from '@headlessui/react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubListing } from '@/types/club';
 import { Club } from '@/types/club';
@@ -26,7 +26,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
         setLoading(true);
         const visitsRef = collection(db, 'opportunities');
         
-        // Fetch all opportunities
+        // Fetch opportunities that match the club name
         const querySnapshot = await getDocs(visitsRef);
         
         // Filter by club name and approved status
@@ -71,6 +71,29 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
     visit => new Date(visit.date) < new Date() || visit.completed
   );
 
+  // Get category color function
+  const getCategoryColor = (category: string): string => {
+    const colorMap: Record<string, string> = {
+      'STEM': '#4285F4',
+      'Business': '#34A853',
+      'Arts': '#FBBC05',
+      'Performing Arts': '#EA4335',
+      'Language & Culture': '#8E44AD',
+      'Community Service': '#3498DB',
+      'Humanities': '#E67E22',
+      'Medical': '#1ABC9C',
+      'Sports': '#2ECC71',
+      'Technology': '#9B59B6',
+      'Academic': '#F1C40F',
+      'Miscellaneous': '#95A5A6'
+    };
+    
+    return colorMap[category] || '#38BFA1'; // Default to theme color
+  };
+
+  const categoryColor = club.bgColor || getCategoryColor(club.category);
+  const categoryGradient = club.bgGradient || `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)`;
+
   return (
     <Dialog open={isOpen} onClose={onCloseAction} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -80,7 +103,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
           {/* Header with gradient background */}
           <div 
             className="p-6 text-white"
-            style={{ background: club.bgGradient || `linear-gradient(135deg, #38BFA1, #38BFA1dd)` }}
+            style={{ background: categoryGradient }}
           >
             <div className="flex justify-between items-start">
               <div>
@@ -104,33 +127,51 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
           
           <div className="overflow-y-auto p-6">
             <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-              <Tab.List className="flex space-x-1 rounded-xl bg-[#38BFA1]/10 p-1 mb-6">
-                <Tab className={({ selected }) =>
-                  `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
-                  ${selected
-                    ? 'bg-white text-[#38BFA1] shadow'
-                    : 'text-[#38BFA1]/60 hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }>
-                  About
+              <Tab.List className="flex space-x-1 rounded-xl p-1 mb-6" style={{ backgroundColor: `${categoryColor}10` }}>
+                <Tab 
+                  className={({ selected }) =>
+                    `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
+                    ${selected
+                      ? 'bg-white shadow'
+                      : 'hover:bg-white/[0.12]'
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <span style={{ color: selected ? categoryColor : `${categoryColor}99` }}>
+                      About
+                    </span>
+                  )}
                 </Tab>
-                <Tab className={({ selected }) =>
-                  `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
-                  ${selected
-                    ? 'bg-white text-[#38BFA1] shadow'
-                    : 'text-[#38BFA1]/60 hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }>
-                  Upcoming Visits
+                <Tab 
+                  className={({ selected }) =>
+                    `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
+                    ${selected
+                      ? 'bg-white shadow'
+                      : 'hover:bg-white/[0.12]'
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <span style={{ color: selected ? categoryColor : `${categoryColor}99` }}>
+                      Upcoming Visits
+                    </span>
+                  )}
                 </Tab>
-                <Tab className={({ selected }) =>
-                  `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
-                  ${selected
-                    ? 'bg-white text-[#38BFA1] shadow'
-                    : 'text-[#38BFA1]/60 hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }>
-                  Past Events
+                <Tab 
+                  className={({ selected }) =>
+                    `w-full py-2.5 text-sm font-medium leading-5 rounded-lg
+                    ${selected
+                      ? 'bg-white shadow'
+                      : 'hover:bg-white/[0.12]'
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <span style={{ color: selected ? categoryColor : `${categoryColor}99` }}>
+                      Past Events
+                    </span>
+                  )}
                 </Tab>
               </Tab.List>
 
@@ -147,18 +188,18 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-medium text-[#0A2540] mb-3 flex items-center">
-                        <ClockIcon className="h-5 w-5 mr-2 text-[#38BFA1]" />
+                        <ClockIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
                         Meeting Times
                       </h3>
-                      <p className="text-gray-600">{club.meetingTimes}</p>
+                      <p className="text-gray-600">{club.meetingTimes || "Schedule not specified"}</p>
                     </div>
                     
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-medium text-[#0A2540] mb-3 flex items-center">
-                        <EnvelopeIcon className="h-5 w-5 mr-2 text-[#38BFA1]" />
+                        <EnvelopeIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
                         Contact
                       </h3>
-                      <p className="text-gray-600">{club.contactInfo}</p>
+                      <p className="text-gray-600">{club.contactInfo || club.sponsorEmail || "Contact information not available"}</p>
                     </div>
                   </div>
                   
@@ -193,15 +234,15 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                           <p className="text-gray-600 mt-2">{visit.description}</p>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                             <div className="flex items-center text-gray-600">
-                              <CalendarIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <CalendarIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {format(new Date(visit.date), 'MMMM d, yyyy')}
                             </div>
                             <div className="flex items-center text-gray-600">
-                              <ClockIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.time}
                             </div>
                             <div className="flex items-center text-gray-600">
-                              <UserGroupIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <UserGroupIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.slots} slots available
                             </div>
                           </div>
@@ -230,15 +271,15 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                           <p className="text-gray-600 mt-2">{visit.description}</p>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                             <div className="flex items-center text-gray-600">
-                              <CalendarIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <CalendarIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {format(new Date(visit.date), 'MMMM d, yyyy')}
                             </div>
                             <div className="flex items-center text-gray-600">
-                              <ClockIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.time}
                             </div>
                             <div className="flex items-center text-gray-600">
-                              <UserGroupIcon className="h-4 w-4 mr-2 text-[#38BFA1]" />
+                              <UserGroupIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.applicants?.length || 0} participants
                             </div>
                           </div>

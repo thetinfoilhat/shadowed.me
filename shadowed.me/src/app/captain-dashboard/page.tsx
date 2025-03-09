@@ -6,11 +6,12 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit, ClubListing } from '@/types/club';
+import { Club, CompletedVisit } from '@/types/club';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 interface Applicant {
   name: string;
@@ -33,7 +34,7 @@ interface VisitData {
   id?: string;
   name: string;
   school?: string;
-  sponsorEmail: string;
+  sponsorEmail?: string;
   category: string;
   contactEmail: string;
   date: string;
@@ -48,40 +49,13 @@ interface VisitData {
 }
 
 function formatDate(dateStr: string) {
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    date.setDate(date.getDate() + 1);
-    return format(date, "MMMM do yyyy");
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid Date';
-  }
-}
-
-function formatDateForCircle(dateStr: string | undefined) {
-  if (!dateStr) return { month: '---', day: '--' };
-  
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return { month: '---', day: '--' };
-    }
-    date.setDate(date.getDate() + 1);
-    return {
-      month: format(date, 'MMM'),
-      day: format(date, 'd')
-    };
-  } catch (error) {
-    console.error('Error formatting date for circle:', error);
-    return { month: '---', day: '--' };
-  }
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return format(date, "MMMM do yyyy");
 }
 
 function formatTime(timeStr: string | undefined) {
-  if (!timeStr) return 'Time not set';
+  if (!timeStr) return '';
   
   try {
     const [start, end] = timeStr.split(' - ').map(time => {
@@ -127,11 +101,8 @@ export default function CaptainDashboard() {
   }>({ isOpen: false, visit: null, completing: false });
   const [isAdmin, setIsAdmin] = useState(false);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-  const [captainClubs, setCaptainClubs] = useState<ClubListing[]>([]);
-  const [confirmClubDelete, setConfirmClubDelete] = useState<{
-    isOpen: boolean;
-    clubId: string;
-  }>({ isOpen: false, clubId: '' });
+  const [upcomingExpanded, setUpcomingExpanded] = useState(true);
+  const [completedExpanded, setCompletedExpanded] = useState(false);
 
   // Fetch user role
   useEffect(() => {
@@ -257,10 +228,6 @@ export default function CaptainDashboard() {
     }
   };
 
-  const handleDeleteClick = (visitId: string) => {
-    setConfirmDelete({ isOpen: true, visitId });
-  };
-
   const handleDelete = async (visitId: string) => {
     try {
       await deleteDoc(doc(db, 'opportunities', visitId));
@@ -276,19 +243,6 @@ export default function CaptainDashboard() {
       visit, 
       completing 
     });
-  };
-
-  const handleConfirmCompletion = async () => {
-    if (!confirmCompletion.visit) return;
-    
-    try {
-      await handleMarkCompleted(
-        confirmCompletion.visit, 
-        confirmCompletion.completing
-      );
-    } finally {
-      setConfirmCompletion({ isOpen: false, visit: null, completing: false });
-    }
   };
 
   const handleMarkCompleted = async (visit: Club, completed: boolean) => {
@@ -310,7 +264,7 @@ export default function CaptainDashboard() {
       };
 
       // Process each applicant
-      for (const applicant of visit.applicants) {
+      for (const applicant of visit.applicants || []) {
         const userQuery = query(
           collection(db, 'users'), 
           where('email', '==', applicant.email)
@@ -343,48 +297,13 @@ export default function CaptainDashboard() {
         }
       }
 
+      toast.success(completed ? 'Visit marked as completed' : 'Visit unmarked as completed');
       await fetchCaptainVisits();
     } catch (error) {
       console.error('Error updating visit completion status:', error);
+      toast.error('Failed to update visit status');
     }
   };
-
-  // Add fetch function for clubs
-  const fetchCaptainClubs = useCallback(async () => {
-    if (!user?.email) return;
-    
-    try {
-      const clubsRef = collection(db, 'clubs');
-      const q = query(clubsRef, where('captain', '==', user.email));
-      const querySnapshot = await getDocs(q);
-      
-      const clubsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ClubListing[];
-      
-      setCaptainClubs(clubsData);
-    } catch (error) {
-      console.error('Error fetching clubs:', error);
-      toast.error('Failed to load clubs');
-    }
-  }, [user]);
-
-  // Add delete handler
-  const handleClubDelete = async (clubId: string) => {
-    try {
-      await deleteDoc(doc(db, 'clubs', clubId));
-      await fetchCaptainClubs();
-      toast.success('Club deleted successfully');
-    } catch (error) {
-      console.error('Error deleting club:', error);
-      toast.error('Failed to delete club');
-    }
-  };
-
-  useEffect(() => {
-    fetchCaptainClubs();
-  }, [fetchCaptainClubs]);
 
   if (loading) {
     return (
@@ -450,168 +369,273 @@ export default function CaptainDashboard() {
                 Create Your First Club Visit
               </h2>
               <p className="text-gray-600 mb-8">
-                Let students experience your club by scheduling a visit opportunity.
+                Start by creating a club visit opportunity for students to sign up
               </p>
-              <button 
-                onClick={() => {
-                  setEditingVisit(null);
-                  setIsCreateModalOpen(true);
-                }}
-                className="bg-[#38BFA1]/10 text-[#38BFA1] px-6 py-3 rounded-md hover:bg-[#38BFA1]/20 transition-all inline-flex items-center gap-2"
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg hover:bg-[#2DA891] transition-colors"
               >
-                <span>Schedule Visit</span>
-                <span>→</span>
+                Create Visit
               </button>
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-              <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
-                Scheduled Club Visits ({captainVisits.length})
-              </h2>
-              
-              <div className="space-y-4">
-                {captainVisits.map((visit) => (
-                  <div 
-                    key={visit.id}
-                    className="group flex items-center gap-6 p-6 rounded-lg border border-gray-100 hover:border-[#38BFA1]/30 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 cursor-pointer bg-white relative"
-                  >
-                    {/* Content wrapper with conditional opacity */}
-                    <div className={`flex items-center gap-6 ${visit.completed ? 'opacity-50' : ''}`}>
-                      {/* Date Circle */}
-                      <div className="flex-shrink-0 w-16 h-16 rounded-full bg-[#38BFA1]/10 flex flex-col items-center justify-center text-[#38BFA1]">
-                        <div className="text-sm font-medium">{formatDateForCircle(visit.date).month}</div>
-                        <div className="text-xl font-bold">{formatDateForCircle(visit.date).day}</div>
-                      </div>
-                      
-                      {/* Visit Details */}
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-[#0A2540]">
-                            {visit.name}
-                          </h3>
-                          {isAdmin && visit.captain !== user?.email && (
-                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                              Captain: {visit.captain}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Approval Status Bar */}
-                        {visit.status && (
-                          <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
-                            visit.status === 'pending' 
-                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                              : visit.status === 'approved' 
-                                ? 'bg-green-100 text-green-700 border border-green-200' 
-                                : 'bg-red-100 text-red-700 border border-red-200'
-                          }`}>
-                            {visit.status === 'pending' && (
-                              <span>Waiting for approval from <span className="font-semibold">
-                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </span></span>
-                            )}
-                            {visit.status === 'approved' && (
-                              <span>Approved by <span className="font-semibold">
-                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </span></span>
-                            )}
-                            {visit.status === 'rejected' && (
-                              <span>Rejected by <span className="font-semibold">
-                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </span></span>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="flex gap-8">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">School:</span>
-                              <span className="text-[#0A2540]">{visit.school}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Time:</span>
-                              <span className="text-[#0A2540]">{formatTime(visit.time)}</span>
-                            </div>
-                          </div>
+          <div className="space-y-8">
+            {/* Upcoming Visits Section */}
+            <div>
+              <button 
+                onClick={() => setUpcomingExpanded(!upcomingExpanded)}
+                className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+              >
+                <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+                  Upcoming Club Visits
+                  <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
+                    {captainVisits.filter(visit => !visit.completed).length}
+                  </span>
+                </h2>
+                {upcomingExpanded ? (
+                  <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
 
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Date:</span>
-                              <span className="text-[#0A2540]">{formatDate(visit.date)}</span>
+              {upcomingExpanded && (
+                <div className="space-y-4 animate-fadeIn">
+                  {captainVisits
+                    .filter(visit => !visit.completed)
+                    .map((visit) => (
+                      <div 
+                        key={visit.id} 
+                        className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
+                        onClick={() => setViewingApplicants(visit)}
+                      >
+                        <div className="flex items-start gap-6">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h3>
+                            <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
+                            
+                            {/* Approval Status Bar */}
+                            {visit.status && (
+                              <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
+                                visit.status === 'pending' 
+                                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                                  : visit.status === 'approved' 
+                                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                                    : 'bg-red-100 text-red-700 border border-red-200'
+                              }`}>
+                                {visit.status === 'pending' && (
+                                  <span>Waiting for approval from <span className="font-semibold">
+                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                                  </span></span>
+                                )}
+                                {visit.status === 'approved' && (
+                                  <span>Approved by <span className="font-semibold">
+                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                                  </span></span>
+                                )}
+                                {visit.status === 'rejected' && (
+                                  <span>Rejected by <span className="font-semibold">
+                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                                  </span></span>
+                                )}
+                              </div>
+                            )}
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-500">School</p>
+                                <p className="font-medium">{visit.school}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Date</p>
+                                <p className="font-medium">{formatDate(visit.date)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Time</p>
+                                <p className="font-medium">{formatTime(visit.time)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Available Slots</p>
+                                <p className="font-medium">{visit.slots}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Applicants</p>
+                                <p className="font-medium">{visit.applicants?.length || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Category</p>
+                                <p className="font-medium text-[#38BFA1]">{visit.category}</p>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Available Slots:</span>
-                              <span className="text-[#0A2540]">{visit.slots}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-500">Category:</span>
-                            <span className="text-[#38BFA1]">{visit.category}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                    
-                    {/* Completion tag - outside the opacity wrapper */}
-                    {visit.completed && (
-                      <div className="absolute top-4 left-4 px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
-                        Completed
-                      </div>
-                    )}
 
-                    {/* Action Buttons - outside the opacity wrapper */}
-                    <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
-                      <button 
-                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCompletionClick(visit, !visit.completed);
-                        }}
+                        {/* Action Buttons */}
+                        <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                          <button 
+                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompletionClick(visit, !visit.completed);
+                            }}
+                          >
+                            <span className="text-sm">Mark as Completed</span>
+                          </button>
+                          <button 
+                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingVisit(visit);
+                              setIsCreateModalOpen(true);
+                            }}
+                          >
+                            <span className="text-sm">Edit</span>
+                          </button>
+                          <button 
+                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingApplicants(visit);
+                            }}
+                          >
+                            <span className="text-sm">View Applicants</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDelete({ isOpen: true, visitId: visit.id });
+                            }}
+                            className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
+                          >
+                            <span className="text-sm">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {upcomingExpanded && captainVisits.filter(visit => !visit.completed).length === 0 && (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500">No upcoming club visits</p>
+                </div>
+              )}
+            </div>
+
+            {/* Completed Visits Section */}
+            <div>
+              <button 
+                onClick={() => setCompletedExpanded(!completedExpanded)}
+                className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+              >
+                <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+                  Completed Club Visits
+                  <span className="ml-2 bg-gray-500 text-white text-sm px-2 py-0.5 rounded-full">
+                    {captainVisits.filter(visit => visit.completed).length}
+                  </span>
+                </h2>
+                {completedExpanded ? (
+                  <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+
+              {completedExpanded && (
+                <div className="space-y-4 animate-fadeIn">
+                  {captainVisits
+                    .filter(visit => visit.completed)
+                    .map((visit) => (
+                      <div 
+                        key={visit.id} 
+                        className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
+                        onClick={() => setViewingApplicants(visit)}
                       >
-                        <span className="text-sm">
-                          {visit.completed ? 'Unmark as Completed' : 'Mark as Completed'}
-                        </span>
-                      </button>
-                      <button 
-                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingVisit(visit);
-                          setIsCreateModalOpen(true);
-                        }}
-                      >
-                        <span className="text-sm">Edit</span>
-                      </button>
-                      <button 
-                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setViewingApplicants(visit);
-                        }}
-                      >
-                        <span className="text-sm">View Applicants</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(visit.id);
-                        }}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md transition-colors"
-                      >
-                        Delete Visit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div className="flex items-start gap-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="text-xl font-semibold text-[#0A2540]">{visit.name}</h3>
+                              <span className="px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+                                Completed
+                              </span>
+                            </div>
+                            <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-500">School</p>
+                                <p className="font-medium">{visit.school}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Date</p>
+                                <p className="font-medium">{formatDate(visit.date)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Time</p>
+                                <p className="font-medium">{formatTime(visit.time)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Total Slots</p>
+                                <p className="font-medium">{visit.slots}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Participants</p>
+                                <p className="font-medium">{visit.applicants?.length || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Category</p>
+                                <p className="font-medium text-[#38BFA1]">{visit.category}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                          <button 
+                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompletionClick(visit, !visit.completed);
+                            }}
+                          >
+                            <span className="text-sm">Unmark as Completed</span>
+                          </button>
+                          <button 
+                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingApplicants(visit);
+                            }}
+                          >
+                            <span className="text-sm">View Participants</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDelete({ isOpen: true, visitId: visit.id });
+                            }}
+                            className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
+                          >
+                            <span className="text-sm">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {completedExpanded && captainVisits.filter(visit => visit.completed).length === 0 && (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500">No completed club visits</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
+        {/* Create/Edit Visit Modal */}
         <VisitModal
           isOpen={isCreateModalOpen}
           onCloseAction={() => {
@@ -622,90 +646,55 @@ export default function CaptainDashboard() {
           initialData={editingVisit ? {
             id: editingVisit.id,
             name: editingVisit.name,
+            school: editingVisit.school,
             sponsorEmail: editingVisit.sponsorEmail || '',
-            category: editingVisit.category || '',
+            category: editingVisit.category,
             contactEmail: editingVisit.contactEmail || '',
-            date: editingVisit.date || '',
+            date: editingVisit.date,
             startTime: editingVisit.startTime || '',
             endTime: editingVisit.endTime || '',
-            slots: editingVisit.slots || 0,
-            description: editingVisit.description || '',
+            slots: editingVisit.slots,
+            description: editingVisit.description,
+            status: editingVisit.status,
             captain: editingVisit.captain,
             applicants: editingVisit.applicants,
-            status: editingVisit.status,
-            createdAt: editingVisit.createdAt,
-            school: editingVisit.school
+            createdAt: editingVisit.createdAt
           } : null}
         />
 
+        {/* Applicants Dialog */}
         <ApplicantsDialog
           isOpen={!!viewingApplicants}
           onCloseAction={() => setViewingApplicants(null)}
           applicants={viewingApplicants?.applicants || []}
         />
 
+        {/* Delete Confirmation Dialog */}
         <ConfirmDialog
           isOpen={confirmDelete.isOpen}
           onClose={() => setConfirmDelete({ isOpen: false, visitId: '' })}
           onConfirm={() => handleDelete(confirmDelete.visitId)}
           title="Delete Visit"
-          message="Are you sure you want to delete this visit opportunity? This action cannot be undone."
+          message="Are you sure you want to delete this visit? This action cannot be undone."
           confirmText="Delete"
         />
 
+        {/* Completion Confirmation Dialog */}
         <ConfirmDialog
           isOpen={confirmCompletion.isOpen}
           onClose={() => setConfirmCompletion({ isOpen: false, visit: null, completing: false })}
-          onConfirm={handleConfirmCompletion}
+          onConfirm={async () => {
+            if (confirmCompletion.visit) {
+              await handleMarkCompleted(confirmCompletion.visit, confirmCompletion.completing);
+              setConfirmCompletion({ isOpen: false, visit: null, completing: false });
+            }
+          }}
           title={confirmCompletion.completing ? "Mark Visit as Completed" : "Unmark Visit as Completed"}
           message={confirmCompletion.completing 
             ? "Are you sure you want to mark this visit as completed? This will move it to students' completed visits."
             : "Are you sure you want to unmark this visit as completed? This will remove it from students' completed visits."
           }
           confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
-        />
-
-        <div className="mt-12 bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">
-            Your Clubs ({captainClubs.length})
-          </h2>
-          
-          <div className="space-y-4">
-            {captainClubs.map((club) => (
-              <div 
-                key={club.id}
-                className="flex items-center justify-between p-6 rounded-lg border border-gray-100 hover:border-[#38BFA1]/30 hover:shadow-lg transition-all"
-              >
-                <div>
-                  <h3 className="text-lg font-medium text-[#0A2540]">{club.name}</h3>
-                  <p className="text-gray-600 mt-1">{club.description}</p>
-                  <span className="inline-block mt-2 px-3 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
-                    {club.category}
-                  </span>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setConfirmClubDelete({ isOpen: true, clubId: club.id })}
-                    className="p-2 text-gray-600 hover:text-red-500 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <ConfirmDialog
-          isOpen={confirmClubDelete.isOpen}
-          onClose={() => setConfirmClubDelete({ isOpen: false, clubId: '' })}
-          onConfirm={() => handleClubDelete(confirmClubDelete.clubId)}
-          title="Delete Club"
-          message="Are you sure you want to delete this club? This action cannot be undone."
-          confirmText="Delete"
         />
       </div>
     </div>

@@ -25,6 +25,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     meetingTimes: initialData?.meetingTimes || '',
     contactInfo: initialData?.contactInfo || '',
     category: initialData?.category || '',
+    sponsorEmail: initialData?.sponsorEmail || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -183,6 +184,20 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     required
                     placeholder="Email or other contact method"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label htmlFor="sponsorEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Sponsor Email
+                  </label>
+                  <input
+                    type="email"
+                    id="sponsorEmail"
+                    value={formData.sponsorEmail}
+                    onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                    placeholder="sponsor@example.com"
                   />
                 </div>
 

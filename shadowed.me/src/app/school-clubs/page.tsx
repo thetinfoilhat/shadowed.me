@@ -26,17 +26,6 @@ function formatDate(dateStr: string) {
   return format(date, "MMMM do yyyy");
 }
 
-function formatTime(timeStr: string) {
-  const [start, end] = timeStr.split(' - ').map(time => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  });
-  return `${start} - ${end}`;
-}
-
 function isUserRegistered(club: Club, userEmail?: string | null) {
   if (!userEmail || !club.applicants) return false;
   return club.applicants.some(applicant => applicant.email === userEmail);
@@ -93,9 +82,11 @@ export default function SchoolClubs() {
             applicants: data.applicants || [],
             categories: data.categories || [],
             status: data.status || 'pending',
+            completed: data.completed || false,
           };
         })
-        .filter(club => club.status === 'approved'); // Only show approved visits
+        .filter(club => club.status === 'approved') // Only show approved visits
+        .filter(club => !club.completed); // Filter out completed visits
       
       setClubs(clubsData);
     } catch (err) {
@@ -121,19 +112,17 @@ export default function SchoolClubs() {
           setUserProfile({
             name: data.displayName || user.displayName || '',
             email: user.email || '',
-            age: data.age,
-            school: data.school,
-            grade: data.grade,
+            age: data.age || 0,
+            school: data.school || '',
+            grade: data.grade || 0,
           });
         }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
       }
     };
 
-    if (user) {
-      fetchUserProfile();
-    }
+    fetchUserProfile();
   }, [user]);
 
   useEffect(() => {
@@ -179,42 +168,45 @@ export default function SchoolClubs() {
       return;
     }
 
-    // Check if slots are available
-    const availableSlots = getAvailableSlots(club);
-    if (availableSlots === 0) {
-      toast.error('Sorry, this opportunity is full');
-      return;
-    }
-
-    // Check if profile is complete
-    if (!userProfile.grade || !userProfile.school) {
+    // Check if user profile is complete
+    if (!userProfile.name || !userProfile.school || !userProfile.grade) {
       setShowProfilePrompt(true);
       return;
     }
 
+    setRegisteringVisit(club);
+  };
+
+  const confirmRegistration = async () => {
+    if (!registeringVisit || !user?.email || !userProfile.name) return;
+    
     try {
-      const visitRef = doc(db, 'opportunities', club.id);
+      const visitRef = doc(db, 'opportunities', registeringVisit.id);
+      
+      // Add user to applicants array
       await updateDoc(visitRef, {
         applicants: arrayUnion({
-          name: user.displayName || 'Anonymous',
+          name: userProfile.name,
           email: user.email,
-          grade: userProfile.grade,
-          school: userProfile.school
+          grade: userProfile.grade?.toString() || '',
+          school: userProfile.school || '',
         })
       });
+      
+      toast.success('Successfully registered for the visit!');
+      setRegisteringVisit(null);
+      
+      // Refresh the clubs list
       await fetchClubs();
-      toast.success('Successfully registered!');
-    } catch (error) {
-      console.error('Error registering:', error);
-      toast.error('Failed to register. Please try again.');
+    } catch (err) {
+      console.error('Error registering for visit:', err);
+      toast.error('Failed to register for the visit');
     }
   };
 
   const handleEditProfile = () => {
     setShowProfilePrompt(false);
-    setTimeout(() => {
-      setShowProfileModal(true);
-    }, 100);
+    setShowProfileModal(true);
   };
 
   const handleDeleteClick = (visitId: string) => {
@@ -224,17 +216,21 @@ export default function SchoolClubs() {
   const handleDelete = async (visitId: string) => {
     try {
       await deleteDoc(doc(db, 'opportunities', visitId));
+      toast.success('Visit deleted successfully');
       await fetchClubs(); // Refresh the list
-    } catch (error) {
-      console.error('Error deleting visit:', error);
+    } catch (err) {
+      console.error('Error deleting visit:', err);
+      toast.error('Failed to delete visit');
+    } finally {
+      setConfirmDelete({ isOpen: false, visitId: '' });
     }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-8 py-12 max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-[3.5rem] font-semibold leading-[1.1] text-[#0A2540] mb-6">
+          <h1 className="text-4xl font-bold text-[#0A2540] mb-4">
             High School Club Visits
           </h1>
           <p className="text-lg text-gray-600">
@@ -318,128 +314,140 @@ export default function SchoolClubs() {
                       )}
                     </div>
                   </div>
+                  
+                  {userRole === 'admin' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(club.id);
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                      title="Delete Visit"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 
-                <p className="text-gray-600 mb-6">{club.description}</p>
+                <p className="text-gray-600 mb-4 line-clamp-3">{club.description}</p>
                 
-                <div className="space-y-2 text-sm text-gray-600 mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#38BFA1] font-medium">School:</span>
-                    <span>{club.school}</span>
+                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Date</p>
+                    <p className="font-medium">{formatDate(club.date)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#38BFA1] font-medium">Date:</span>
-                    <span>{formatDate(club.date)}</span>
+                  <div>
+                    <p className="text-gray-500">Time</p>
+                    <p className="font-medium">{club.startTime} - {club.endTime}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#38BFA1] font-medium">Time:</span>
-                    <span>{formatTime(club.time)}</span>
+                  <div>
+                    <p className="text-gray-500">Available Slots</p>
+                    <p className="font-medium">{availableSlots} / {club.slots}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#38BFA1] font-medium">Available Slots:</span>
-                    <span className={`${availableSlots === 0 ? 'text-red-500 font-medium' : ''}`}>
-                      {availableSlots} of {club.slots}
-                    </span>
-                    {isFull && (
-                      <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
-                        Full
-                      </span>
-                    )}
+                  <div>
+                    <p className="text-gray-500">Contact</p>
+                    <p className="font-medium truncate">{club.contactEmail}</p>
                   </div>
                 </div>
-
-                <button 
-                  className={`w-full px-6 py-3 rounded-md transition-all ${
-                    isRegistered 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                
+                <button
+                  onClick={() => handleRegister(club)}
+                  disabled={isFull || isRegistered}
+                  className={`w-full py-2 rounded-lg font-medium transition-colors ${
+                    isRegistered
+                      ? 'bg-blue-100 text-blue-600 cursor-default'
                       : isFull
-                        ? 'bg-red-50 text-red-400 cursor-not-allowed'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
                   }`}
-                  onClick={() => !isRegistered && !isFull && setRegisteringVisit(club)}
-                  disabled={isRegistered || isFull}
                 >
-                  {isRegistered 
-                    ? 'Already Registered' 
-                    : isFull 
-                      ? 'No Slots Available' 
-                      : 'Register to Visit'
-                  }
+                  {isRegistered
+                    ? 'Already Registered'
+                    : isFull
+                      ? 'No Available Slots'
+                      : 'Register for Visit'}
                 </button>
-
-                {userRole === 'admin' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(club.id);
-                    }}
-                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-md"
-                  >
-                    Delete Visit
-                  </button>
-                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {registeringVisit && (
-        <ConfirmDialog
-          isOpen={!!registeringVisit}
-          onClose={() => setRegisteringVisit(null)}
-          onConfirm={() => handleRegister(registeringVisit)}
-          title="Confirm Registration"
-          message={`Are you sure you want to register for "${registeringVisit.name}"?`}
-          confirmText="Register"
-        />
-      )}
+      {/* Registration Confirmation Dialog */}
+      <Dialog
+        open={registeringVisit !== null}
+        onClose={() => setRegisteringVisit(null)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-6">
+            <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-4">
+              Confirm Registration
+            </Dialog.Title>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to register for {registeringVisit?.name}?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setRegisteringVisit(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRegistration}
+                className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
 
-      {/* Profile Prompt Modal */}
-      {showProfilePrompt && (
-        <Dialog
-          open={showProfilePrompt}
-          onClose={() => setShowProfilePrompt(false)}
-          className="relative z-50"
-        >
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-8">
-              <Dialog.Title className="text-2xl font-semibold text-[#0A2540] mb-4">
-                Complete Your Profile
-              </Dialog.Title>
-              
-              <p className="text-gray-600 mb-8">
-                Please complete your profile information before registering for opportunities. 
-                This helps club captains better understand their visitors.
-              </p>
+      {/* Profile Prompt Dialog */}
+      <Dialog
+        open={showProfilePrompt}
+        onClose={() => setShowProfilePrompt(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-6">
+            <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-4">
+              Complete Your Profile
+            </Dialog.Title>
+            <p className="text-gray-600 mb-6">
+              Please complete your profile information before registering for opportunities.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowProfilePrompt(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditProfile}
+                className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+              >
+                Edit Profile
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
 
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setShowProfilePrompt(false)}
-                  className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-black"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEditProfile}
-                  className="px-6 py-2 rounded-lg bg-[#38BFA1] text-white hover:bg-[#2DA891] transition-colors"
-                >
-                  Edit Profile
-                </button>
-              </div>
-            </Dialog.Panel>
-          </div>
-        </Dialog>
-      )}
-
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, visitId: '' })}
         onConfirm={() => handleDelete(confirmDelete.visitId)}
         title="Delete Visit"
-        message="Are you sure you want to delete this visit opportunity? This action cannot be undone."
+        message="Are you sure you want to delete this visit? This action cannot be undone."
         confirmText="Delete"
       />
     </div>
