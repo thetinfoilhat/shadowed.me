@@ -8,11 +8,14 @@ import ClubCard from '@/components/ClubCard';
 import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { generateClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
+
+// Common sense attributes for filtering
+const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 'Performance'] as const;
 
 // Use the generated club listings instead of placeholder data
 const PLACEHOLDER_CLUBS = generateClubListings();
@@ -25,6 +28,7 @@ export default function ClubListings() {
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -81,6 +85,15 @@ export default function ClubListings() {
     fetchClubs();
   }, [fetchClubs]);
 
+  // Handle attribute selection
+  const toggleAttribute = (attribute: string) => {
+    setSelectedAttributes(prev => 
+      prev.includes(attribute)
+        ? prev.filter(attr => attr !== attribute)
+        : [...prev, attribute]
+    );
+  };
+
   // Apply all filters
   const filteredClubs = useMemo(() => {
     return clubs
@@ -88,16 +101,25 @@ export default function ClubListings() {
       .filter(club => 
         selectedCategory === 'All' || club.category === selectedCategory
       )
+      .filter(club => {
+        if (selectedAttributes.length === 0) return true;
+        
+        // Check if any of the selected attributes match the club's attributes
+        return selectedAttributes.every(attr => 
+          club.attributes?.includes(attr)
+        );
+      })
       .filter(club => 
         searchQuery === '' || 
         club.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         club.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-  }, [clubs, selectedCategory, searchQuery]);
+  }, [clubs, selectedCategory, selectedAttributes, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedCategory('All');
+    setSelectedAttributes([]);
     setSearchQuery('');
   };
 
@@ -149,9 +171,9 @@ export default function ClubListings() {
             >
               <AdjustmentsHorizontalIcon className="h-5 w-5" />
               <span className="font-medium">Filters</span>
-              {(selectedCategory !== 'All' || searchQuery) && (
+              {(selectedCategory !== 'All' || selectedAttributes.length > 0 || searchQuery) && (
                 <span className={`ml-1 ${showFilters ? 'bg-white text-[#38BFA1]' : 'bg-[#38BFA1] text-white'} text-xs rounded-full w-5 h-5 flex items-center justify-center`}>
-                  {(selectedCategory !== 'All' ? 1 : 0) + (searchQuery ? 1 : 0)}
+                  {(selectedCategory !== 'All' ? 1 : 0) + selectedAttributes.length + (searchQuery ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -194,7 +216,7 @@ export default function ClubListings() {
                 </button>
               </div>
               
-              <div>
+              <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Categories</h4>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -224,6 +246,30 @@ export default function ClubListings() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Activity Type</h4>
+                <div className="flex flex-wrap gap-2">
+                  {ATTRIBUTES.map((attribute) => (
+                    <button
+                      key={attribute}
+                      onClick={() => toggleAttribute(attribute)}
+                      className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                        selectedAttributes.includes(attribute)
+                          ? attribute === 'Competitive' 
+                            ? 'bg-amber-500 text-white shadow-sm' 
+                            : 'bg-[#38BFA1] text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {attribute === 'Competitive' && (
+                        <TrophyIcon className="h-3.5 w-3.5 inline-block mr-1" />
+                      )}
+                      {attribute}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -272,6 +318,7 @@ export default function ClubListings() {
           <div className="space-y-4">
             {filteredClubs.map((club) => {
               const categoryColor = getCategoryColor(club.category);
+              const isCompetitive = club.attributes?.includes('Competitive');
               return (
                 <div 
                   key={club.id}
@@ -279,6 +326,13 @@ export default function ClubListings() {
                   className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white overflow-hidden relative"
                 >
                   <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: categoryColor }} />
+                  {isCompetitive && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Competitive">
+                        <TrophyIcon className="h-4 w-4" />
+                      </div>
+                    </div>
+                  )}
                   <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative flex flex-col items-center justify-center bg-gray-50 border border-gray-100">
                     <span className="text-xl font-bold" style={{ color: categoryColor }}>{club.name.split(' ')[0]}</span>
                     <span 
@@ -319,15 +373,16 @@ export default function ClubListings() {
             </button>
           </div>
         )}
-      </div>
 
-      {selectedClub && (
-        <ClubDetailsDialog
-          club={selectedClub}
-          isOpen={!!selectedClub}
-          onCloseAction={() => setSelectedClub(null)}
-        />
-      )}
+        {/* Club Details Dialog */}
+        {selectedClub && (
+          <ClubDetailsDialog
+            club={selectedClub}
+            isOpen={!!selectedClub}
+            onCloseAction={() => setSelectedClub(null)}
+          />
+        )}
+      </div>
     </div>
   );
 } 

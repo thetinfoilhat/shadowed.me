@@ -1,7 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { ClubListing } from '@/types/club';
-import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon, TrophyIcon } from '@heroicons/react/24/outline';
 
 interface ClubCardProps {
   club: ClubListing;
@@ -17,6 +17,9 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
   const scheduleAttribute = club.attributes?.find(attr => 
     ['Weekly', 'Monthly', 'Bi-weekly'].includes(attr)
   );
+  
+  // Check if club is competitive
+  const isCompetitive = club.attributes?.includes('Competitive');
 
   // Get a subtle color based on category
   const getCategoryColor = (category: string): string => {
@@ -43,9 +46,16 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full border border-gray-100 overflow-hidden"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full border border-gray-100 overflow-hidden relative"
       onClick={onClick}
     >
+      {isCompetitive && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Competitive">
+            <TrophyIcon className="h-4 w-4" />
+          </div>
+        </div>
+      )}
       <div className="h-1.5" style={{ backgroundColor: categoryColor }} />
       <div className="p-5 flex-grow flex flex-col">
         <div className="mb-3">

@@ -35,6 +35,33 @@ const getCategoryGradient = (category: string): string => {
   return `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`;
 };
 
+// Add a list of competitive clubs - only include the specific ones mentioned
+const COMPETITIVE_CLUBS = [
+  'DECA',
+  'BPA',
+  'Robotics Team',
+  'HOSA',
+  'Esports Club',
+  'Chess Team',
+  'Math Team',
+  'Debate',
+  'Model UN',
+  'Show Choir',
+  'Orchesis'
+];
+
+// Function to generate a description for a club
+const generateDescription = (club: {
+  name: string;
+  membership: string;
+  frequency: string;
+  schedule: string;
+  category?: string;
+  description?: string;
+}): string => {
+  return `${club.name} is a ${club.membership.toLowerCase()} membership club that meets ${club.frequency.toLowerCase()}${club.schedule !== 'All Year' ? ` during ${club.schedule.toLowerCase()}` : ''}.`;
+};
+
 // Raw club data from the table
 export const CLUB_DATA: {
   name: string;
@@ -156,12 +183,30 @@ export const CLUB_DATA: {
   { name: "Youth and Government", membership: "Open", schedule: "All Year", frequency: "Weekly", category: "Humanities" }
 ];
 
+// Category-based attributes mapping
+const categoryAttributes: Record<string, string[]> = {
+  'STEM': ['Research', 'Analytical', 'Problem-Solving'],
+  'Business': ['Leadership', 'Entrepreneurship', 'Networking'],
+  'Arts': ['Creative', 'Artistic', 'Expressive'],
+  'Performing Arts': ['Performance', 'Creative', 'Expressive'],
+  'Language & Culture': ['Cultural', 'Communication', 'Global'],
+  'Community Service': ['Volunteering', 'Leadership', 'Empathy'],
+  'Humanities': ['Research', 'Critical Thinking', 'Communication'],
+  'Medical': ['Healthcare', 'Science', 'Service'],
+  'Sports': ['Teamwork', 'Physical Activity', 'Discipline'],
+  'Technology': ['Coding', 'Innovation', 'Technical'],
+  'Academic': ['Research', 'Analytical', 'Scholarly'],
+  'Miscellaneous': ['Diverse', 'Unique', 'Specialized']
+};
+
 // Convert raw club data to ClubListing format
 export function generateClubListings(): ClubListing[] {
   return CLUB_DATA.map((club, index) => {
     // Generate a description if one isn't provided
-    const description = club.description || 
-      `${club.name} is a ${club.membership.toLowerCase()} membership club that meets ${club.frequency.toLowerCase()}${club.schedule !== 'All Year' ? ` during ${club.schedule.toLowerCase()}` : ''}.`;
+    const description = club.description || generateDescription(club);
+    
+    // Determine if the club is competitive - ONLY use the explicit list
+    const isCompetitive = COMPETITIVE_CLUBS.includes(club.name);
     
     // Map frequency to attributes
     const frequencyAttribute = club.frequency === 'Weekly' ? 'Weekly' : 
@@ -171,29 +216,15 @@ export function generateClubListings(): ClubListing[] {
     
     // Map membership to attributes
     const membershipAttribute = club.membership === 'Open' ? 'Open Membership' :
-                               club.membership === 'Application' || club.membership === 'Staff Nomination' || club.membership === 'Class Specific' || club.membership === 'Election' ? 'Application Required' :
-                               'Tryout/Audition';
+                               club.membership === 'Application' ? 'Application Required' :
+                               club.membership === 'Tryout/Audition' ? 'Tryout/Audition' :
+                               club.membership === 'Staff Nomination' ? 'Staff Nomination' :
+                               club.membership === 'Class Specific' ? 'Class Specific' : 'Election';
     
     // Map schedule to attributes
     const scheduleAttribute = club.schedule === 'All Year' ? 'Year-round' : 'Seasonal';
     
-    // Generate random attributes based on club category
-    const categoryAttributes: Record<string, string[]> = {
-      'STEM': ['Research', 'Hands-on', 'Teamwork'],
-      'Business': ['Entrepreneurship', 'Networking', 'Leadership'],
-      'Arts': ['Creative', 'Hands-on'],
-      'Performing Arts': ['Creative', 'Teamwork', 'Public Speaking'],
-      'Language & Culture': ['Public Speaking', 'Creative'],
-      'Community Service': ['Leadership', 'Teamwork'],
-      'Humanities': ['Public Speaking', 'Research'],
-      'Medical': ['Research', 'Hands-on'],
-      'Sports': ['Teamwork', 'Competitive'],
-      'Technology': ['Hands-on', 'Research'],
-      'Academic': ['Research', 'Competitive'],
-      'Miscellaneous': ['Creative', 'Teamwork']
-    };
-    
-    // Select 1-3 category attributes plus the frequency, membership, and schedule attributes
+    // Select 1-3 category attributes
     const baseAttributes = [frequencyAttribute, membershipAttribute, scheduleAttribute];
     const possibleCategoryAttributes = club.category ? categoryAttributes[club.category] || [] : [];
     const numToSelect = Math.floor(Math.random() * 3) + 1; // 1 to 3 attributes
@@ -201,11 +232,17 @@ export function generateClubListings(): ClubListing[] {
       .sort(() => 0.5 - Math.random()) // Shuffle
       .slice(0, Math.min(numToSelect, possibleCategoryAttributes.length));
     
+    // Create the attributes array - add Competitive ONLY if in the explicit list
+    let attributes = [...baseAttributes, ...selectedCategoryAttributes];
+    if (isCompetitive) {
+      attributes = ['Competitive', ...attributes];
+    }
+    
     return {
       id: (index + 1).toString(),
       name: club.name,
       category: club.category || 'Miscellaneous',
-      attributes: [...baseAttributes, ...selectedCategoryAttributes],
+      attributes,
       description,
       bgColor: getCategoryColor(club.category || 'Miscellaneous'),
       bgGradient: getCategoryGradient(club.category || 'Miscellaneous'),
