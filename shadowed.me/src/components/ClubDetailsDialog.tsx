@@ -2,7 +2,7 @@
 import { Dialog, Tab } from '@headlessui/react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubListing } from '@/types/club';
 import { Club } from '@/types/club';
