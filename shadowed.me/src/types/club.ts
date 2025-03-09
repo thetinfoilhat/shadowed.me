@@ -51,4 +51,6 @@ export interface ClubListing {
   status?: 'pending' | 'approved' | 'rejected';
   attributes?: string[];
   image?: string;
+  bgColor?: string;
+  bgGradient?: string;
 } 

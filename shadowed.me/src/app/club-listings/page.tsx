@@ -8,32 +8,11 @@ import ClubCard from '@/components/ClubCard';
 import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
+import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { generateClubListings } from '@/data/clubData';
 
-// Enhanced categories and attributes for filtering
+// Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
-
-const ATTRIBUTES = [
-  'Competitive', 
-  'Teamwork', 
-  'Public Speaking', 
-  'Hands-on', 
-  'Leadership', 
-  'Creative', 
-  'Research',
-  'Entrepreneurship',
-  'Networking',
-  'Weekly',
-  'Monthly',
-  'Bi-weekly',
-  'Open Membership',
-  'Application Required',
-  'Tryout/Audition',
-  'Year-round',
-  'Seasonal'
-] as const;
 
 // Use the generated club listings instead of placeholder data
 const PLACEHOLDER_CLUBS = generateClubListings();
@@ -46,7 +25,6 @@ export default function ClubListings() {
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -103,15 +81,6 @@ export default function ClubListings() {
     fetchClubs();
   }, [fetchClubs]);
 
-  // Handle attribute selection
-  const toggleAttribute = (attribute: string) => {
-    setSelectedAttributes(prev => 
-      prev.includes(attribute)
-        ? prev.filter(attr => attr !== attribute)
-        : [...prev, attribute]
-    );
-  };
-
   // Apply all filters
   const filteredClubs = useMemo(() => {
     return clubs
@@ -120,21 +89,36 @@ export default function ClubListings() {
         selectedCategory === 'All' || club.category === selectedCategory
       )
       .filter(club => 
-        selectedAttributes.length === 0 || 
-        selectedAttributes.some(attr => club.attributes?.includes(attr))
-      )
-      .filter(club => 
         searchQuery === '' || 
         club.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         club.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-  }, [clubs, selectedCategory, selectedAttributes, searchQuery]);
+  }, [clubs, selectedCategory, searchQuery]);
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedCategory('All');
-    setSelectedAttributes([]);
     setSearchQuery('');
+  };
+
+  // Get category color function
+  const getCategoryColor = (category: string): string => {
+    const colorMap: Record<string, string> = {
+      'STEM': '#4285F4',
+      'Business': '#34A853',
+      'Arts': '#FBBC05',
+      'Performing Arts': '#EA4335',
+      'Language & Culture': '#8E44AD',
+      'Community Service': '#3498DB',
+      'Humanities': '#E67E22',
+      'Medical': '#1ABC9C',
+      'Sports': '#2ECC71',
+      'Technology': '#9B59B6',
+      'Academic': '#F1C40F',
+      'Miscellaneous': '#95A5A6'
+    };
+    
+    return colorMap[category] || '#38BFA1'; // Default to theme color
   };
 
   if (loading) {
@@ -157,13 +141,17 @@ export default function ClubListings() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all ${
+                showFilters 
+                  ? 'bg-[#38BFA1] text-white shadow-md' 
+                  : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20 border border-[#38BFA1]/20'
+              }`}
             >
               <AdjustmentsHorizontalIcon className="h-5 w-5" />
-              <span>Filters</span>
-              {(selectedCategory !== 'All' || selectedAttributes.length > 0 || searchQuery) && (
-                <span className="ml-1 bg-[#38BFA1] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {(selectedCategory !== 'All' ? 1 : 0) + selectedAttributes.length + (searchQuery ? 1 : 0)}
+              <span className="font-medium">Filters</span>
+              {(selectedCategory !== 'All' || searchQuery) && (
+                <span className={`ml-1 ${showFilters ? 'bg-white text-[#38BFA1]' : 'bg-[#38BFA1] text-white'} text-xs rounded-full w-5 h-5 flex items-center justify-center`}>
+                  {(selectedCategory !== 'All' ? 1 : 0) + (searchQuery ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -194,62 +182,48 @@ export default function ClubListings() {
           </div>
 
           {showFilters && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4 animate-fadeIn">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-900">Filters</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4 animate-fadeIn shadow-sm">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="font-semibold text-[#0A2540] text-lg">Filters</h3>
                 <button
                   onClick={resetFilters}
-                  className="text-sm text-[#38BFA1] hover:text-[#2DA891]"
+                  className="text-sm font-medium text-[#38BFA1] hover:text-[#2DA891] flex items-center"
                 >
+                  <XMarkIcon className="h-4 w-4 mr-1" />
                   Reset all
                 </button>
               </div>
               
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Categories</h4>
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Categories</h4>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory('All')}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       selectedCategory === 'All'
-                        ? 'bg-[#38BFA1] text-white'
+                        ? 'bg-[#38BFA1] text-white shadow-sm'
                         : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20'
                     }`}
                   >
                     All
                   </button>
-                  {CATEGORIES.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedCategory === category
-                          ? 'bg-[#38BFA1] text-white'
-                          : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20'
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Attributes</h4>
-                <div className="flex flex-wrap gap-2">
-                  {ATTRIBUTES.map((attribute) => (
-                    <button
-                      key={attribute}
-                      onClick={() => toggleAttribute(attribute)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedAttributes.includes(attribute)
-                          ? 'bg-[#38BFA1] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {attribute}
-                    </button>
-                  ))}
+                  {CATEGORIES.filter(c => c !== 'All').map((category) => {
+                    const categoryColor = getCategoryColor(category);
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors`}
+                        style={
+                          selectedCategory === category
+                            ? { backgroundColor: categoryColor, color: 'white', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }
+                            : { backgroundColor: `${categoryColor}20`, color: categoryColor }
+                        }
+                      >
+                        {category}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -296,42 +270,38 @@ export default function ClubListings() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredClubs.map((club) => (
-              <div 
-                key={club.id}
-                onClick={() => setSelectedClub(club)}
-                className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative">
-                  <Image 
-                    src={club.image || 'https://via.placeholder.com/300x200?text=No+Image'} 
-                    alt={club.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, 192px"
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'https://via.placeholder.com/300x200?text=No+Image';
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-[#0A2540]">{club.name}</h3>
-                  <p className="text-sm text-[#38BFA1] mb-2">{club.category}</p>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{club.description}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {club.attributes?.map((attribute, index) => (
-                      <span 
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                      >
-                        {attribute}
-                      </span>
-                    ))}
+            {filteredClubs.map((club) => {
+              const categoryColor = getCategoryColor(club.category);
+              return (
+                <div 
+                  key={club.id}
+                  onClick={() => setSelectedClub(club)}
+                  className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white overflow-hidden relative"
+                >
+                  <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: categoryColor }} />
+                  <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative flex flex-col items-center justify-center bg-gray-50 border border-gray-100">
+                    <span className="text-xl font-bold" style={{ color: categoryColor }}>{club.name.split(' ')[0]}</span>
+                    <span 
+                      className="text-sm mt-1 px-2 py-0.5 rounded-full"
+                      style={{ 
+                        backgroundColor: `${categoryColor}20`, // 20% opacity
+                        color: categoryColor 
+                      }}
+                    >
+                      {club.category}
+                    </span>
+                  </div>
+                  <div className="flex-1 pl-2">
+                    <h3 className="text-lg font-semibold text-[#0A2540]">{club.name}</h3>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{club.description}</p>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <ClockIcon className="h-3 w-3 mr-1" style={{ color: categoryColor }} />
+                      {club.meetingTimes}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

@@ -9,6 +9,32 @@ type ScheduleType = 'All Year' | 'Fall Only' | 'Winter Only' | 'Spring Only' | '
 // Frequency types
 type FrequencyType = 'Weekly' | 'Monthly' | 'Every other week' | 'Bi-monthly' | 'Varies';
 
+// Function to generate a color based on category
+const getCategoryColor = (category: string): string => {
+  const colorMap: Record<string, string> = {
+    'STEM': '#4285F4',
+    'Business': '#34A853',
+    'Arts': '#FBBC05',
+    'Performing Arts': '#EA4335',
+    'Language & Culture': '#8E44AD',
+    'Community Service': '#3498DB',
+    'Humanities': '#E67E22',
+    'Medical': '#1ABC9C',
+    'Sports': '#2ECC71',
+    'Technology': '#9B59B6',
+    'Academic': '#F1C40F',
+    'Miscellaneous': '#95A5A6'
+  };
+  
+  return colorMap[category] || '#38BFA1'; // Default to theme color
+};
+
+// Function to generate a gradient based on category color
+const getCategoryGradient = (category: string): string => {
+  const baseColor = getCategoryColor(category);
+  return `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`;
+};
+
 // Raw club data from the table
 export const CLUB_DATA: {
   name: string;
@@ -131,7 +157,7 @@ export const CLUB_DATA: {
 ];
 
 // Convert raw club data to ClubListing format
-export const generateClubListings = (): ClubListing[] => {
+export function generateClubListings(): ClubListing[] {
   return CLUB_DATA.map((club, index) => {
     // Generate a description if one isn't provided
     const description = club.description || 
@@ -181,7 +207,8 @@ export const generateClubListings = (): ClubListing[] => {
       category: club.category || 'Miscellaneous',
       attributes: [...baseAttributes, ...selectedCategoryAttributes],
       description,
-      image: `https://source.unsplash.com/random/300x200/?${encodeURIComponent(club.category || 'club')}`,
+      bgColor: getCategoryColor(club.category || 'Miscellaneous'),
+      bgGradient: getCategoryGradient(club.category || 'Miscellaneous'),
       status: 'approved',
       mission: `To provide students with opportunities to explore their interests in ${club.category || 'various activities'}.`,
       meetingTimes: club.frequency === 'Weekly' ? 'Every Monday, 3:30-5:00 PM' :
@@ -195,4 +222,4 @@ export const generateClubListings = (): ClubListing[] => {
       createdAt: new Date()
     };
   });
-}; 
+} 
