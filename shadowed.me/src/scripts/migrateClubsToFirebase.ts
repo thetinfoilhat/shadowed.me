@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs} from 'firebase/firestore';
 import { generateClubListings } from '@/data/clubData';
 import { ClubListing } from '@/types/club';
 
