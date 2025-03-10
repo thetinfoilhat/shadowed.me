@@ -7,7 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { ClubListing } from '@/types/club';
 
-const CATEGORIES = ['STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
+// Enhanced categories for filtering - match with club-listings page
+const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous'] as const;
+
+// Common sense attributes for filtering - match with club-listings page
+const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 'Performance'] as const;
 
 interface ClubModalProps {
   isOpen: boolean;
@@ -26,15 +30,30 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     contactInfo: initialData?.contactInfo || '',
     category: initialData?.category || '',
     sponsorEmail: initialData?.sponsorEmail || '',
+    roomNumber: initialData?.roomNumber || '',
+    attributes: initialData?.attributes || [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.email) return;
 
+    // Validate room number
+    const errors: {[key: string]: string} = {};
+    if (!formData.roomNumber.trim()) {
+      errors.roomNumber = 'Room number is required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      setValidationErrors({});
       const clubData = {
         ...formData,
         captain: user.email,
@@ -57,6 +76,23 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const toggleAttribute = (attribute: string) => {
+    setFormData(prev => {
+      const currentAttributes = [...prev.attributes];
+      if (currentAttributes.includes(attribute)) {
+        return {
+          ...prev,
+          attributes: currentAttributes.filter(attr => attr !== attribute)
+        };
+      } else {
+        return {
+          ...prev,
+          attributes: [...currentAttributes, attribute]
+        };
+      }
+    });
   };
 
   return (
@@ -84,7 +120,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-xl bg-white p-6 relative">
+            <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-xl bg-white p-6 relative overflow-y-auto max-h-[90vh]">
               <button
                 onClick={onCloseAction}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -98,6 +134,16 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
               <Dialog.Title className="text-2xl font-bold text-[#0A2540] mb-6">
                 {initialData ? 'Edit Club' : 'Create New Club'}
               </Dialog.Title>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Important:</strong> Please make sure to provide the room number where your club meets. This information is required and helps students locate your club.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -135,6 +181,33 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                    Activity Types
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {ATTRIBUTES.map((attribute) => (
+                      <button
+                        key={attribute}
+                        type="button"
+                        onClick={() => toggleAttribute(attribute)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                          formData.attributes.includes(attribute)
+                            ? attribute === 'Competitive' 
+                              ? 'bg-amber-500 text-white shadow-sm' 
+                              : 'bg-[#38BFA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {attribute}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select all that apply to your club
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
                     Description
                   </label>
                   <textarea
@@ -161,6 +234,29 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                    Room Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.roomNumber}
+                    onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
+                    required
+                    placeholder="e.g., Room 123"
+                    className={`w-full rounded-lg border ${validationErrors.roomNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]`}
+                  />
+                  {validationErrors.roomNumber ? (
+                    <p className="text-xs text-red-500 mt-1">
+                      {validationErrors.roomNumber}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Please provide the room number where the club meets
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
                     Meeting Times
                   </label>
                   <input
@@ -173,32 +269,34 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Contact Information
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contactInfo}
-                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                    required
-                    placeholder="Email or other contact method"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                      Contact Information
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contactInfo}
+                      onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                      required
+                      placeholder="Email or other contact method"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    />
+                  </div>
 
-                <div className="mb-4">
-                  <label htmlFor="sponsorEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    Sponsor Email
-                  </label>
-                  <input
-                    type="email"
-                    id="sponsorEmail"
-                    value={formData.sponsorEmail}
-                    onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="sponsor@example.com"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                      Sponsor Email
+                    </label>
+                    <input
+                      type="email"
+                      id="sponsorEmail"
+                      value={formData.sponsorEmail}
+                      onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      placeholder="sponsor@example.com"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-6">

@@ -53,4 +53,5 @@ export interface ClubListing {
   image?: string;
   bgColor?: string;
   bgGradient?: string;
+  roomNumber?: string;
 } 
