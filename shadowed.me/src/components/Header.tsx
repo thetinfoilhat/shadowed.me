@@ -317,6 +317,22 @@ export default function Header() {
                   Club Visits
                 </Link>
               </li>
+              <li>
+                <Link 
+                  href="/club-listings"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  Club Lists
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/what-fits-you"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  Discover
+                </Link>
+              </li>
               
               {/* Combined Dashboard Menu */}
               <li className="relative group">
@@ -325,14 +341,14 @@ export default function Header() {
                     href="/my-visits"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
-                    My Visits
+                    Dashboard
                   </Link>
                 ) : userRole === 'student' ? (
                   <Link 
                     href="/my-visits"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
-                    My Dashboard
+                    Dashboard
                   </Link>
                 ) : (userRole === 'admin' || userRole === 'captain') ? (
                   <>
@@ -391,22 +407,6 @@ export default function Header() {
                     </div>
                   </>
                 ) : null}
-              </li>
-              <li>
-                <Link 
-                  href="/what-fits-you"
-                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                >
-                  What Fits You!
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/club-listings"
-                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
-                >
-                  Club List
-                </Link>
               </li>
               <li>
                 <Link 
@@ -509,6 +509,24 @@ export default function Header() {
                   Club Visits
                 </Link>
               </li>
+              <li>
+                <Link 
+                  href="/club-listings"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Club Lists
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/what-fits-you"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Discover
+                </Link>
+              </li>
               {!user ? (
                 <li>
                   <Link 
@@ -516,7 +534,7 @@ export default function Header() {
                     className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    My Visits
+                    Dashboard
                   </Link>
                 </li>
               ) : userRole === 'student' ? (
@@ -526,7 +544,7 @@ export default function Header() {
                     className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    My Dashboard
+                    Dashboard
                   </Link>
                 </li>
               ) : (userRole === 'captain' || userRole === 'admin') ? (
@@ -583,24 +601,6 @@ export default function Header() {
                   </li>
                 </>
               ) : null}
-              <li>
-                <Link 
-                  href="/what-fits-you"
-                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  What Fits You!
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/club-listings"
-                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Club List
-                </Link>
-              </li>
               <li>
                 <Link 
                   href="/about"
