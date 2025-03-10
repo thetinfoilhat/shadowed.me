@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import EnhancedIntro from './EnhancedIntro';
 
@@ -1315,6 +1315,20 @@ const ClubQuiz: React.FC = () => {
   // Calculate progress percentage
   const progress = ((currentQuestionIndex || 0) / questions.length) * 100;
 
+  // Auto-set default value for slider questions when they're first displayed
+  useEffect(() => {
+    if (currentQuestionIndex !== null) {
+      const currentQuestion = questions[currentQuestionIndex];
+      if (currentQuestion && currentQuestion.type === 'slider') {
+        const existingAnswer = answers.find(a => a.questionId === currentQuestion.id);
+        if (!existingAnswer) {
+          // Set default value of 3 for slider questions
+          handleSliderChange(currentQuestion.id, 3);
+        }
+      }
+    }
+  }, [currentQuestionIndex, answers]);
+
   // Navigate to next question with error handling
   const handleNext = () => {
     try {
@@ -1408,7 +1422,15 @@ const ClubQuiz: React.FC = () => {
       
       const answer = answers.find(a => a.questionId === currentQuestion.id);
       
-      if (!answer) return false;
+      if (!answer) {
+        // If it's a slider question, consider it answered with the default value
+        if (currentQuestion.type === 'slider') {
+          // Auto-set the default value for slider questions
+          handleSliderChange(currentQuestion.id, 3);
+          return true;
+        }
+        return false;
+      }
       
       let isAnswered = false;
       
