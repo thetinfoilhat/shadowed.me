@@ -138,7 +138,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
                 <div className="flex">
                   <div className="ml-3">
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-black">
                       <strong>Important:</strong> Please make sure to provide the room number where your club meets. This information is required and helps students locate your club.
                     </p>
                   </div>
@@ -156,7 +156,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                     placeholder="Club name"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
 
@@ -201,9 +201,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Select all that apply to your club
-                  </p>
+                  <p className="text-sm text-black opacity-70 mt-1">Optional: Select all that apply</p>
                 </div>
 
                 <div>
@@ -215,7 +213,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
 
@@ -228,7 +226,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
                     required
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
 
@@ -249,7 +247,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                       {validationErrors.roomNumber}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-black opacity-70 mt-1">
                       Please provide the room number where the club meets
                     </p>
                   )}
@@ -265,7 +263,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     onChange={(e) => setFormData({ ...formData, meetingTimes: e.target.value })}
                     required
                     placeholder="e.g., Every Monday 3:30 PM - 5:00 PM"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
 
@@ -280,7 +278,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                       onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
                       required
                       placeholder="Email or other contact method"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     />
                   </div>
 
@@ -293,7 +291,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                       id="sponsorEmail"
                       value={formData.sponsorEmail}
                       onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
                       placeholder="sponsor@example.com"
                     />
                   </div>

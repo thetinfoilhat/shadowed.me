@@ -230,11 +230,11 @@ export default function SchoolClubs() {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-[#0A2540] mb-4">
+          <h1 className="text-4xl font-bold text-black mb-4">
             High School Club Visits
           </h1>
-          <p className="text-lg text-gray-600">
-            Get a firsthand look at club meetings and events at Naperville North
+          <p className="text-lg text-black">
+            Experience high school clubs firsthand and find your passion
           </p>
         </div>
 
@@ -244,11 +244,11 @@ export default function SchoolClubs() {
             <input
               type="text"
               placeholder="Search clubs..."
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black placeholder:text-gray-400"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black placeholder:text-black placeholder:opacity-70"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <span className="absolute right-4 top-3.5 text-gray-400">🔍</span>
+            <span className="absolute right-4 top-3.5 text-black opacity-70">🔍</span>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -270,7 +270,7 @@ export default function SchoolClubs() {
 
         {loading && (
           <div className="text-center py-12">
-            <p className="text-gray-600">Loading clubs...</p>
+            <p className="text-black">Loading clubs...</p>
           </div>
         )}
 
@@ -282,7 +282,7 @@ export default function SchoolClubs() {
 
         {!loading && !error && filteredClubs.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600">No clubs found</p>
+            <p className="text-black">No clubs found</p>
           </div>
         )}
 
@@ -297,7 +297,7 @@ export default function SchoolClubs() {
               <div key={club.id} className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-[#0A2540]">{club.name}</h3>
+                    <h3 className="text-xl font-semibold text-black">{club.name}</h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {(club.categories || [club.category]).map((cat) => (
                         <span 
@@ -331,24 +331,24 @@ export default function SchoolClubs() {
                   )}
                 </div>
                 
-                <p className="text-gray-600 mb-4 line-clamp-3">{club.description}</p>
+                <p className="text-black mb-4 line-clamp-3">{club.description}</p>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Date</p>
-                    <p className="font-medium">{formatDate(club.date)}</p>
+                    <p className="text-black font-medium">Date</p>
+                    <p className="font-medium text-black">{formatDate(club.date)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Time</p>
-                    <p className="font-medium">{club.startTime} - {club.endTime}</p>
+                    <p className="text-black font-medium">Time</p>
+                    <p className="font-medium text-black">{club.startTime} - {club.endTime}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Available Slots</p>
-                    <p className="font-medium">{availableSlots} / {club.slots}</p>
+                    <p className="text-black font-medium">Available Slots</p>
+                    <p className="font-medium text-black">{availableSlots} / {club.slots}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Contact</p>
-                    <p className="font-medium truncate">{club.contactEmail}</p>
+                    <p className="text-black font-medium">Contact</p>
+                    <p className="font-medium truncate text-black">{club.contactEmail}</p>
                   </div>
                 </div>
                 
@@ -359,7 +359,7 @@ export default function SchoolClubs() {
                     isRegistered
                       ? 'bg-blue-100 text-blue-600 cursor-default'
                       : isFull
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-100 text-black cursor-not-allowed'
                         : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
                   }`}
                 >
@@ -384,16 +384,16 @@ export default function SchoolClubs() {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-6">
-            <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-4">
+            <Dialog.Title className="text-xl font-semibold text-black mb-4">
               Confirm Registration
             </Dialog.Title>
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               Are you sure you want to register for {registeringVisit?.name}?
             </p>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setRegisteringVisit(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-black"
               >
                 Cancel
               </button>
@@ -417,16 +417,16 @@ export default function SchoolClubs() {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white p-6">
-            <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-4">
+            <Dialog.Title className="text-xl font-semibold text-black mb-4">
               Complete Your Profile
             </Dialog.Title>
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               Please complete your profile information before registering for opportunities.
             </p>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setShowProfilePrompt(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-black"
               >
                 Cancel
               </button>
