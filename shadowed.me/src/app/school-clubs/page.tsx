@@ -234,7 +234,7 @@ export default function SchoolClubs() {
             High School Club Visits
           </h1>
           <p className="text-lg text-black">
-            Experience high school clubs firsthand and find your passion
+            Get a firsthand look at club meetings, events, and volunteer opportunities at Naperville North to find activities you&apos;re passionate about
           </p>
         </div>
 
