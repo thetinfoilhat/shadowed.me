@@ -162,7 +162,7 @@ const SyncedCounters = () => {
           {isVisible && (
             <CountUp
               start={0}
-              end={50}
+              end={100}
               duration={2.5}
               suffix="+"
               useEasing={true}
@@ -273,7 +273,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
               >
-                Supporting students with simple searching, instant club registration, and easy outreach tracking.
+                The one-stop shop for discovering clubs, events, and experiences at Naperville North, helping rising underclassmen get involved and interested.
               </motion.p>
 
               <motion.div
@@ -330,15 +330,15 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-white/10 pb-3">
                       <div>
-                        <div className="text-[#2A8E9E] font-medium">Physics Club Visit</div>
-                        <div className="text-white/70 text-sm mt-1">Neuqua Valley High School</div>
+                        <div className="text-[#2A8E9E] font-medium">Physics Club</div>
+                        <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
                       </div>
                       <div className="text-white/50 text-sm">Mar 15</div>
                     </div>
                     <div className="flex items-center justify-between border-b border-white/10 pb-3">
                       <div>
-                        <div className="text-[#2A8E9E] font-medium">Food Bank Volunteering</div>
-                        <div className="text-white/70 text-sm mt-1">Loaves & Fishes</div>
+                        <div className="text-[#2A8E9E] font-medium">HOSA Competition</div>
+                        <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
                       </div>
                       <div className="text-white/50 text-sm">Mar 18</div>
                     </div>
@@ -369,7 +369,7 @@ export default function Home() {
             >
               <div className="text-white/90 text-sm font-medium">Active Students</div>
               <div className="text-white text-2xl font-bold mt-1">500+</div>
-              <div className="text-white/70 text-xs mt-1">across 12 schools</div>
+              <div className="text-white/70 text-xs mt-1">across 110 clubs</div>
             </motion.div>
           </div>
         </div>
@@ -408,7 +408,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
               >
-                Experience that grows with your interests
+                Explore, Engage, and Excel at Naperville North.
               </motion.h2>
               <motion.p 
                 className="text-base sm:text-lg text-gray-500 max-w-md"
@@ -416,7 +416,8 @@ export default function Home() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
               >
-                Designed to find volunteering opportunities that work for your schedule and interests.
+               Designed to help younger students explore their interests, prioritize their passions, and get involved early.
+
               </motion.p>
             </div>
             {/* Feature cards */}
@@ -433,9 +434,9 @@ export default function Home() {
                 <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
                   <span className="text-2xl">🔍</span>
                 </div>
-                <h3 className="text-xl font-semibold text-[#180D39] mb-3">Easy Discovery</h3>
+                <h3 className="text-xl font-semibold text-[#180D39] mb-3">Explore</h3>
                 <p className="text-[#180D39]/70">
-                  Find opportunities that match your interests and schedule
+                Find clubs, events, and opportunities that match your goals and schedule.
                 </p>
               </motion.div>
 
@@ -451,9 +452,9 @@ export default function Home() {
                 <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
                   <span className="text-2xl">⚡</span>
                 </div>
-                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Quick Registration</h3>
+                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Engage</h3>
                 <p className="text-[#180D39]/70">
-                  One-click signup for clubs and volunteer work
+                One-click sign-up for school clubs, extracurricular activities, and volunteer work.
                 </p>
               </motion.div>
 
@@ -469,9 +470,9 @@ export default function Home() {
                 <div className="bg-[#E6F7F4] w-12 h-12 rounded-xl flex items-center justify-center mb-6">
                   <span className="text-2xl">📊</span>
                 </div>
-                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Progress Tracking</h3>
+                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Excel</h3>
                 <p className="text-gray-600">
-                  Automatically log your hours and experiences
+                Automatically log your participation, volunteer hours, and experiences to build a strong foundation for high school and beyond.
                 </p>
               </motion.div>
 
@@ -503,26 +504,24 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            Maximize your experience with a
-            <br className="hidden md:block" />
-            platform that connects.
+            Find your path at Naperville North
           </motion.h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16">
             <div>
               <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">1</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Create your profile</h3>
-              <p className="text-sm md:text-base text-gray-400">Set your interests, availability, and preferences</p>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Chart Your Course</h3>
+              <p className="text-sm md:text-base text-gray-400">Create your profile with your name, email, and grade to get started.</p>
             </div>
             <div>
               <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">2</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Discover opportunities</h3>
-              <p className="text-sm md:text-base text-gray-400">Browse and filter opportunities that match your profile</p>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Join the Pack</h3>
+              <p className="text-sm md:text-base text-gray-400">Explore 110+ clubs and activities to discover what excites you most.</p>
             </div>
             <div>
               <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">3</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Track your growth</h3>
-              <p className="text-sm md:text-base text-gray-400">Build your portfolio as you participate</p>
+              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Track Your Trail</h3>
+              <p className="text-sm md:text-base text-gray-400">Discover a career path that you really care about!</p>
             </div>
           </div>
         </div>
@@ -565,8 +564,8 @@ export default function Home() {
             className="bg-white rounded-[2rem] p-12 shadow-sm"
             whileHover={{ y: -8 }}
           >
-            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Smart Scheduling</h3>
-            <p className="text-[#180D39]/80 mb-6">AI-powered conflict detection ensures you never double-book</p>
+            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Teacher Touchpoints</h3>
+            <p className="text-[#180D39]/80 mb-6">All activities are teacher or admin approved</p>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 rounded-lg bg-[#2A8E9E]/10 flex items-center justify-center">
@@ -584,7 +583,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="text-[#2A8E9E] font-medium">
-                Conflict-free scheduling
+              Approval-based scheduling
               </div>
             </div>
           </motion.div>

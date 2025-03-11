@@ -2,7 +2,7 @@
 import { Dialog, Tab } from '@headlessui/react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubListing } from '@/types/club';
 import { Club } from '@/types/club';
@@ -203,6 +203,16 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                     </div>
                   </div>
                   
+                  {club.roomNumber && (
+                    <div className="mt-4 bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-medium text-[#0A2540] mb-3 flex items-center">
+                        <BuildingLibraryIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
+                        Location
+                      </h3>
+                      <p className="text-gray-600">{club.roomNumber}</p>
+                    </div>
+                  )}
+                  
                   {club.attributes && club.attributes.length > 0 && (
                     <div className="mt-6">
                       <h3 className="font-medium text-[#0A2540] mb-3">Club Attributes</h3>
@@ -210,7 +220,19 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                         {club.attributes.map((attribute, index) => (
                           <span 
                             key={index}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                            className={`px-3 py-1 text-sm rounded-full ${
+                              attribute === 'Competitive' 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : attribute === 'Leadership'
+                                ? 'bg-blue-100 text-blue-800'
+                                : attribute === 'Teamwork'
+                                ? 'bg-green-100 text-green-800'
+                                : attribute === 'Public Speaking'
+                                ? 'bg-purple-100 text-purple-800'
+                                : attribute === 'Performance'
+                                ? 'bg-pink-100 text-pink-800'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
                           >
                             {attribute}
                           </span>

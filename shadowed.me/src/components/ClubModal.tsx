@@ -40,6 +40,8 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     meetingTimes: initialData?.meetingTimes || '',
     contactInfo: initialData?.contactInfo || '',
     sponsorEmail: initialData?.sponsorEmail || '',
+    roomNumber: initialData?.roomNumber || '',
+    attributes: initialData?.attributes || [] as string[],
   });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(initialData?.types || []);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -49,6 +51,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     initialData?.activityTypes || []
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
   const toggleType = (type: string) => {
     if (selectedTypes.includes(type)) {
@@ -85,6 +88,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
     try {
       setIsSubmitting(true);
+      setValidationErrors({});
       const clubData = {
         ...formData,
         types: selectedTypes,
@@ -112,6 +116,23 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const toggleAttribute = (attribute: string) => {
+    setFormData(prev => {
+      const currentAttributes = [...prev.attributes];
+      if (currentAttributes.includes(attribute)) {
+        return {
+          ...prev,
+          attributes: currentAttributes.filter(attr => attr !== attribute)
+        };
+      } else {
+        return {
+          ...prev,
+          attributes: [...currentAttributes, attribute]
+        };
+      }
+    });
   };
 
   return (
@@ -151,6 +172,16 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
               <Dialog.Title className="text-2xl font-bold text-black mb-6">
                 {initialData ? 'Edit Club' : 'Create New Club'}
               </Dialog.Title>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Important:</strong> Please make sure to provide the room number where your club meets. This information is required and helps students locate your club.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -326,12 +357,21 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                   </label>
                   <input
                     type="text"
-                    value={formData.meetingTimes}
-                    onChange={(e) => setFormData({ ...formData, meetingTimes: e.target.value })}
+                    value={formData.roomNumber}
+                    onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
                     required
-                    placeholder="e.g., Every Monday 3:30 PM - 5:00 PM"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    placeholder="e.g., Room 123"
+                    className={`w-full rounded-lg border ${validationErrors.roomNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]`}
                   />
+                  {validationErrors.roomNumber ? (
+                    <p className="text-xs text-red-500 mt-1">
+                      {validationErrors.roomNumber}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Please provide the room number where the club meets
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -340,10 +380,10 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                   </label>
                   <input
                     type="text"
-                    value={formData.contactInfo}
-                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                    value={formData.meetingTimes}
+                    onChange={(e) => setFormData({ ...formData, meetingTimes: e.target.value })}
                     required
-                    placeholder="Email or other contact method"
+                    placeholder="e.g., Every Monday 3:30 PM - 5:00 PM"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
