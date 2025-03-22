@@ -1,21 +1,29 @@
 'use client';
 import { motion } from 'framer-motion';
 import { ClubListing } from '@/types/club';
-import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon, TrophyIcon, BuildingLibraryIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon, TrophyIcon, BuildingLibraryIcon, StarIcon } from '@heroicons/react/24/outline';
 
 interface ClubCardProps {
   club: ClubListing & { created?: boolean };
   onClick: () => void;
+  compact?: boolean;
 }
 
-export default function ClubCard({ club, onClick }: ClubCardProps) {
+export default function ClubCard({ club, onClick, compact = false }: ClubCardProps) {
+  const {
+    name,
+    description,
+    meetingTimes,
+    category,
+  } = club;
+
   // Extract the first attribute of each type for display
   const membershipAttribute = club.attributes?.find(attr => 
-    ['Open Membership', 'Application Required', 'Tryout/Audition'].includes(attr)
+    attr === 'Open Membership' || attr === 'Application' || attr === 'Tryout'
   );
   
-  const scheduleAttribute = club.attributes?.find(attr => 
-    ['Weekly', 'Monthly', 'Bi-weekly'].includes(attr)
+  const frequencyAttribute = club.attributes?.find(attr =>
+    attr === 'Weekly' || attr === 'Bi-weekly' || attr === 'Monthly' || attr === 'Quarterly'
   );
   
   // Check for activity types
@@ -23,130 +31,113 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
   const hasLeadership = club.attributes?.includes('Leadership');
   const hasTeamwork = club.attributes?.includes('Teamwork');
   const hasPublicSpeaking = club.attributes?.includes('Public Speaking');
-  const hasPerformance = club.attributes?.includes('Performance');
   
-  // Check if this is a placeholder club with no details
-  const isPlaceholder = club.created === false;
+  // Check if this is a placeholder (no detailed info yet)
+  const isPlaceholder = !club.created;
 
-  // Get a subtle color based on category
-  const getCategoryColor = (category: string): string => {
-    const colorMap: Record<string, string> = {
-      'STEM': '#4285F4',
-      'Business': '#34A853',
-      'Arts': '#FBBC05',
-      'Performing Arts': '#EA4335',
-      'Language & Culture': '#8E44AD',
-      'Community Service': '#3498DB',
-      'Humanities': '#E67E22',
-      'Medical': '#1ABC9C',
-      'Sports': '#2ECC71',
-      'Technology': '#9B59B6',
-      'Academic': '#F1C40F',
-      'Miscellaneous': '#95A5A6'
-    };
-    
-    return colorMap[category] || '#38BFA1'; // Default to theme color
+  // Helper function to get color based on category
+  const getCategoryColor = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'academic': return '#4361EE'; // brighter blue
+      case 'arts': return '#F72585'; // vibrant pink
+      case 'cultural': return '#FF9500'; // bright orange
+      case 'service': return '#06D6A0'; // bright teal
+      case 'social': return '#9D4EDD'; // rich purple
+      case 'stem': return '#4CC9F0'; // bright cyan
+      case 'sports': return '#D90429'; // bright red
+      default: return '#4361EE'; // bright blue default
+    }
   };
 
-  const categoryColor = getCategoryColor(club.category);
+  const categoryColor = getCategoryColor(category);
+
+  // Build card classes directly instead of using cn utility
+  const cardClasses = `relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 ${
+    compact ? 'p-3' : 'p-4'
+  }`;
 
   return (
     <motion.div
-      whileHover={{ y: -4, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
-      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full border border-gray-100 overflow-hidden relative ${isPlaceholder ? 'opacity-75' : ''}`}
+      whileHover={{ y: -8, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
+      className={`${cardClasses} ${isPlaceholder ? 'opacity-80' : ''}`}
       onClick={onClick}
     >
       <div className="absolute top-2 right-2 z-10 flex gap-1">
         {isCompetitive && (
-          <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Competitive">
+          <div className="bg-gradient-to-r from-amber-500 to-amber-400 text-white p-1.5 rounded-full shadow-md" title="Competitive">
             <TrophyIcon className="h-4 w-4" />
           </div>
         )}
         {hasLeadership && (
-          <div className="bg-blue-500 text-white p-1 rounded-full shadow-sm" title="Leadership">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-          </div>
-        )}
-        {isPlaceholder && (
-          <div className="bg-gray-200 text-gray-500 p-1 rounded-full shadow-sm" title="Details coming soon">
-            <LockClosedIcon className="h-4 w-4" />
+          <div className="bg-gradient-to-r from-blue-500 to-blue-400 text-white p-1.5 rounded-full shadow-md" title="Leadership">
+            <StarIcon className="h-4 w-4" />
           </div>
         )}
       </div>
-      <div className="h-1.5" style={{ backgroundColor: categoryColor }} />
+
+      <div className="h-2" style={{ backgroundColor: categoryColor }} />
       <div className="p-5 flex-grow flex flex-col">
         <div className="mb-3">
-          <h3 className="text-xl font-bold text-[#0A2540] mb-1">{club.name}</h3>
+          <h3 className="text-xl font-bold text-[#0A2540] mb-1">{name}</h3>
           <div className="flex items-center gap-2 flex-wrap">
             <span 
-              className="inline-block px-3 py-1 text-sm rounded-full"
+              className="text-xs font-medium px-2.5 py-1.5 rounded-full text-white"
               style={{ 
-                backgroundColor: `${categoryColor}20`, // 20% opacity
-                color: categoryColor 
+                background: `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)`,
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
               }}
             >
-              {club.category}
+              {category}
             </span>
             
             {membershipAttribute && (
-              <span className="text-xs text-gray-500 flex items-center">
-                <UserGroupIcon className="h-3 w-3 mr-1" />
-                {membershipAttribute.replace(' Membership', '').replace(' Required', '')}
+              <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded-full font-medium shadow-sm">
+                <UserGroupIcon className="h-3 w-3 inline mr-1" />
+                {membershipAttribute}
               </span>
             )}
             
-            {scheduleAttribute && (
-              <span className="text-xs text-gray-500 flex items-center">
-                <CalendarIcon className="h-3 w-3 mr-1" />
-                {scheduleAttribute}
-              </span>
-            )}
-            
-            {isPlaceholder && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                Details Coming Soon
+            {frequencyAttribute && (
+              <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded-full font-medium shadow-sm">
+                <CalendarIcon className="h-3 w-3 inline mr-1" />
+                {frequencyAttribute}
               </span>
             )}
           </div>
         </div>
         
         <p className="text-gray-600 line-clamp-3 mb-4 flex-grow">
-          {club.description || (isPlaceholder ? "Information about this club will be available soon." : "")}
+          {description || (isPlaceholder ? "Information about this club will be available soon." : "")}
         </p>
         
-        <div className="text-sm text-gray-500 border-t pt-3 mt-auto space-y-1">
+        <div className="text-sm text-gray-600 border-t pt-3 mt-auto space-y-2">
           <div className="flex items-center">
             <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-            {club.meetingTimes || (isPlaceholder ? "Meeting times TBD" : "")}
+            <span className="font-medium">{meetingTimes || (isPlaceholder ? "Meeting times TBD" : "")}</span>
           </div>
           
-          {(club.roomNumber || isPlaceholder) && (
+          {club.roomNumber && (
             <div className="flex items-center">
               <BuildingLibraryIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-              {club.roomNumber || "Room number TBD"}
+              <span className="font-medium">Room: {club.roomNumber}</span>
             </div>
           )}
           
-          {(club.captain || isPlaceholder) && (
+          {club.captain && (
             <div className="flex items-center">
               <UserIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-              {club.captain || "Captain TBD"}
+              <span className="font-medium">Captain: {club.captain}</span>
             </div>
           )}
         </div>
         
-        {(hasTeamwork || hasPublicSpeaking || hasPerformance) && (
+        {(hasTeamwork || hasPublicSpeaking) && (
           <div className="mt-3 flex flex-wrap gap-1">
             {hasTeamwork && (
-              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">Teamwork</span>
+              <span className="text-xs px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full font-medium shadow-sm">Teamwork</span>
             )}
             {hasPublicSpeaking && (
-              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">Public Speaking</span>
-            )}
-            {hasPerformance && (
-              <span className="text-xs px-2 py-0.5 bg-pink-100 text-pink-800 rounded-full">Performance</span>
+              <span className="text-xs px-2.5 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium shadow-sm">Public Speaking</span>
             )}
           </div>
         )}
