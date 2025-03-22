@@ -311,6 +311,14 @@ export default function Header() {
             <ul className="flex gap-8">
               <li>
                 <Link 
+                  href="/jamboree"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  Jamboree
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/school-clubs"
                   className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                 >
@@ -500,6 +508,15 @@ export default function Header() {
         >
           <nav className="h-full overflow-y-auto">
             <ul className="px-6 py-4 space-y-4">
+              <li>
+                <Link 
+                  href="/jamboree"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Jamboree
+                </Link>
+              </li>
               <li>
                 <Link 
                   href="/school-clubs"
