@@ -58,14 +58,22 @@ const ClubSelect = ({ value, onChange, required }: ClubSelectProps) => {
         if (isAdmin) {
           // If user is admin, get all clubs
           const querySnapshot = await getDocs(clubsRef);
+          const uniqueClubNames = new Set<string>();
+          
           querySnapshot.forEach((doc) => {
             const clubData = doc.data();
-            clubsList.push({
-              id: doc.id,
-              name: clubData.name || 'Unnamed Club',
-              category: clubData.category || 'Uncategorized',
-              captain: clubData.captain || '',
-            });
+            const clubName = clubData.name || 'Unnamed Club';
+            
+            // Only add if we haven't seen this club name yet
+            if (!uniqueClubNames.has(clubName.toLowerCase())) {
+              uniqueClubNames.add(clubName.toLowerCase());
+              clubsList.push({
+                id: doc.id,
+                name: clubName,
+                category: clubData.category || 'Uncategorized',
+                captain: clubData.captain || '',
+              });
+            }
           });
         } else {
           // Get clubs where the current user is the captain
