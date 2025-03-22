@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { ClubListing } from '@/types/club';
 import { Club } from '@/types/club';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { CalendarIcon, ClockIcon, UserGroupIcon, EnvelopeIcon, BuildingLibraryIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon, UserGroupIcon, EnvelopeIcon, BuildingLibraryIcon, LinkIcon } from '@heroicons/react/24/outline';
 
 interface ClubDetailsProps {
   club: ClubListing;
@@ -199,7 +199,50 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                         <EnvelopeIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
                         Contact
                       </h3>
-                      <p className="text-gray-600">{club.contactInfo || club.sponsorEmail || "Contact information not available"}</p>
+                      {/* Display primary contact info */}
+                      {club.contactInfo && (
+                        <div className="mb-2">
+                          <p className="text-gray-600">{club.contactInfo}</p>
+                        </div>
+                      )}
+                      
+                      {/* Display additional contact methods if available */}
+                      {club.contactInfoList && club.contactInfoList.length > 0 && (
+                        <div className="space-y-1">
+                          {club.contactInfoList.filter(contact => contact !== club.contactInfo).map((contact, i) => (
+                            <div key={i} className="flex items-center text-gray-600">
+                              <LinkIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
+                              <span>{contact}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Display primary sponsor email */}
+                      {club.sponsorEmail && (
+                        <div className="mt-3">
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Sponsor Contact:</h4>
+                          <p className="text-gray-600">{club.sponsorEmail}</p>
+                        </div>
+                      )}
+                      
+                      {/* Display additional sponsor emails if available */}
+                      {club.sponsorEmailList && club.sponsorEmailList.length > 0 && (
+                        <div className="mt-1 space-y-1">
+                          {club.sponsorEmailList.filter(email => email !== club.sponsorEmail).map((email, i) => (
+                            <div key={i} className="flex items-center text-gray-600">
+                              <EnvelopeIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
+                              <span>{email}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {!club.contactInfo && !club.sponsorEmail && 
+                        club.contactInfoList?.length === 0 && 
+                        club.sponsorEmailList?.length === 0 && (
+                          <p className="text-gray-600">Contact information not available</p>
+                      )}
                     </div>
                   </div>
                   

@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { ClubListing } from '@/types/club';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 // Enhanced categories for filtering - match with club-listings page
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous'] as const;
@@ -39,7 +40,13 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     roomNumber: initialData?.roomNumber || '',
     attributes: initialData?.attributes || [] as string[],
     captain: initialData?.captain || user?.email || '',
+    contactInfoList: initialData?.contactInfoList || [],
+    sponsorEmailList: initialData?.sponsorEmailList || [],
   });
+  
+  const [newContactInfo, setNewContactInfo] = useState('');
+  const [newSponsorEmail, setNewSponsorEmail] = useState('');
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [isAdmin, setIsAdmin] = useState(false);
@@ -92,6 +99,22 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     fetchCaptains();
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (initialData && !initialData.contactInfoList && initialData.contactInfo) {
+      setFormData(prev => ({
+        ...prev,
+        contactInfoList: [initialData.contactInfo]
+      }));
+    }
+    
+    if (initialData && !initialData.sponsorEmailList && initialData.sponsorEmail) {
+      setFormData(prev => ({
+        ...prev,
+        sponsorEmailList: [initialData.sponsorEmail]
+      }));
+    }
+  }, [initialData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.email) return;
@@ -110,8 +133,21 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     try {
       setIsSubmitting(true);
       setValidationErrors({});
+      
+      const contactInfoList = [...formData.contactInfoList];
+      if (formData.contactInfo && !contactInfoList.includes(formData.contactInfo)) {
+        contactInfoList.unshift(formData.contactInfo);
+      }
+      
+      const sponsorEmailList = [...formData.sponsorEmailList];
+      if (formData.sponsorEmail && !sponsorEmailList.includes(formData.sponsorEmail)) {
+        sponsorEmailList.unshift(formData.sponsorEmail);
+      }
+      
       const clubData = {
         ...formData,
+        contactInfoList,
+        sponsorEmailList,
         captain: isAdmin ? formData.captain : user.email, // Use selected captain if admin
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -177,6 +213,45 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         };
       }
     });
+  };
+
+  const addContactInfo = () => {
+    if (!newContactInfo.trim()) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      contactInfoList: [...prev.contactInfoList, newContactInfo.trim()]
+    }));
+    setNewContactInfo('');
+  };
+
+  const removeContactInfo = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      contactInfoList: prev.contactInfoList.filter((_, i: number) => i !== index)
+    }));
+  };
+
+  const addSponsorEmail = () => {
+    if (!newSponsorEmail.trim()) return;
+    
+    if (!newSponsorEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      sponsorEmailList: [...prev.sponsorEmailList, newSponsorEmail.trim()]
+    }));
+    setNewSponsorEmail('');
+  };
+
+  const removeSponsorEmail = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      sponsorEmailList: prev.sponsorEmailList.filter((_, i: number) => i !== index)
+    }));
   };
 
   return (
@@ -384,34 +459,126 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                      Contact Information
+                <div>
+                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                    Primary Contact Information
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.contactInfo}
+                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                    required
+                    placeholder="Email or other contact method"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-[#0A2540]">
+                      Additional Contact Information (Optional)
                     </label>
+                  </div>
+                  
+                  {formData.contactInfoList.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {formData.contactInfoList.map((contact: string, index: number) => (
+                        <div key={index} className="flex items-center">
+                          <div className="flex-grow p-2 bg-gray-50 rounded-lg text-sm">
+                            {contact}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeContactInfo(index)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="mt-2 flex">
                     <input
                       type="text"
-                      value={formData.contactInfo}
-                      onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                      required
-                      placeholder="Email or other contact method"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      value={newContactInfo}
+                      onChange={(e) => setNewContactInfo(e.target.value)}
+                      placeholder="Add another contact method"
+                      className="flex-grow rounded-l-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     />
+                    <button
+                      type="button"
+                      onClick={addContactInfo}
+                      className="rounded-r-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
+                    >
+                      Add
+                    </button>
                   </div>
+                  <p className="text-xs text-black opacity-70 mt-1">
+                    Add secondary contact methods like Instagram, Discord, etc.
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                      Sponsor Email
+                <div>
+                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                    Primary Sponsor Email
+                  </label>
+                  <input
+                    type="email"
+                    id="sponsorEmail"
+                    value={formData.sponsorEmail}
+                    onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                    placeholder="sponsor@example.com"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-[#0A2540]">
+                      Additional Sponsor Emails (Optional)
                     </label>
+                  </div>
+                  
+                  {formData.sponsorEmailList.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {formData.sponsorEmailList.map((email: string, index: number) => (
+                        <div key={index} className="flex items-center">
+                          <div className="flex-grow p-2 bg-gray-50 rounded-lg text-sm">
+                            {email}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeSponsorEmail(index)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="mt-2 flex">
                     <input
                       type="email"
-                      id="sponsorEmail"
-                      value={formData.sponsorEmail}
-                      onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                      placeholder="sponsor@example.com"
+                      value={newSponsorEmail}
+                      onChange={(e) => setNewSponsorEmail(e.target.value)}
+                      placeholder="Add another sponsor email"
+                      className="flex-grow rounded-l-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     />
+                    <button
+                      type="button"
+                      onClick={addSponsorEmail}
+                      className="rounded-r-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
+                    >
+                      Add
+                    </button>
                   </div>
+                  <p className="text-xs text-black opacity-70 mt-1">
+                    Add emails for additional club sponsors
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-6">
