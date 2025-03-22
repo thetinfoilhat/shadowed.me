@@ -24,6 +24,7 @@ export interface Club {
   startTime: string;
   endTime: string;
   contactEmail: string;
+  attributes?: string[];
 }
 
 export interface CompletedVisit {

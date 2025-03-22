@@ -20,6 +20,8 @@ interface ClubWebsite {
   updatedAt: Date;
   bannerImage?: string;
   slogan?: string;
+  officers?: string[];
+  galleryImages?: string[];
 }
 
 export default function Jamboree() {
@@ -77,7 +79,9 @@ export default function Jamboree() {
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || new Date(),
             bannerImage: data.bannerImage,
-            slogan: data.slogan
+            slogan: data.slogan,
+            officers: data.officers,
+            galleryImages: data.galleryImages
           });
         });
         
@@ -160,7 +164,10 @@ export default function Jamboree() {
 
           {/* Club Websites Grid */}
           <div className="mb-24">
-            <h2 className="text-2xl font-bold text-[#180D39] mb-8">Club Websites</h2>
+            <h2 className="text-2xl font-bold text-[#180D39] mb-4">Club Websites</h2>
+            <p className="text-[#180D39]/70 mb-8 max-w-3xl">
+              Explore beautiful websites created by clubs at your school. Click on any site to visit or explore featured content.
+            </p>
             
             {isLoading ? (
               <div className="flex justify-center items-center py-16">
@@ -171,20 +178,25 @@ export default function Jamboree() {
                 {clubWebsites.map((website) => (
                   <motion.div
                     key={website.id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden"
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden group"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
+                    whileHover={{ 
+                      y: -5,
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                    }}
                   >
                     <div 
-                      className="h-48 bg-gradient-to-r from-blue-500 to-purple-500 relative"
+                      className="h-48 relative"
                       style={{
                         backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined,
                         backgroundSize: 'cover',
-                        backgroundPosition: 'center'
+                        backgroundPosition: 'center',
+                        backgroundColor: website.bannerImage ? undefined : '#4361EE'
                       }}
                     >
-                      <div className="absolute inset-0 bg-black/30 flex items-end">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end">
                         <div className="p-4 text-white">
                           <h3 className="text-xl font-bold truncate">{website.clubName}</h3>
                           {website.slogan && (
@@ -193,13 +205,32 @@ export default function Jamboree() {
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        Updated {new Date(website.updatedAt).toLocaleDateString()}
+                    <div className="p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm text-gray-500">
+                          Updated {new Date(website.updatedAt).toLocaleDateString()}
+                        </div>
+                        <span className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded-full">
+                          Active
+                        </span>
                       </div>
+                      
+                      <div className="flex space-x-2 mb-4">
+                        {website.officers && website.officers.length > 0 && (
+                          <span className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
+                            {website.officers.length} Members
+                          </span>
+                        )}
+                        {website.galleryImages && website.galleryImages.length > 0 && (
+                          <span className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded-full">
+                            {website.galleryImages.length} Photos
+                          </span>
+                        )}
+                      </div>
+                      
                       <Link 
                         href={`/${website.slug}`}
-                        className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#2DA891] transition-colors"
+                        className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm font-medium inline-block hover:from-[#2DA891] hover:to-[#259889] transition-colors w-full text-center"
                       >
                         Visit Site
                       </Link>

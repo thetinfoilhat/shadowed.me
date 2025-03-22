@@ -1,8 +1,8 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { LinkIcon, CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 
 interface Officer {
@@ -18,6 +18,13 @@ interface ContactLink {
   label: string;
 }
 
+interface ImageWithMetadata {
+  url: string;
+  title?: string;
+  caption?: string;
+  uploadedAt: Date;
+}
+
 interface ClubWebsiteData {
   id: string;
   clubName: string;
@@ -30,8 +37,12 @@ interface ClubWebsiteData {
   aboutSection?: string;
   meetingInfo?: string;
   galleryImages?: string[];
+  galleryImagesMetadata?: ImageWithMetadata[];
   officers?: Officer[];
   contactLinks?: ContactLink[];
+  themeColor?: string;
+  showFeaturedImage?: boolean;
+  featuredImage?: string;
 }
 
 interface WebsiteViewerProps {
@@ -42,6 +53,10 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
   const hasOfficers = website.officers && website.officers.length > 0;
   const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
+  const themeColor = website.themeColor || '#38BFA1';
+  
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
   // Function to get appropriate icon for contact links
   const getLinkIcon = (linkType: string) => {
@@ -82,6 +97,33 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
     }
   };
 
+  // Function to navigate through images in the lightbox
+  const navigateImage = (direction: 'next' | 'prev') => {
+    if (!website.galleryImages || website.galleryImages.length === 0) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === website.galleryImages!.length - 1 ? 0 : prevIndex + 1
+      );
+      setSelectedImage(website.galleryImages[(currentImageIndex + 1) % website.galleryImages.length]);
+    } else {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? website.galleryImages!.length - 1 : prevIndex - 1
+      );
+      setSelectedImage(website.galleryImages[currentImageIndex === 0 
+        ? website.galleryImages.length - 1 
+        : currentImageIndex - 1]);
+    }
+  };
+  
+  // Get the title of the current selected image
+  const getImageTitle = (url: string): string | undefined => {
+    if (!website.galleryImagesMetadata) return undefined;
+    
+    const metadata = website.galleryImagesMetadata.find(meta => meta.url === url);
+    return metadata?.title;
+  };
+
   return (
     <div className="pt-[80px] min-h-screen bg-[#FAFAFA]">
       {/* Banner Image Section */}
@@ -95,13 +137,23 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
       >
         <div className="absolute inset-0 bg-black/30 flex items-end">
           <div className="max-w-[1200px] w-full mx-auto px-4 md:px-8 py-8 md:py-12">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4">
+            <motion.h1 
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               {website.clubName}
-            </h1>
+            </motion.h1>
             {website.slogan && (
-              <p className="text-lg md:text-xl text-white/90 max-w-2xl">
+              <motion.p 
+                className="text-lg md:text-xl text-white/90 max-w-2xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 {website.slogan}
-              </p>
+              </motion.p>
             )}
           </div>
         </div>
@@ -117,7 +169,9 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-4">
+              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
+                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
                 About Our Club
               </h2>
               <div className="prose prose-lg max-w-none text-[#180D39]/80">
@@ -136,26 +190,76 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-6">
+              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
                 Gallery
               </h2>
+              
+              {/* Featured Image (if enabled) */}
+              {website.showFeaturedImage && website.featuredImage && (
+                <motion.div 
+                  className="relative h-[250px] md:h-[350px] rounded-lg overflow-hidden mb-6 cursor-pointer"
+                  whileHover={{ scale: 1.01 }}
+                  onClick={() => {
+                    setSelectedImage(website.featuredImage!);
+                    const index = website.galleryImages?.findIndex(img => img === website.featuredImage) || 0;
+                    setCurrentImageIndex(index >= 0 ? index : 0);
+                  }}
+                >
+                  <Image 
+                    src={website.featuredImage}
+                    alt={getImageTitle(website.featuredImage) || `${website.clubName} featured image`}
+                    className="object-cover rounded-lg"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 800px"
+                  />
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                    <div className="p-4 text-white">
+                      {getImageTitle(website.featuredImage) && (
+                        <h3 className="text-xl font-medium">{getImageTitle(website.featuredImage)}</h3>
+                      )}
+                      <p className="text-sm opacity-90 mt-1">Featured image • Click to enlarge</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {website.galleryImages?.map((image, index) => (
-                  <div key={`gallery-${index}`} className="relative h-[200px] rounded-lg">
+                  <motion.div 
+                    key={`gallery-${index}`} 
+                    className="relative h-[200px] rounded-lg cursor-pointer group"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => {
+                      setSelectedImage(image);
+                      setCurrentImageIndex(index);
+                    }}
+                  >
                     <Image 
                       src={image}
-                      alt={`${website.clubName} gallery image ${index + 1}`}
+                      alt={getImageTitle(image) || `${website.clubName} gallery image ${index + 1}`}
                       className="object-cover rounded-lg"
                       fill
                       sizes="(max-width: 768px) 100vw, 400px"
                     />
-                  </div>
+                    
+                    {getImageTitle(image) && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-end transition-colors">
+                        <div className="p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="font-medium">{getImageTitle(image)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {/* Officers Section */}
+          {/* Board Members Section */}
           {hasOfficers && (
             <motion.div 
               className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
@@ -163,14 +267,19 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-6">
+              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
                 Board Members
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                 {website.officers?.map((officer, index) => (
-                  <div 
+                  <motion.div 
                     key={`officer-${index}`}
-                    className="flex flex-col sm:flex-row gap-4 bg-gray-50 rounded-lg p-4"
+                    className="flex flex-col sm:flex-row gap-4 rounded-lg p-4"
+                    style={{ backgroundColor: `${themeColor}10` }}
+                    whileHover={{ scale: 1.02, backgroundColor: `${themeColor}20` }}
+                    transition={{ duration: 0.2 }}
                   >
                     <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 relative">
                       {officer.photoUrl ? (
@@ -182,19 +291,21 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
                           sizes="100px"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#38BFA1]/20">
-                          <UserIcon className="h-8 w-8 text-[#38BFA1]" />
+                        <div className="w-full h-full flex items-center justify-center bg-[#38BFA1]/20"
+                          style={{ backgroundColor: `${themeColor}20` }}
+                        >
+                          <UserIcon className="h-8 w-8 text-[#38BFA1]" style={{ color: themeColor }} />
                         </div>
                       )}
                     </div>
                     <div>
                       <h3 className="font-bold text-[#180D39] text-lg">{officer.name}</h3>
-                      <p className="text-[#38BFA1] font-medium mb-2">{officer.role}</p>
+                      <p className="font-medium mb-2" style={{ color: themeColor }}>{officer.role}</p>
                       {officer.bio && (
                         <p className="text-sm text-[#180D39]/70">{officer.bio}</p>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
@@ -212,7 +323,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5 }}
             >
               <div className="flex items-center mb-4">
-                <CalendarIcon className="h-5 w-5 text-[#38BFA1] mr-2" />
+                <CalendarIcon className="h-5 w-5 mr-2" style={{ color: themeColor }} />
                 <h2 className="text-xl font-bold text-[#180D39]">
                   Meeting Information
                 </h2>
@@ -234,7 +345,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <div className="flex items-center mb-4">
-                <LinkIcon className="h-5 w-5 text-[#38BFA1] mr-2" />
+                <LinkIcon className="h-5 w-5 mr-2" style={{ color: themeColor }} />
                 <h2 className="text-xl font-bold text-[#180D39]">
                   Contact & Links
                 </h2>
@@ -246,18 +357,22 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
                     : link.url.startsWith('http') ? link.url : `https://${link.url}`;
                     
                   return (
-                    <a 
+                    <motion.a 
                       key={`link-${index}`}
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#38BFA1]/10 text-[#38BFA1] mr-3">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full mr-3"
+                        style={{ backgroundColor: `${themeColor}10`, color: themeColor }}
+                      >
                         {getLinkIcon(link.type)}
                       </span>
                       <span className="font-medium text-[#180D39]">{link.label}</span>
-                    </a>
+                    </motion.a>
                   );
                 })}
               </div>
@@ -268,7 +383,8 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <Link 
               href="/jamboree"
-              className="flex items-center text-[#38BFA1] font-medium hover:underline"
+              className="flex items-center font-medium hover:underline"
+              style={{ color: themeColor }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -278,6 +394,73 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
           </div>
         </div>
       </div>
+      
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div 
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedImage(null)}
+          >
+            <button 
+              className="absolute top-4 right-4 text-white p-2 rounded-full bg-black/50 hover:bg-black/70"
+              onClick={() => setSelectedImage(null)}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            
+            {website.galleryImages && website.galleryImages.length > 1 && (
+              <>
+                <button 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('prev');
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <button 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('next');
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            
+            <div className="relative h-[80vh] w-[80vw] max-w-[1200px]" onClick={(e) => e.stopPropagation()}>
+              <Image 
+                src={selectedImage}
+                alt={getImageTitle(selectedImage) || "Gallery image"}
+                className="object-contain"
+                fill
+                sizes="80vw"
+              />
+              
+              {getImageTitle(selectedImage) && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-4 text-white">
+                  <h3 className="text-lg font-medium">{getImageTitle(selectedImage)}</h3>
+                  <p className="text-sm opacity-70">
+                    Image {currentImageIndex + 1} of {website.galleryImages?.length}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 

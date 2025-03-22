@@ -23,6 +23,12 @@ interface ClubWebsiteData {
   aboutSection?: string;
   meetingInfo?: string;
   galleryImages?: string[];
+  galleryImagesMetadata?: {
+    url: string;
+    title?: string;
+    caption?: string;
+    uploadedAt: Date;
+  }[];
   officers?: {
     name: string;
     role: string;
@@ -34,6 +40,9 @@ interface ClubWebsiteData {
     url: string;
     label: string;
   }[];
+  themeColor?: string;
+  showFeaturedImage?: boolean;
+  featuredImage?: string;
 }
 
 export default function ClubWebsitePage() {
@@ -126,8 +135,12 @@ export default function ClubWebsitePage() {
             aboutSection: data.aboutSection,
             meetingInfo: data.meetingInfo,
             galleryImages: data.galleryImages,
+            galleryImagesMetadata: data.galleryImagesMetadata,
             officers: data.officers,
-            contactLinks: data.contactLinks
+            contactLinks: data.contactLinks,
+            themeColor: data.themeColor,
+            showFeaturedImage: data.showFeaturedImage,
+            featuredImage: data.featuredImage
           });
         } else if (isNew) {
           // Handle new website creation
@@ -187,10 +200,18 @@ export default function ClubWebsitePage() {
     try {
       const websiteRef = doc(db, 'clubWebsites', clubSlug as string);
       
+      // Clean data - remove any undefined values as Firebase doesn't support them
+      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, unknown>);
+      
       // Merge with existing data and update timestamp
       const updatedData = {
         ...website,
-        ...data,
+        ...cleanData,
         updatedAt: new Date()
       };
       
