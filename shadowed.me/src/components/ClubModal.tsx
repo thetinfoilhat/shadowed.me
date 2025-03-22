@@ -1,7 +1,7 @@
 'use client';
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
-import { doc, setDoc, collection, addDoc, getDocs } from 'firebase/firestore';
+import { Fragment, useState, useEffect } from 'react';
+import { doc, setDoc, collection, addDoc, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -20,6 +20,12 @@ interface ClubModalProps {
   initialData?: ClubListing | null;
 }
 
+interface CaptainUser {
+  id: string;
+  email: string;
+  displayName?: string;
+}
+
 export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initialData }: ClubModalProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -32,9 +38,59 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     sponsorEmail: initialData?.sponsorEmail || '',
     roomNumber: initialData?.roomNumber || '',
     attributes: initialData?.attributes || [] as string[],
+    captain: initialData?.captain || user?.email || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [captains, setCaptains] = useState<CaptainUser[]>([]);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setIsAdmin(userDoc.data().role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
+
+  // Fetch captains if user is admin
+  useEffect(() => {
+    const fetchCaptains = async () => {
+      if (!isAdmin) return;
+
+      try {
+        const usersRef = collection(db, 'users');
+        const captainQuery = query(usersRef, where('role', '==', 'captain'));
+        const querySnapshot = await getDocs(captainQuery);
+        
+        const captainsList: CaptainUser[] = [];
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          captainsList.push({
+            id: doc.id,
+            email: userData.email || '',
+            displayName: userData.displayName || userData.email || '',
+          });
+        });
+        
+        setCaptains(captainsList);
+      } catch (error) {
+        console.error('Error fetching captains:', error);
+      }
+    };
+
+    fetchCaptains();
+  }, [isAdmin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +112,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
       setValidationErrors({});
       const clubData = {
         ...formData,
-        captain: user.email,
+        captain: isAdmin ? formData.captain : user.email, // Use selected captain if admin
         createdAt: new Date(),
         updatedAt: new Date(),
         created: true
@@ -163,6 +219,18 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                 {initialData ? 'Edit Club' : 'Create New Club'}
               </Dialog.Title>
 
+              {isAdmin && (
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
+                  <div className="flex">
+                    <div className="ml-3">
+                      <p className="text-sm text-black">
+                        <strong>Admin Mode:</strong> You can create or edit club information for any captain. Select a captain from the dropdown below.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
                 <div className="flex">
                   <div className="ml-3">
@@ -174,6 +242,27 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {isAdmin && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                      Captain Email <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.captain}
+                      onChange={(e) => setFormData({ ...formData, captain: e.target.value })}
+                      required
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                    >
+                      <option value="">Select a captain</option>
+                      {captains.map((captain) => (
+                        <option key={captain.id} value={captain.email}>
+                          {captain.displayName || captain.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
                     Club Name

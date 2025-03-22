@@ -6,6 +6,9 @@ import { toast } from 'react-hot-toast';
 import SponsorSelect from './SponsorSelect';
 import ClubSelect from './ClubSelect';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useAuth } from '@/context/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Add CSS to prevent layout shifts
 const modalStyles = `
@@ -106,6 +109,7 @@ export default function VisitModal({
   onSubmitAction: (data: VisitData) => Promise<void>;
   initialData?: VisitData | null;
 }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     sponsorEmail: '',
@@ -119,6 +123,25 @@ export default function VisitModal({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setIsAdmin(userDoc.data().role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
 
   // Add styles to head when component mounts
   useEffect(() => {
@@ -251,6 +274,17 @@ export default function VisitModal({
               </div>
 
               <div className="overflow-y-auto p-6 flex-1">
+                {isAdmin && (
+                  <div className="mb-6 p-3 bg-amber-50 text-amber-700 rounded-lg border border-amber-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <span>
+                      <strong>Admin Mode:</strong> You can create or edit visit opportunities for any club, even if you&apos;re not a captain.
+                    </span>
+                  </div>
+                )}
+
                 {error && (
                   <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg border border-red-100 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
