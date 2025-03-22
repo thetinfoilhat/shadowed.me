@@ -15,6 +15,8 @@ interface User {
   email: string;
   role?: UserRole;
   displayName?: string | null;
+  id?: string;
+  uniqueKey?: string;
 }
 
 interface Applicant {
@@ -59,6 +61,7 @@ interface ClubListing {
   image?: string;
   bgColor?: string;
   bgGradient?: string;
+  created?: boolean;
 }
 
 function formatDate(dateString: string) {
@@ -86,15 +89,15 @@ export default function AdminDashboard() {
   const [success, setSuccess] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<{email: string, role: UserRole} | null>(null);
-  const [visits, setVisits] = useState<VisitData[]>([]);
+  const [visits, setVisits] = useState<(VisitData & { uniqueKey: string })[]>([]);
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-  const [allClubs, setAllClubs] = useState<ClubListing[]>([]);
+  const [allClubs, setAllClubs] = useState<(ClubListing & { uniqueKey: string })[]>([]);
   const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [showClubModal, setShowClubModal] = useState(false);
   const [loadingClubs, setLoadingClubs] = useState(true);
 
-  const fetchSponsorNames = useCallback(async (visits: VisitData[]) => {
+  const fetchSponsorNames = useCallback(async (visits: (VisitData & { uniqueKey: string })[]) => {
     const emails = visits
       .map(visit => visit.sponsorEmail)
       .filter((email): email is string => !!email);
@@ -124,11 +127,12 @@ export default function AdminDashboard() {
       const visitsRef = collection(db, 'opportunities');
       const querySnapshot = await getDocs(visitsRef);
       
-      const visitsData = querySnapshot.docs.map(doc => ({
+      const visitsData = querySnapshot.docs.map((doc, index) => ({
         id: doc.id,
+        uniqueKey: `visit-${doc.id}-${index}-${Date.now()}`,
         ...doc.data(),
         status: doc.data().status || 'pending',
-      })) as VisitData[];
+      })) as (VisitData & { uniqueKey: string })[];
       
       setVisits(visitsData);
       fetchSponsorNames(visitsData);
@@ -144,10 +148,12 @@ export default function AdminDashboard() {
       const querySnapshot = await getDocs(usersRef);
       
       const usersList = querySnapshot.docs
-        .map(doc => ({
+        .map((doc, index) => ({
+          id: doc.id,
           email: doc.data().email,
           role: doc.data().role as UserRole,
-          displayName: doc.data().displayName
+          displayName: doc.data().displayName,
+          uniqueKey: `user-${doc.id}-${index}-${Date.now()}`
         }))
         .filter(user => user.email)
         // Sort by role hierarchy and then by email
@@ -173,10 +179,58 @@ export default function AdminDashboard() {
       const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
       
-      const clubsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ClubListing[];
+      // Create a map to track unique clubs by name (to prevent duplicates)
+      const uniqueClubsByName: Record<string, ClubListing & { uniqueKey: string }> = {};
+      
+      // Process clubs and ensure only one entry per club name
+      querySnapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        if (!data.name) return; // Skip clubs without names
+        
+        const name = data.name.trim();
+        const nameLower = name.toLowerCase();
+        
+        // Create a guaranteed unique key for React
+        const uniqueKey = `club-${doc.id}-${index}-${Date.now()}`;
+        
+        // Create the club object
+        const club = {
+          id: doc.id,
+          uniqueKey,
+          ...data,
+          // Ensure required fields are present
+          name: name,
+          description: data.description || '',
+          mission: data.mission || '',
+          meetingTimes: data.meetingTimes || '',
+          contactInfo: data.contactInfo || '',
+          category: data.category || '',
+          captain: data.captain || '',
+          sponsorEmail: data.sponsorEmail || '',
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          attributes: data.attributes || [],
+          created: data.created,
+        } as (ClubListing & { uniqueKey: string });
+        
+        // If this club name already exists, only keep the one with a valid ID
+        // or replace a placeholder with a real club
+        if (
+          !uniqueClubsByName[nameLower] || 
+          (data.created && !uniqueClubsByName[nameLower].created) ||
+          uniqueClubsByName[nameLower].id.includes('placeholder')
+        ) {
+          uniqueClubsByName[nameLower] = club;
+        }
+      });
+      
+      // Convert the map to an array of unique clubs
+      const clubsData = Object.values(uniqueClubsByName);
+      
+      // Sort clubs alphabetically by name
+      clubsData.sort((a, b) => a.name.localeCompare(b.name));
+      
+      console.log(`Found ${querySnapshot.docs.length} total clubs`);
+      console.log(`Displaying ${clubsData.length} unique clubs after deduplication`);
       
       setAllClubs(clubsData);
     } catch (error) {
@@ -340,8 +394,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAssignClub = (club: ClubListing) => {
-    setSelectedClub(club);
+  const handleAssignClub = (club: ClubListing & { uniqueKey?: string }) => {
+    // Use type assertion to convert to ClubListing
+    setSelectedClub(club as ClubListing);
     setShowAssignmentModal(true);
   };
 
@@ -475,8 +530,8 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {pendingVisits.map((visit) => (
-                      <div key={visit.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+                    {pendingVisits.map((visit, index) => (
+                      <div key={visit.uniqueKey || `pending-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
                         <div className="p-6">
                           <div className="flex justify-between items-start">
                             <div>
@@ -547,8 +602,8 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {approvedVisits.map((visit) => (
-                      <div key={visit.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+                    {approvedVisits.map((visit, index) => (
+                      <div key={visit.uniqueKey || `approved-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
                         <div className="p-6">
                           <div className="flex justify-between items-start">
                             <div>
@@ -602,8 +657,8 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {rejectedVisits.map((visit) => (
-                      <div key={visit.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+                    {rejectedVisits.map((visit, index) => (
+                      <div key={visit.uniqueKey || `rejected-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
                         <div className="p-6">
                           <div className="flex justify-between items-start">
                             <div>
@@ -685,25 +740,25 @@ export default function AdminDashboard() {
             
             <Tab.Panels>
               <Tab.Panel>
-          <div className="space-y-4">
+                <div className="space-y-4">
                   {users
                     .filter(user => ['admin', 'sponsor', 'captain'].includes(user.role || ''))
-                    .map((user) => (
-              <div 
-                key={user.email}
-                className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
+                    .map((user, index) => (
+                      <div 
+                        key={user.uniqueKey || `staff-${user.email}-${index}`}
+                        className={`flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors
                           ${user.role === 'admin' ? 'bg-red-50' : 
                             user.role === 'sponsor' ? 'bg-purple-50' : 
                             user.role === 'captain' ? 'bg-blue-50' : ''}`}
-              >
-                <div>
+                      >
+                        <div>
                           <p className="text-[#0A2540] font-medium">
                             {user.email}
                             {user.displayName && ` (${user.displayName})`}
                           </p>
                           <div className="flex items-center mt-1">
                             <span className={`text-xs px-2 py-1 rounded-full capitalize ${getRoleBadgeClass(user.role)}`}>
-                    {user.role}
+                              {user.role}
                             </span>
                           </div>
                         </div>
@@ -720,9 +775,9 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   {users
                     .filter(user => user.role === 'student')
-                    .map((user) => (
+                    .map((user, index) => (
                       <div 
-                        key={user.email}
+                        key={user.uniqueKey || `student-${user.email}-${index}`}
                         className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <div>
@@ -735,14 +790,14 @@ export default function AdminDashboard() {
                               {user.role}
                             </span>
                           </div>
-                </div>
-              </div>
-            ))}
+                        </div>
+                      </div>
+                    ))}
 
                   {users.filter(user => user.role === 'student').length === 0 && (
                     <p className="text-gray-500 text-center py-4">No students found</p>
-            )}
-          </div>
+                  )}
+                </div>
               </Tab.Panel>
             </Tab.Panels>
           </Tab.Group>
@@ -782,8 +837,8 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {allClubs.map((club) => (
-                    <tr key={club.id} className="hover:bg-gray-50">
+                  {allClubs.map((club, index) => (
+                    <tr key={club.uniqueKey || `club-${club.id}-${index}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{club.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{club.category}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -802,7 +857,7 @@ export default function AdminDashboard() {
                           </button>
                           <button
                             onClick={() => {
-                              setSelectedClub(club);
+                              setSelectedClub(club as ClubListing);
                               setShowClubModal(true);
                             }}
                             className="text-indigo-600 hover:text-indigo-900"

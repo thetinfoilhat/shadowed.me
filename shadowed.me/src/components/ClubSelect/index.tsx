@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, memo } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -22,6 +22,25 @@ const ClubSelect = ({ value, onChange, required }: ClubSelectProps) => {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setIsAdmin(userDoc.data().role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -34,25 +53,47 @@ const ClubSelect = ({ value, onChange, required }: ClubSelectProps) => {
       try {
         setLoading(true);
         const clubsRef = collection(db, 'clubs');
-        
-        // Get clubs where the current user is the captain
-        const q = query(
-          clubsRef,
-          where('captain', '==', user.email)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        
         const clubsList: Club[] = [];
-        querySnapshot.forEach((doc) => {
-          const clubData = doc.data();
-          clubsList.push({
-            id: doc.id,
-            name: clubData.name || 'Unnamed Club',
-            category: clubData.category || 'Uncategorized',
-            captain: clubData.captain || user.email,
+        
+        if (isAdmin) {
+          // If user is admin, get all clubs
+          const querySnapshot = await getDocs(clubsRef);
+          const uniqueClubNames = new Set<string>();
+          
+          querySnapshot.forEach((doc) => {
+            const clubData = doc.data();
+            const clubName = clubData.name || 'Unnamed Club';
+            
+            // Only add if we haven't seen this club name yet
+            if (!uniqueClubNames.has(clubName.toLowerCase())) {
+              uniqueClubNames.add(clubName.toLowerCase());
+              clubsList.push({
+                id: doc.id,
+                name: clubName,
+                category: clubData.category || 'Uncategorized',
+                captain: clubData.captain || '',
+              });
+            }
           });
-        });
+        } else {
+          // Get clubs where the current user is the captain
+          const q = query(
+            clubsRef,
+            where('captain', '==', user.email)
+          );
+          
+          const querySnapshot = await getDocs(q);
+          
+          querySnapshot.forEach((doc) => {
+            const clubData = doc.data();
+            clubsList.push({
+              id: doc.id,
+              name: clubData.name || 'Unnamed Club',
+              category: clubData.category || 'Uncategorized',
+              captain: clubData.captain || user.email,
+            });
+          });
+        }
         
         // Sort clubs by name
         clubsList.sort((a, b) => a.name.localeCompare(b.name));
@@ -73,7 +114,7 @@ const ClubSelect = ({ value, onChange, required }: ClubSelectProps) => {
     };
 
     fetchClubs();
-  }, [onChange, value, user?.email]);
+  }, [onChange, value, user?.email, isAdmin]);
 
   if (loading) {
     return (

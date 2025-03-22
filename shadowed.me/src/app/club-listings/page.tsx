@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
@@ -8,7 +8,13 @@ import ClubCard from '@/components/ClubCard';
 import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
+  TrophyIcon,
+} from "@heroicons/react/20/solid";
+import { generatePlaceholderClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
@@ -19,97 +25,39 @@ const ATTRIBUTES = ['Competitive', 'Leadership', 'Tryout', 'Public Speaking', 'P
 // Get category color function
 const getCategoryColor = (category: string): string => {
   const colorMap: Record<string, string> = {
-    'STEM': '#4285F4',
-    'Business': '#34A853',
-    'Arts': '#FBBC05',
-    'Performing Arts': '#EA4335',
-    'Language & Culture': '#8E44AD',
-    'Community Service': '#3498DB',
-    'Humanities': '#E67E22',
-    'Medical': '#1ABC9C',
-    'Sports': '#2ECC71',
-    'Technology': '#9B59B6',
-    'Academic': '#F1C40F',
-    'Miscellaneous': '#95A5A6'
+    'STEM': '#4361EE', // Brighter blue
+    'Business': '#3A0CA3', // Rich purple
+    'Arts': '#F72585', // Vibrant pink
+    'Performing Arts': '#FF0054', // Bright red
+    'Language & Culture': '#E5446D', // Vibrant rose/pink
+    'Community Service': '#4CC9F0', // Bright cyan
+    'Humanities': '#F77F00', // Bright orange
+    'Medical': '#06D6A0', // Bright teal
+    'Sports': '#D90429', // Bright red
+    'Technology': '#7B2CBF', // Deep purple
+    'Academic': '#FFD60A', // Bright yellow
+    'Miscellaneous': '#4895EF' // Bright blue
   };
   
-  return colorMap[category] || '#38BFA1'; // Default to theme color
+  return colorMap[category] || '#4361EE'; // Default to bright blue
 };
 
-// Generate a gradient based on category color
-const getCategoryGradient = (category: string): string => {
-  const baseColor = getCategoryColor(category);
-  return `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`;
-};
+// Interface for Firestore data that might include a timestamp
+interface FirestoreClubData extends Omit<ClubListing, 'createdAt'> {
+  created?: boolean;
+  createdAt?: Timestamp | Date;
+}
 
-// Sample clubs to add if none are found
-const SAMPLE_CLUBS = [
-  {
-    name: 'Physics Club',
-    description: 'Explore the fundamental laws of the universe through experiments and discussions.',
-    category: 'STEM',
-    mission: 'To foster a love for physics and scientific inquiry among students.',
-    meetingTimes: 'Tuesdays, 3:30 PM - 5:00 PM',
-    contactInfo: 'physics@school.edu',
-    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Research', 'Analytical'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('STEM'),
-    bgGradient: getCategoryGradient('STEM')
-  },
-  {
-    name: 'Debate Team',
-    description: 'Develop critical thinking and public speaking skills through competitive debate.',
-    category: 'Humanities',
-    mission: 'To empower students with effective communication and argumentation skills.',
-    meetingTimes: 'Mondays and Wednesdays, 4:00 PM - 6:00 PM',
-    contactInfo: 'debate@school.edu',
-    attributes: ['Competitive', 'Weekly', 'Tryout/Audition', 'Public Speaking', 'Critical Thinking'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('Humanities'),
-    bgGradient: getCategoryGradient('Humanities')
-  },
-  {
-    name: 'Art Collective',
-    description: 'Express yourself through various art forms and collaborate on creative projects.',
-    category: 'Arts',
-    mission: 'To provide a space for artistic expression and creative collaboration.',
-    meetingTimes: 'Fridays, 3:00 PM - 5:30 PM',
-    contactInfo: 'art@school.edu',
-    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Creative', 'Expressive'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('Arts'),
-    bgGradient: getCategoryGradient('Arts')
-  }
-];
-
-// Function to add sample clubs to Firebase
-const addSampleClubs = async () => {
-  try {
-    console.log('Adding sample clubs to Firebase...');
-    const clubsRef = collection(db, 'clubs');
-    
-    for (const club of SAMPLE_CLUBS) {
-      await addDoc(clubsRef, club);
-      console.log(`Added sample club: ${club.name}`);
-    }
-    
-    toast.success('Sample clubs added successfully');
-    return true;
-  } catch (error) {
-    console.error('Error adding sample clubs:', error);
-    toast.error('Failed to add sample clubs');
-    return false;
-  }
-};
+// Define an extended ClubListing type to include 'created' property
+interface ExtendedClubListing extends ClubListing {
+  created?: boolean;
+}
 
 export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
-  const [clubs, setClubs] = useState<ClubListing[]>([]);
+  const [clubs, setClubs] = useState<ExtendedClubListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
+  const [selectedClub, setSelectedClub] = useState<ExtendedClubListing | null>(null);
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -126,47 +74,32 @@ export default function ClubListings() {
       const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
       
+      // Get placeholder clubs for comparison
+      const placeholderClubs = generatePlaceholderClubListings();
+      console.log(`Expected ${placeholderClubs.length} placeholder clubs`);
       console.log(`Found ${querySnapshot.docs.length} clubs in Firebase`);
       
-      // If no clubs are found, add sample clubs
-      if (querySnapshot.docs.length === 0) {
-        console.log('No clubs found, adding sample clubs...');
-        const success = await addSampleClubs();
-        if (success) {
-          // Fetch clubs again after adding samples
-          const newQuerySnapshot = await getDocs(clubsRef);
-          const clubsData = newQuerySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || '',
-              description: data.description || '',
-              category: data.category || '',
-              captain: data.captain || '',
-              sponsorEmail: data.sponsorEmail || '',
-              mission: data.mission || '',
-              meetingTimes: data.meetingTimes || '',
-              contactInfo: data.contactInfo || '',
-              status: data.status || 'approved',
-              attributes: data.attributes || [],
-              image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              bgColor: data.bgColor,
-              bgGradient: data.bgGradient
-            } as ClubListing;
-          });
-          
-          setClubs(clubsData);
-          setLoading(false);
-          return;
-        }
-      }
+      // Create a map to track unique clubs by name (to prevent duplicates)
+      const uniqueClubsByName: Record<string, ExtendedClubListing> = {};
       
-      const clubsData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
+      // Process existing clubs from Firebase first
+      querySnapshot.docs.forEach(doc => {
+        const data = doc.data() as FirestoreClubData;
+        if (!data.name) return; // Skip clubs without names
+        
+        const name = data.name.trim();
+        const nameLower = name.toLowerCase();
+        
+        // Convert Firestore timestamp to Date object
+        const createdAt = data.createdAt instanceof Timestamp 
+          ? data.createdAt.toDate() 
+          : (data.createdAt as Date) || new Date();
+          
+        // Create the club object
+        const club: ExtendedClubListing = {
+          ...data,
           id: doc.id,
-          name: data.name || '',
+          name: name,
           description: data.description || '',
           category: data.category || '',
           captain: data.captain || '',
@@ -174,20 +107,74 @@ export default function ClubListings() {
           mission: data.mission || '',
           meetingTimes: data.meetingTimes || '',
           contactInfo: data.contactInfo || '',
-          status: data.status || 'approved', // Default to approved
+          status: data.status || 'approved',
           attributes: data.attributes || [],
+          roomNumber: data.roomNumber || '',
           image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          createdAt,
           bgColor: data.bgColor,
-          bgGradient: data.bgGradient
-        } as ClubListing;
+          bgGradient: data.bgGradient,
+          created: data.created || false
+        };
+        
+        // Only add if this club name doesn't exist yet, or if this one is more complete
+        if (!uniqueClubsByName[nameLower] || (club.created && !uniqueClubsByName[nameLower].created)) {
+          uniqueClubsByName[nameLower] = club;
+        }
       });
       
-      setClubs(clubsData);
+      // Track which clubs we already have in Firestore by name
+      const existingClubNames = new Set(Object.keys(uniqueClubsByName).map(name => name.toLowerCase().trim()));
+      let addedCount = 0;
+      
+      // Only add placeholders for clubs that don't exist yet
+      for (const placeholderClub of placeholderClubs) {
+        const clubNameLower = placeholderClub.name.toLowerCase().trim();
+        
+        // Only add placeholder if a club with this name doesn't already exist
+        if (!existingClubNames.has(clubNameLower)) {
+          try {
+            const docRef = await addDoc(clubsRef, {
+              ...placeholderClub,
+              createdAt: new Date(),
+              created: false  // Mark as placeholder
+            });
+            
+            uniqueClubsByName[clubNameLower] = { 
+              ...placeholderClub, 
+              id: docRef.id
+            };
+            
+            addedCount++;
+            console.log(`Added placeholder club: ${placeholderClub.name}`);
+          } catch (err) {
+            console.error(`Error adding club ${placeholderClub.name}:`, err);
+          }
+        }
+      }
+      
+      if (addedCount > 0) {
+        console.log(`Added ${addedCount} new placeholder clubs to Firebase`);
+      }
+      
+      // Convert the map to an array of unique clubs
+      const clubs = Object.values(uniqueClubsByName);
+      
+      console.log(`Total unique clubs: ${clubs.length}`);
+      console.log(`Placeholder clubs: ${clubs.filter(c => !c.created).length}`);
+      console.log(`Fully created clubs: ${clubs.filter(c => c.created).length}`);
+      
+      // Sort clubs alphabetically by name
+      clubs.sort((a, b) => a.name.localeCompare(b.name));
+      
+      setClubs(clubs);
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast.error('Failed to load clubs');
-      setClubs([]);
+      
+      // Fall back to placeholder listings if Firebase fetch fails
+      const placeholderClubs = generatePlaceholderClubListings();
+      setClubs(placeholderClubs);
     } finally {
       setLoading(false);
     }
@@ -246,7 +233,7 @@ export default function ClubListings() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#0A2540]">Club Listings</h1>
+            <h1 className="text-3xl font-bold text-[#0A2540] bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] inline-block text-transparent bg-clip-text">Club Listings</h1>
             <p className="text-gray-600 mt-1">Discover and join clubs that match your interests</p>
           </div>
           
@@ -255,14 +242,14 @@ export default function ClubListings() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all ${
                 showFilters 
-                  ? 'bg-[#38BFA1] text-white shadow-md' 
+                  ? 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-lg' 
                   : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20 border border-[#38BFA1]/20'
               }`}
             >
               <AdjustmentsHorizontalIcon className="h-5 w-5" />
               <span className="font-medium">Filters</span>
               {(selectedCategory !== 'All' || selectedAttributes.length > 0 || searchQuery) && (
-                <span className={`ml-1 ${showFilters ? 'bg-white text-[#38BFA1]' : 'bg-[#38BFA1] text-white'} text-xs rounded-full w-5 h-5 flex items-center justify-center`}>
+                <span className={`ml-1 ${showFilters ? 'bg-white text-[#38BFA1]' : 'bg-[#38BFA1] text-white'} text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold`}>
                   {(selectedCategory !== 'All' ? 1 : 0) + selectedAttributes.length + (searchQuery ? 1 : 0)}
                 </span>
               )}
@@ -281,7 +268,7 @@ export default function ClubListings() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search clubs by name or description..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#38BFA1] focus:border-[#38BFA1] transition-colors"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#4361EE] focus:border-[#4361EE] transition-colors shadow-sm"
             />
             {searchQuery && (
               <button
@@ -294,14 +281,14 @@ export default function ClubListings() {
           </div>
 
           {showFilters && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4 animate-fadeIn shadow-sm">
+            <div className="bg-gradient-to-r from-slate-50 to-white rounded-lg border border-gray-200 p-6 mb-4 animate-fadeIn shadow-md">
               <div className="flex justify-between items-center mb-5">
                 <h3 className="font-semibold text-[#0A2540] text-lg">Filters</h3>
                 <button
                   onClick={resetFilters}
-                  className="text-sm font-medium text-[#38BFA1] hover:text-[#2DA891] flex items-center"
+                  className="text-sm font-medium bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] bg-clip-text text-transparent hover:opacity-80 flex items-center"
                 >
-                  <XMarkIcon className="h-4 w-4 mr-1" />
+                  <XMarkIcon className="h-4 w-4 mr-1 text-[#4361EE]" />
                   Reset all
                 </button>
               </div>
@@ -311,14 +298,15 @@ export default function ClubListings() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory('All')}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                       selectedCategory === 'All'
-                        ? 'bg-[#38BFA1] text-white shadow-sm'
-                        : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20'
+                        ? 'bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] text-white shadow-sm transform -translate-y-0.5'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                     }`}
                   >
                     All
                   </button>
+                  
                   {CATEGORIES.filter(c => c !== 'All').map((category) => {
                     const categoryColor = getCategoryColor(category);
                     const isSelected = selectedCategory === category;
@@ -327,18 +315,17 @@ export default function ClubListings() {
                       <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
-                        className="transition-colors"
+                        className="transition-all"
                       >
                         <span 
-                          className="block"
+                          className="block text-sm font-medium px-3 py-1.5 rounded-full transition-all"
                           style={{
-                            backgroundColor: isSelected ? categoryColor : `${categoryColor}20`,
+                            background: isSelected 
+                              ? `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)` 
+                              : '#f3f4f6',
                             color: isSelected ? 'white' : categoryColor,
-                            boxShadow: isSelected ? '0 1px 2px rgba(0, 0, 0, 0.1)' : 'none',
-                            padding: '0.375rem 0.75rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.875rem',
-                            lineHeight: '1.25rem'
+                            boxShadow: isSelected ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
+                            transform: isSelected ? 'translateY(-1px)' : 'none',
                           }}
                         >
                           {category}
@@ -356,12 +343,12 @@ export default function ClubListings() {
                     <button
                       key={attribute}
                       onClick={() => toggleAttribute(attribute)}
-                      className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                         selectedAttributes.includes(attribute)
                           ? attribute === 'Competitive' 
-                            ? 'bg-amber-500 text-white shadow-sm' 
-                            : 'bg-[#38BFA1] text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md transform -translate-y-0.5' 
+                            : 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-md transform -translate-y-0.5'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                       }`}
                     >
                       {attribute === 'Competitive' && (
@@ -378,12 +365,18 @@ export default function ClubListings() {
           {/* View mode toggle and results count */}
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              Showing {filteredClubs.length} {filteredClubs.length === 1 ? 'club' : 'clubs'}
+              Showing <span className="font-semibold text-[#4361EE]">{filteredClubs.length}</span> {filteredClubs.length === 1 ? 'club' : 'clubs'}
+              {/* Display count of clubs needing details */}
+              {clubs.filter(club => !club.created).length > 0 && (
+                <span className="ml-2 text-gray-500">
+                  ({clubs.filter(club => !club.created).length} need details)
+                </span>
+              )}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-gray-500'}`}
                 aria-label="Grid view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -392,97 +385,37 @@ export default function ClubListings() {
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-gray-500'}`}
                 aria-label="List view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Club Cards */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredClubs.map((club) => (
-              <ClubCard
-                key={club.id}
-                club={club}
-                onClick={() => setSelectedClub(club)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredClubs.map((club) => {
-              const categoryColor = getCategoryColor(club.category);
-              const isCompetitive = club.attributes?.includes('Competitive');
-              return (
-                <div 
-                  key={club.id}
-                  onClick={() => setSelectedClub(club)}
-                  className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white overflow-hidden relative"
-                >
-                  <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: categoryColor }} />
-                  {isCompetitive && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Competitive">
-                        <TrophyIcon className="h-4 w-4" />
-                      </div>
-                    </div>
-                  )}
-                  <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative flex flex-col items-center justify-center bg-gray-50 border border-gray-100">
-                    <span className="text-xl font-bold" style={{ color: categoryColor }}>{club.name.split(' ')[0]}</span>
-                    <span 
-                      className="text-sm mt-1 px-2 py-0.5 rounded-full"
-                      style={{ 
-                        backgroundColor: `${categoryColor}20`, // 20% opacity
-                        color: categoryColor 
-                      }}
-                    >
-                      {club.category}
-                    </span>
-                  </div>
-                  <div className="flex-1 pl-2">
-                    <h3 className="text-lg font-semibold text-[#0A2540]">{club.name}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{club.description}</p>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <ClockIcon className="h-3 w-3 mr-1" style={{ color: categoryColor }} />
-                      {club.meetingTimes}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {filteredClubs.length === 0 && (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-gray-500 mb-2">No clubs found matching your filters</p>
-            <button
-              onClick={resetFilters}
-              className="text-[#38BFA1] hover:text-[#2DA891] font-medium"
-            >
-              Reset all filters
-            </button>
-          </div>
-        )}
-
-        {/* Club Details Dialog */}
-        {selectedClub && (
-          <ClubDetailsDialog
-            club={selectedClub}
-            isOpen={!!selectedClub}
-            onCloseAction={() => setSelectedClub(null)}
-          />
-        )}
+        {/* Club listings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredClubs.map((club) => (
+            <ClubCard 
+              key={club.id} 
+              club={club} 
+              onClick={() => setSelectedClub(club)}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Club Details Dialog */}
+      {selectedClub && (
+        <ClubDetailsDialog
+          club={selectedClub as ClubListing}
+          isOpen={!!selectedClub}
+          onCloseAction={() => setSelectedClub(null)}
+        />
+      )}
     </div>
   );
-} 
+}
