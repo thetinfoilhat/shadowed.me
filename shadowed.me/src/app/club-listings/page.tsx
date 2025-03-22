@@ -5,7 +5,6 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
 import ClubCard from '@/components/ClubCard';
-import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import {
@@ -14,7 +13,6 @@ import {
   XMarkIcon,
   TrophyIcon,
 } from "@heroicons/react/20/solid";
-import { ClockIcon } from "@heroicons/react/24/outline";
 import { generatePlaceholderClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
@@ -30,12 +28,12 @@ const getCategoryColor = (category: string): string => {
     'Business': '#3A0CA3', // Rich purple
     'Arts': '#F72585', // Vibrant pink
     'Performing Arts': '#FF0054', // Bright red
-    'Language & Culture': '#7209B7', // Deep purple
+    'Language & Culture': '#E5446D', // Vibrant rose/pink
     'Community Service': '#4CC9F0', // Bright cyan
     'Humanities': '#F77F00', // Bright orange
     'Medical': '#06D6A0', // Bright teal
     'Sports': '#D90429', // Bright red
-    'Technology': '#9D4EDD', // Rich purple
+    'Technology': '#7B2CBF', // Deep purple
     'Academic': '#FFD60A', // Bright yellow
     'Miscellaneous': '#4895EF' // Bright blue
   };
@@ -58,7 +56,6 @@ export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
   const [clubs, setClubs] = useState<ExtendedClubListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClub, setSelectedClub] = useState<ExtendedClubListing | null>(null);
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -299,14 +296,15 @@ export default function ClubListings() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory('All')}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                       selectedCategory === 'All'
-                        ? 'bg-[#38BFA1] text-white shadow-sm'
-                        : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20'
+                        ? 'bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] text-white shadow-sm transform -translate-y-0.5'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                     }`}
                   >
                     All
                   </button>
+                  
                   {CATEGORIES.filter(c => c !== 'All').map((category) => {
                     const categoryColor = getCategoryColor(category);
                     const isSelected = selectedCategory === category;
@@ -315,20 +313,17 @@ export default function ClubListings() {
                       <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
-                        className="transition-colors"
+                        className="transition-all"
                       >
                         <span 
-                          className="block font-medium"
+                          className="block text-sm font-medium px-3 py-1.5 rounded-full transition-all"
                           style={{
-                            backgroundColor: isSelected ? categoryColor : `${categoryColor}15`,
+                            background: isSelected 
+                              ? `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)` 
+                              : '#f3f4f6',
                             color: isSelected ? 'white' : categoryColor,
                             boxShadow: isSelected ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
-                            padding: '0.375rem 0.75rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.875rem',
-                            lineHeight: '1.25rem',
                             transform: isSelected ? 'translateY(-1px)' : 'none',
-                            transition: 'all 0.2s ease'
                           }}
                         >
                           {category}
@@ -392,108 +387,24 @@ export default function ClubListings() {
                 aria-label="List view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Club Cards */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredClubs.map((club) => (
-              <div key={`club-${club.id}-${club.name.toLowerCase().replace(/\s+/g, '-')}`} className="relative">
-                <div className={!club.created ? "" : ""}>
-                  <ClubCard
-                    club={{
-                      ...club,
-                      // For placeholder clubs, provide default values for display
-                      description: club.description || "Details coming soon",
-                      meetingTimes: club.meetingTimes || "TBD",
-                      captain: club.captain || "TBD",
-                      sponsorEmail: club.sponsorEmail || "TBD",
-                      roomNumber: club.roomNumber || "TBD",
-                    }}
-                    onClick={() => setSelectedClub(club)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredClubs.map((club) => {
-              const categoryColor = getCategoryColor(club.category);
-              const isCompetitive = club.attributes?.includes('Competitive');
-              return (
-                <div 
-                  key={`club-list-${club.id}-${club.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  onClick={() => setSelectedClub(club)}
-                  className={`flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer bg-white overflow-hidden relative transform hover:-translate-y-1 ${!club.created ? "opacity-80" : ""}`}
-                >
-                  <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: categoryColor }} />
-                  
-                  {isCompetitive && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className="bg-gradient-to-r from-amber-500 to-amber-400 text-white p-1.5 rounded-full shadow-md" title="Competitive">
-                        <TrophyIcon className="h-4 w-4" />
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative flex flex-col items-center justify-center bg-gradient-to-br from-white to-gray-50 border border-gray-100 shadow-sm">
-                    <span className="text-xl font-bold bg-gradient-to-r from-[categoryColor] to-[categoryColor + '99'] bg-clip-text text-transparent" style={{ color: categoryColor }}>{club.name.split(' ')[0]}</span>
-                    <span 
-                      className="text-sm mt-1 px-2.5 py-1 rounded-full font-medium shadow-sm"
-                      style={{ 
-                        background: `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)`,
-                        color: 'white'
-                      }}
-                    >
-                      {club.category}
-                    </span>
-                  </div>
-                  <div className="flex-1 pl-2">
-                    <h3 className="text-lg font-semibold text-[#0A2540]">{club.name}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {club.description || "Details coming soon"}
-                    </p>
-                    <div className="flex items-center text-xs text-gray-700 font-medium">
-                      <ClockIcon className="h-3.5 w-3.5 mr-1.5" style={{ color: categoryColor }} />
-                      {club.meetingTimes || "Meeting times TBD"}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {filteredClubs.length === 0 && (
-          <div className="text-center py-16 bg-gradient-to-r from-slate-50 to-white rounded-lg shadow-sm border border-gray-100">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-gray-500 text-lg mb-3">No clubs found matching your filters</p>
-            <button
-              onClick={resetFilters}
-              className="px-4 py-2 bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] text-white rounded-full font-medium shadow-md hover:shadow-lg transition-all"
-            >
-              Reset all filters
-            </button>
-          </div>
-        )}
-
-        {/* Club Details Dialog */}
-        {selectedClub && (
-          <ClubDetailsDialog
-            club={selectedClub as ClubListing}
-            isOpen={!!selectedClub}
-            onCloseAction={() => setSelectedClub(null)}
-          />
-        )}
+        {/* Club listings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredClubs.map((club) => (
+            <ClubCard 
+              key={club.id} 
+              club={club} 
+              onClick={() => {/* Will implement club details dialog in future */}}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
-} 
+}

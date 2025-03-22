@@ -41,10 +41,18 @@ export default function ClubCard({ club, onClick, compact = false }: ClubCardPro
       case 'academic': return '#4361EE'; // brighter blue
       case 'arts': return '#F72585'; // vibrant pink
       case 'cultural': return '#FF9500'; // bright orange
+      case 'language & culture': return '#E5446D'; // vibrant rose
+      case 'performing arts': return '#FF0054'; // bright red
       case 'service': return '#06D6A0'; // bright teal
-      case 'social': return '#9D4EDD'; // rich purple
+      case 'community service': return '#4CC9F0'; // bright cyan
+      case 'social': return '#7B2CBF'; // deep purple
       case 'stem': return '#4CC9F0'; // bright cyan
+      case 'business': return '#3A0CA3'; // rich purple
       case 'sports': return '#D90429'; // bright red
+      case 'technology': return '#7B2CBF'; // deep purple
+      case 'humanities': return '#F77F00'; // bright orange
+      case 'medical': return '#06D6A0'; // bright teal
+      case 'miscellaneous': return '#4895EF'; // bright blue
       default: return '#4361EE'; // bright blue default
     }
   };
