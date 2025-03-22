@@ -199,7 +199,35 @@ const categoryAttributes: Record<string, string[]> = {
   'Miscellaneous': ['Diverse', 'Unique', 'Specialized']
 };
 
-// Convert raw club data to ClubListing format
+// Generate placeholder club listings with minimal data
+export function generatePlaceholderClubListings(): ClubListing[] {
+  return CLUB_DATA.map((club, index) => {
+    const categoryColor = getCategoryColor(club.category || 'Miscellaneous');
+    const categoryGradient = getCategoryGradient(club.category || 'Miscellaneous');
+    const uniqueId = `placeholder-${club.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}-${index}`;
+    
+    return {
+      id: uniqueId,
+      name: club.name,
+      description: "",
+      mission: "",
+      meetingTimes: "",
+      contactInfo: "",
+      category: club.category || 'Miscellaneous',
+      captain: "",
+      sponsorEmail: "",
+      createdAt: new Date(),
+      status: 'approved',
+      attributes: [],
+      bgColor: categoryColor,
+      bgGradient: categoryGradient,
+      roomNumber: "",
+      created: false
+    };
+  });
+}
+
+// Convert raw club data to ClubListing format with full details
 export function generateClubListings(): ClubListing[] {
   return CLUB_DATA.map((club, index) => {
     // Generate a description if one isn't provided
@@ -256,7 +284,8 @@ export function generateClubListings(): ClubListing[] {
       contactInfo: `${club.name.toLowerCase().replace(/\s+/g, '.')}@school.edu`,
       captain: 'Club Captain',
       sponsorEmail: 'faculty.sponsor@school.edu',
-      createdAt: new Date()
+      createdAt: new Date(),
+      created: true
     };
   });
 } 

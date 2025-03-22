@@ -1,7 +1,7 @@
 'use client';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -59,17 +59,45 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         captain: user.email,
         createdAt: new Date(),
         updatedAt: new Date(),
+        created: true
       };
 
       if (initialData?.id) {
+        // If we're editing an existing club, just update it
         await setDoc(doc(db, 'clubs', initialData.id), clubData, { merge: true });
+        toast.success('Club information updated successfully');
       } else {
-        await addDoc(collection(db, 'clubs'), clubData);
+        // If creating a new club, first check if a club with that name already exists
+        const clubName = formData.name.trim();
+        const clubNameLower = clubName.toLowerCase();
+        const clubsRef = collection(db, 'clubs');
+        
+        // We'll do a more thorough search by getting all clubs and checking in memory
+        // This is more reliable than a direct query which might not handle case sensitivity well
+        const allClubsSnapshot = await getDocs(clubsRef);
+        
+        // Find any club with a matching name (case-insensitive)
+        const matchingDocs = allClubsSnapshot.docs.filter(doc => {
+          const data = doc.data();
+          return data.name && data.name.toLowerCase().trim() === clubNameLower;
+        });
+        
+        if (matchingDocs.length > 0) {
+          // Found an existing club with the same name, update it instead of creating a new one
+          const existingDoc = matchingDocs[0];
+          console.log(`Updating existing club: ${clubName} (id: ${existingDoc.id})`);
+          await setDoc(doc(db, 'clubs', existingDoc.id), clubData, { merge: true });
+          toast.success('Club information updated successfully');
+        } else {
+          // No existing club found, create a new one
+          console.log(`Creating new club: ${clubName}`);
+          await addDoc(collection(db, 'clubs'), clubData);
+          toast.success('Club created successfully');
+        }
       }
 
       await onSubmitAction();
       onCloseAction();
-      toast.success(initialData ? 'Club updated successfully' : 'Club created successfully');
     } catch (error) {
       console.error('Error saving club:', error);
       toast.error('Failed to save club');

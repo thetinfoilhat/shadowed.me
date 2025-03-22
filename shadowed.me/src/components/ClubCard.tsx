@@ -1,10 +1,10 @@
 'use client';
 import { motion } from 'framer-motion';
 import { ClubListing } from '@/types/club';
-import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon, TrophyIcon, BuildingLibraryIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon, UserGroupIcon, UserIcon, TrophyIcon, BuildingLibraryIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 interface ClubCardProps {
-  club: ClubListing;
+  club: ClubListing & { created?: boolean };
   onClick: () => void;
 }
 
@@ -24,6 +24,9 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
   const hasTeamwork = club.attributes?.includes('Teamwork');
   const hasPublicSpeaking = club.attributes?.includes('Public Speaking');
   const hasPerformance = club.attributes?.includes('Performance');
+  
+  // Check if this is a placeholder club with no details
+  const isPlaceholder = club.created === false;
 
   // Get a subtle color based on category
   const getCategoryColor = (category: string): string => {
@@ -50,7 +53,7 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full border border-gray-100 overflow-hidden relative"
+      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full border border-gray-100 overflow-hidden relative ${isPlaceholder ? 'opacity-75' : ''}`}
       onClick={onClick}
     >
       <div className="absolute top-2 right-2 z-10 flex gap-1">
@@ -64,6 +67,11 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
+          </div>
+        )}
+        {isPlaceholder && (
+          <div className="bg-gray-200 text-gray-500 p-1 rounded-full shadow-sm" title="Details coming soon">
+            <LockClosedIcon className="h-4 w-4" />
           </div>
         )}
       </div>
@@ -95,28 +103,36 @@ export default function ClubCard({ club, onClick }: ClubCardProps) {
                 {scheduleAttribute}
               </span>
             )}
+            
+            {isPlaceholder && (
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                Details Coming Soon
+              </span>
+            )}
           </div>
         </div>
         
-        <p className="text-gray-600 line-clamp-3 mb-4 flex-grow">{club.description}</p>
+        <p className="text-gray-600 line-clamp-3 mb-4 flex-grow">
+          {club.description || (isPlaceholder ? "Information about this club will be available soon." : "")}
+        </p>
         
         <div className="text-sm text-gray-500 border-t pt-3 mt-auto space-y-1">
           <div className="flex items-center">
             <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-            {club.meetingTimes}
+            {club.meetingTimes || (isPlaceholder ? "Meeting times TBD" : "")}
           </div>
           
-          {club.roomNumber && (
+          {(club.roomNumber || isPlaceholder) && (
             <div className="flex items-center">
               <BuildingLibraryIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-              {club.roomNumber}
+              {club.roomNumber || "Room number TBD"}
             </div>
           )}
           
-          {club.captain && (
+          {(club.captain || isPlaceholder) && (
             <div className="flex items-center">
               <UserIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
-              {club.captain}
+              {club.captain || "Captain TBD"}
             </div>
           )}
         </div>

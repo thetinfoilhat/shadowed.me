@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
@@ -8,7 +8,8 @@ import ClubCard from '@/components/ClubCard';
 import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon, ClockIcon, TrophyIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { generatePlaceholderClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
@@ -36,80 +37,22 @@ const getCategoryColor = (category: string): string => {
   return colorMap[category] || '#38BFA1'; // Default to theme color
 };
 
-// Generate a gradient based on category color
-const getCategoryGradient = (category: string): string => {
-  const baseColor = getCategoryColor(category);
-  return `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`;
-};
+// Interface for Firestore data that might include a timestamp
+interface FirestoreClubData extends Omit<ClubListing, 'createdAt'> {
+  created?: boolean;
+  createdAt?: Timestamp | Date;
+}
 
-// Sample clubs to add if none are found
-const SAMPLE_CLUBS = [
-  {
-    name: 'Physics Club',
-    description: 'Explore the fundamental laws of the universe through experiments and discussions.',
-    category: 'STEM',
-    mission: 'To foster a love for physics and scientific inquiry among students.',
-    meetingTimes: 'Tuesdays, 3:30 PM - 5:00 PM',
-    contactInfo: 'physics@school.edu',
-    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Research', 'Analytical'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('STEM'),
-    bgGradient: getCategoryGradient('STEM')
-  },
-  {
-    name: 'Debate Team',
-    description: 'Develop critical thinking and public speaking skills through competitive debate.',
-    category: 'Humanities',
-    mission: 'To empower students with effective communication and argumentation skills.',
-    meetingTimes: 'Mondays and Wednesdays, 4:00 PM - 6:00 PM',
-    contactInfo: 'debate@school.edu',
-    attributes: ['Competitive', 'Weekly', 'Tryout/Audition', 'Public Speaking', 'Critical Thinking'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('Humanities'),
-    bgGradient: getCategoryGradient('Humanities')
-  },
-  {
-    name: 'Art Collective',
-    description: 'Express yourself through various art forms and collaborate on creative projects.',
-    category: 'Arts',
-    mission: 'To provide a space for artistic expression and creative collaboration.',
-    meetingTimes: 'Fridays, 3:00 PM - 5:30 PM',
-    contactInfo: 'art@school.edu',
-    attributes: ['Weekly', 'Open Membership', 'Year-round', 'Creative', 'Expressive'],
-    status: 'approved',
-    createdAt: new Date(),
-    bgColor: getCategoryColor('Arts'),
-    bgGradient: getCategoryGradient('Arts')
-  }
-];
-
-// Function to add sample clubs to Firebase
-const addSampleClubs = async () => {
-  try {
-    console.log('Adding sample clubs to Firebase...');
-    const clubsRef = collection(db, 'clubs');
-    
-    for (const club of SAMPLE_CLUBS) {
-      await addDoc(clubsRef, club);
-      console.log(`Added sample club: ${club.name}`);
-    }
-    
-    toast.success('Sample clubs added successfully');
-    return true;
-  } catch (error) {
-    console.error('Error adding sample clubs:', error);
-    toast.error('Failed to add sample clubs');
-    return false;
-  }
-};
+// Define an extended ClubListing type to include 'created' property
+interface ExtendedClubListing extends ClubListing {
+  created?: boolean;
+}
 
 export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
-  const [clubs, setClubs] = useState<ClubListing[]>([]);
+  const [clubs, setClubs] = useState<ExtendedClubListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
+  const [selectedClub, setSelectedClub] = useState<ExtendedClubListing | null>(null);
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -126,47 +69,32 @@ export default function ClubListings() {
       const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
       
+      // Get placeholder clubs for comparison
+      const placeholderClubs = generatePlaceholderClubListings();
+      console.log(`Expected ${placeholderClubs.length} placeholder clubs`);
       console.log(`Found ${querySnapshot.docs.length} clubs in Firebase`);
       
-      // If no clubs are found, add sample clubs
-      if (querySnapshot.docs.length === 0) {
-        console.log('No clubs found, adding sample clubs...');
-        const success = await addSampleClubs();
-        if (success) {
-          // Fetch clubs again after adding samples
-          const newQuerySnapshot = await getDocs(clubsRef);
-          const clubsData = newQuerySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || '',
-              description: data.description || '',
-              category: data.category || '',
-              captain: data.captain || '',
-              sponsorEmail: data.sponsorEmail || '',
-              mission: data.mission || '',
-              meetingTimes: data.meetingTimes || '',
-              contactInfo: data.contactInfo || '',
-              status: data.status || 'approved',
-              attributes: data.attributes || [],
-              image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              bgColor: data.bgColor,
-              bgGradient: data.bgGradient
-            } as ClubListing;
-          });
-          
-          setClubs(clubsData);
-          setLoading(false);
-          return;
-        }
-      }
+      // Create a map to track unique clubs by name (to prevent duplicates)
+      const uniqueClubsByName: Record<string, ExtendedClubListing> = {};
       
-      const clubsData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
+      // Process existing clubs from Firebase first
+      querySnapshot.docs.forEach(doc => {
+        const data = doc.data() as FirestoreClubData;
+        if (!data.name) return; // Skip clubs without names
+        
+        const name = data.name.trim();
+        const nameLower = name.toLowerCase();
+        
+        // Convert Firestore timestamp to Date object
+        const createdAt = data.createdAt instanceof Timestamp 
+          ? data.createdAt.toDate() 
+          : (data.createdAt as Date) || new Date();
+          
+        // Create the club object
+        const club: ExtendedClubListing = {
+          ...data,
           id: doc.id,
-          name: data.name || '',
+          name: name,
           description: data.description || '',
           category: data.category || '',
           captain: data.captain || '',
@@ -174,20 +102,74 @@ export default function ClubListings() {
           mission: data.mission || '',
           meetingTimes: data.meetingTimes || '',
           contactInfo: data.contactInfo || '',
-          status: data.status || 'approved', // Default to approved
+          status: data.status || 'approved',
           attributes: data.attributes || [],
+          roomNumber: data.roomNumber || '',
           image: data.image || `https://source.unsplash.com/random/300x200/?${encodeURIComponent(data.category || 'club')}`,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          createdAt,
           bgColor: data.bgColor,
-          bgGradient: data.bgGradient
-        } as ClubListing;
+          bgGradient: data.bgGradient,
+          created: data.created || false
+        };
+        
+        // Only add if this club name doesn't exist yet, or if this one is more complete
+        if (!uniqueClubsByName[nameLower] || (club.created && !uniqueClubsByName[nameLower].created)) {
+          uniqueClubsByName[nameLower] = club;
+        }
       });
       
-      setClubs(clubsData);
+      // Track which clubs we already have in Firestore by name
+      const existingClubNames = new Set(Object.keys(uniqueClubsByName).map(name => name.toLowerCase().trim()));
+      let addedCount = 0;
+      
+      // Only add placeholders for clubs that don't exist yet
+      for (const placeholderClub of placeholderClubs) {
+        const clubNameLower = placeholderClub.name.toLowerCase().trim();
+        
+        // Only add placeholder if a club with this name doesn't already exist
+        if (!existingClubNames.has(clubNameLower)) {
+          try {
+            const docRef = await addDoc(clubsRef, {
+              ...placeholderClub,
+              createdAt: new Date(),
+              created: false  // Mark as placeholder
+            });
+            
+            uniqueClubsByName[clubNameLower] = { 
+              ...placeholderClub, 
+              id: docRef.id
+            };
+            
+            addedCount++;
+            console.log(`Added placeholder club: ${placeholderClub.name}`);
+          } catch (err) {
+            console.error(`Error adding club ${placeholderClub.name}:`, err);
+          }
+        }
+      }
+      
+      if (addedCount > 0) {
+        console.log(`Added ${addedCount} new placeholder clubs to Firebase`);
+      }
+      
+      // Convert the map to an array of unique clubs
+      const clubs = Object.values(uniqueClubsByName);
+      
+      console.log(`Total unique clubs: ${clubs.length}`);
+      console.log(`Placeholder clubs: ${clubs.filter(c => !c.created).length}`);
+      console.log(`Fully created clubs: ${clubs.filter(c => c.created).length}`);
+      
+      // Sort clubs alphabetically by name
+      clubs.sort((a, b) => a.name.localeCompare(b.name));
+      
+      setClubs(clubs);
     } catch (error) {
       console.error('Error fetching clubs:', error);
       toast.error('Failed to load clubs');
-      setClubs([]);
+      
+      // Fall back to placeholder listings if Firebase fetch fails
+      const placeholderClubs = generatePlaceholderClubListings();
+      setClubs(placeholderClubs);
     } finally {
       setLoading(false);
     }
@@ -379,6 +361,12 @@ export default function ClubListings() {
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
               Showing {filteredClubs.length} {filteredClubs.length === 1 ? 'club' : 'clubs'}
+              {/* Display count of clubs needing details */}
+              {clubs.filter(club => !club.created).length > 0 && (
+                <span className="ml-2 text-gray-500">
+                  ({clubs.filter(club => !club.created).length} need details)
+                </span>
+              )}
             </p>
             <div className="flex gap-2">
               <button
@@ -407,11 +395,27 @@ export default function ClubListings() {
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClubs.map((club) => (
-              <ClubCard
-                key={club.id}
-                club={club}
-                onClick={() => setSelectedClub(club)}
-              />
+              <div key={`club-${club.id}-${club.name.toLowerCase().replace(/\s+/g, '-')}`} className="relative">
+                {!club.created && (
+                  <div className="absolute -top-2 -right-2 z-20 bg-gray-100 rounded-full p-1.5 shadow-md" title="Details coming soon">
+                    <LockClosedIcon className="h-4 w-4 text-gray-500" />
+                  </div>
+                )}
+                <div className={!club.created ? "opacity-70" : ""}>
+                  <ClubCard
+                    club={{
+                      ...club,
+                      // For placeholder clubs, provide default values for display
+                      description: club.description || "Details coming soon",
+                      meetingTimes: club.meetingTimes || "TBD",
+                      captain: club.captain || "TBD",
+                      sponsorEmail: club.sponsorEmail || "TBD",
+                      roomNumber: club.roomNumber || "TBD",
+                    }}
+                    onClick={() => setSelectedClub(club)}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -421,11 +425,12 @@ export default function ClubListings() {
               const isCompetitive = club.attributes?.includes('Competitive');
               return (
                 <div 
-                  key={club.id}
+                  key={`club-list-${club.id}-${club.name.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={() => setSelectedClub(club)}
-                  className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white overflow-hidden relative"
+                  className={`flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white overflow-hidden relative ${!club.created ? "opacity-70" : ""}`}
                 >
                   <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: categoryColor }} />
+                  
                   {isCompetitive && (
                     <div className="absolute top-2 right-2 z-10">
                       <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Competitive">
@@ -433,6 +438,15 @@ export default function ClubListings() {
                       </div>
                     </div>
                   )}
+                  
+                  {!club.created && (
+                    <div className="absolute top-2 right-2 z-10 ml-2">
+                      <div className="bg-gray-200 text-gray-600 p-1 rounded-full shadow-sm" title="Details coming soon">
+                        <LockClosedIcon className="h-4 w-4" />
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 relative flex flex-col items-center justify-center bg-gray-50 border border-gray-100">
                     <span className="text-xl font-bold" style={{ color: categoryColor }}>{club.name.split(' ')[0]}</span>
                     <span 
@@ -447,10 +461,12 @@ export default function ClubListings() {
                   </div>
                   <div className="flex-1 pl-2">
                     <h3 className="text-lg font-semibold text-[#0A2540]">{club.name}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{club.description}</p>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {club.description || "Details coming soon"}
+                    </p>
                     <div className="flex items-center text-xs text-gray-500">
                       <ClockIcon className="h-3 w-3 mr-1" style={{ color: categoryColor }} />
-                      {club.meetingTimes}
+                      {club.meetingTimes || "Meeting times TBD"}
                     </div>
                   </div>
                 </div>
@@ -477,7 +493,7 @@ export default function ClubListings() {
         {/* Club Details Dialog */}
         {selectedClub && (
           <ClubDetailsDialog
-            club={selectedClub}
+            club={selectedClub as ClubListing}
             isOpen={!!selectedClub}
             onCloseAction={() => setSelectedClub(null)}
           />
