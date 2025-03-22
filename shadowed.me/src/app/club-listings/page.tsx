@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ClubListing } from '@/types/club';
 import ClubCard from '@/components/ClubCard';
+import ClubDetailsDialog from '@/components/ClubDetailsDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import {
@@ -56,6 +57,7 @@ export default function ClubListings() {
   const {} = useAuth(); // Not using any auth properties
   const [clubs, setClubs] = useState<ExtendedClubListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedClub, setSelectedClub] = useState<ExtendedClubListing | null>(null);
   
   // Enhanced filtering state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -400,11 +402,20 @@ export default function ClubListings() {
             <ClubCard 
               key={club.id} 
               club={club} 
-              onClick={() => {/* Will implement club details dialog in future */}}
+              onClick={() => setSelectedClub(club)}
             />
           ))}
         </div>
       </div>
+
+      {/* Club Details Dialog */}
+      {selectedClub && (
+        <ClubDetailsDialog
+          club={selectedClub as ClubListing}
+          isOpen={!!selectedClub}
+          onCloseAction={() => setSelectedClub(null)}
+        />
+      )}
     </div>
   );
 }
