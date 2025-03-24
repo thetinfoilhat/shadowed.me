@@ -191,13 +191,13 @@ export default function MyVisits() {
               <p className="text-gray-600 mb-8">
                 Start exploring clubs and register for visits that interest you.
               </p>
-              <a 
+              <Link 
                 href="/school-clubs"
                 className="bg-[#38BFA1]/10 text-[#38BFA1] px-6 py-3 rounded-md hover:bg-[#38BFA1]/20 transition-all inline-flex items-center gap-2"
               >
                 <span>Explore Clubs</span>
                 <span>→</span>
-              </a>
+              </Link>
             </div>
           </div>
         ) : (
