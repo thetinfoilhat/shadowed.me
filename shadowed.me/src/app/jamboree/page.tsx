@@ -23,6 +23,18 @@ export default function Jamboree() {
   const [newClubName, setNewClubName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter websites based on search query
+  const filteredWebsites = clubWebsites.filter(website => 
+    website.clubName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    website.slogan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    website.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    website.members?.some(member => 
+      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.role.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -141,11 +153,42 @@ export default function Jamboree() {
             >
               Explore club websites or create your own to showcase your club&apos;s activities, members, and resources.
             </motion.p>
+
+            {/* Search Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-8 max-w-2xl mx-auto"
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search clubs by name, description, or members..."
+                  className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                />
+                <svg
+                  className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </motion.div>
+
             {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
                 className="mt-8"
               >
                 <button
@@ -166,9 +209,9 @@ export default function Jamboree() {
             <div className="flex justify-center py-16">
               <LoadingSpinner size="lg" />
             </div>
-          ) : clubWebsites.length > 0 ? (
+          ) : filteredWebsites.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {clubWebsites.map((website) => (
+              {filteredWebsites.map((website) => (
                 <motion.div
                   key={website.id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -196,9 +239,14 @@ export default function Jamboree() {
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
                         {website.clubName}
                       </h3>
-                      <p className="text-gray-600 mb-4 line-clamp-3">
+                      <p className="text-gray-600 mb-2 line-clamp-2">
                         {website.slogan || website.description?.substring(0, 100) || 'No description available.'}
                       </p>
+                      {website.members?.find(m => m.role.toLowerCase().includes('captain')) && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Captain: {website.members.find(m => m.role.toLowerCase().includes('captain'))?.name}
+                        </p>
+                      )}
                     </div>
                     <div className="flex justify-between items-center mt-4">
                       <span className="text-sm text-gray-500">
@@ -217,9 +265,11 @@ export default function Jamboree() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <h3 className="text-xl font-medium text-gray-700 mb-2">No Club Websites Yet</h3>
+              <h3 className="text-xl font-medium text-gray-700 mb-2">
+                {searchQuery ? 'No matching clubs found' : 'No Club Websites Yet'}
+              </h3>
               <p className="text-gray-500 mb-8">
-                Be the first to create a website for your club!
+                {searchQuery ? 'Try adjusting your search terms' : 'Be the first to create a website for your club!'}
               </p>
               {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
                 <button
