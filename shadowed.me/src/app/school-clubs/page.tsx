@@ -9,8 +9,38 @@ import { Club } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import {
+  MagnifyingGlassIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
+  TrophyIcon
+} from "@heroicons/react/20/solid";
 
-const CATEGORIES = ['All', 'STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
+// Enhanced categories for filtering - match with club-listings page
+const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
+
+// Common sense attributes for filtering
+const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 'Performance'] as const;
+
+// Get category color function
+const getCategoryColor = (category: string): string => {
+  const colorMap: Record<string, string> = {
+    'STEM': '#4361EE', // Brighter blue
+    'Business': '#3A0CA3', // Rich purple
+    'Arts': '#F72585', // Vibrant pink
+    'Performing Arts': '#FF0054', // Bright red
+    'Language & Culture': '#E5446D', // Vibrant rose/pink
+    'Community Service': '#4CC9F0', // Bright cyan
+    'Humanities': '#F77F00', // Bright orange
+    'Medical': '#06D6A0', // Bright teal
+    'Sports': '#D90429', // Bright red
+    'Technology': '#7B2CBF', // Deep purple
+    'Academic': '#FFD60A', // Bright yellow
+    'Miscellaneous': '#4895EF' // Bright blue
+  };
+  
+  return colorMap[category] || '#4361EE'; // Default to bright blue
+};
 
 type UserProfile = {
   name: string;
@@ -42,7 +72,9 @@ export default function SchoolClubs() {
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number]>('All');
+  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,8 +191,31 @@ export default function SchoolClubs() {
                           club.category.toLowerCase() === selectedCategory.toLowerCase();
     const matchesSearch = club.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          club.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    // Check if club has all selected attributes
+    const matchesAttributes = selectedAttributes.length === 0 || 
+                            selectedAttributes.every(attr => 
+                              club.attributes?.includes(attr)
+                            );
+    
+    return matchesCategory && matchesSearch && matchesAttributes;
   });
+
+  // Toggle attribute selection
+  const toggleAttribute = (attribute: string) => {
+    setSelectedAttributes(prev => 
+      prev.includes(attribute)
+        ? prev.filter(attr => attr !== attribute)
+        : [...prev, attribute]
+    );
+  };
+  
+  // Reset all filters
+  const resetFilters = () => {
+    setSelectedCategory('All');
+    setSelectedAttributes([]);
+    setSearchQuery('');
+  };
 
   const handleRegister = async (club: Club) => {
     if (!user) {
@@ -240,32 +295,117 @@ export default function SchoolClubs() {
 
         {/* Search and Filter Section */}
         <div className="mb-8 space-y-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search clubs..."
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] text-black placeholder:text-black placeholder:opacity-70"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <span className="absolute right-4 top-3.5 text-black opacity-70">🔍</span>
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="relative w-full md:max-w-md">
+              <input
+                type="text"
+                placeholder="Search clubs..."
+                className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-[#0A2540] placeholder-gray-500 shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <MagnifyingGlassIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+            </div>
+            
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all ${
+                showFilters 
+                  ? 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-lg' 
+                  : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20 border border-[#38BFA1]/20'
+              }`}
+            >
+              <AdjustmentsHorizontalIcon className="h-5 w-5" />
+              <span className="font-medium">Filters</span>
+              {(selectedCategory !== 'All' || selectedAttributes.length > 0 || searchQuery) && (
+                <span className={`ml-1 ${showFilters ? 'bg-white text-[#38BFA1]' : 'bg-[#38BFA1] text-white'} text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold`}>
+                  {(selectedCategory !== 'All' ? 1 : 0) + selectedAttributes.length + (searchQuery ? 1 : 0)}
+                </span>
+              )}
+            </button>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-[#38BFA1] text-white'
-                    : 'bg-[#38BFA1]/10 text-[#38BFA1] hover:bg-[#38BFA1]/20'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          {showFilters && (
+            <div className="bg-gradient-to-r from-slate-50 to-white rounded-lg border border-gray-200 p-6 mb-4 animate-fadeIn shadow-md">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="font-semibold text-[#0A2540] text-lg">Filters</h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-sm font-medium bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] bg-clip-text text-transparent hover:opacity-80 flex items-center"
+                >
+                  <XMarkIcon className="h-4 w-4 mr-1 text-[#4361EE]" />
+                  Reset all
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategory('All')}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      selectedCategory === 'All'
+                        ? 'bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] text-white shadow-md transform -translate-y-0.5'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                    }`}
+                  >
+                    All
+                  </button>
+                  
+                  {CATEGORIES.filter(c => c !== 'All').map((category) => {
+                    const categoryColor = getCategoryColor(category);
+                    const isSelected = selectedCategory === category;
+                    
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className="transition-all"
+                      >
+                        <span 
+                          className="block text-sm font-medium px-3 py-1.5 rounded-full transition-all"
+                          style={{
+                            background: isSelected 
+                              ? `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)` 
+                              : '#f3f4f6',
+                            color: isSelected ? 'white' : categoryColor,
+                            boxShadow: isSelected ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
+                            transform: isSelected ? 'translateY(-1px)' : 'none',
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Activity Type</h4>
+                <div className="flex flex-wrap gap-2">
+                  {ATTRIBUTES.map((attribute) => (
+                    <button
+                      key={attribute}
+                      onClick={() => toggleAttribute(attribute)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        selectedAttributes.includes(attribute)
+                          ? attribute === 'Competitive' 
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md transform -translate-y-0.5' 
+                            : 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-md transform -translate-y-0.5'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                      }`}
+                    >
+                      {attribute === 'Competitive' && (
+                        <TrophyIcon className="h-3.5 w-3.5 inline-block mr-1" />
+                      )}
+                      {attribute}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading && (
@@ -299,14 +439,37 @@ export default function SchoolClubs() {
                   <div>
                     <h3 className="text-xl font-semibold text-black">{club.name}</h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      {(club.categories || [club.category]).map((cat) => (
+                      {/* Category tag */}
+                      <span 
+                        key={club.category}
+                        style={{ backgroundColor: getCategoryColor(club.category) + '20', color: getCategoryColor(club.category) }}
+                        className="inline-block px-3 py-1 text-sm rounded-full"
+                      >
+                        {club.category}
+                      </span>
+                      
+                      {/* Attribute tags */}
+                      {club.attributes?.slice(0, 2).map(attr => (
                         <span 
-                          key={cat}
-                          className="inline-block px-3 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full"
+                          key={attr}
+                          className={`inline-block px-2 py-0.5 text-xs rounded-full ${
+                            attr === 'Competitive' 
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                              : attr === 'Leadership'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : attr === 'Teamwork'
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : attr === 'Public Speaking'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : attr === 'Performance'
+                              ? 'bg-pink-100 text-pink-800 border border-pink-200'
+                              : 'bg-gray-100 text-gray-800 border border-gray-200'
+                          }`}
                         >
-                          {cat}
+                          {attr}
                         </span>
                       ))}
+                      
                       {isRegistered && (
                         <span className="inline-block px-3 py-1 bg-blue-100 text-blue-600 text-sm rounded-full">
                           Registered

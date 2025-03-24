@@ -24,6 +24,7 @@ export interface Club {
   startTime: string;
   endTime: string;
   contactEmail: string;
+  attributes?: string[];
 }
 
 export interface CompletedVisit {
@@ -59,4 +60,48 @@ export interface ClubListing {
   sponsorEmailList?: string[];
   captains?: string[];
   sponsorEmails?: string[];
+}
+
+export interface ClubSite {
+  id: string;
+  slug: string;
+  clubName: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  theme: {
+    primaryColor: string;
+    textColor: string;
+    font: string;
+  };
+  bannerImage?: string;
+  slogan?: string;
+  description?: string;      // Long form about section
+  meetingInfo?: string;      // Times, room, day
+  galleryImages?: string[];  // URLs to images
+  galleryImagesMetadata?: {
+    url: string;
+    title?: string;
+    caption?: string;
+    uploadedAt: Date;
+  }[];
+  contactLinks?: {
+    type: string;      // email, instagram, remind, etc.
+    url: string;
+    label: string;
+  }[];
+  members?: {
+    name: string;
+    role: string;
+    photoUrl?: string;
+    bio?: string;
+  }[];
+  pdfUploads?: {
+    fileName: string;
+    url: string;
+    uploadedAt: Date;
+    fileSize?: number;
+  }[];
+  lastUpdated?: Date;
+  featuredImage?: string;    // URL to featured image from gallery
 } 

@@ -2,6 +2,7 @@
 import { useState, useEffect, Fragment, memo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { TrophyIcon } from '@heroicons/react/20/solid';
 import { toast } from 'react-hot-toast';
 import SponsorSelect from './SponsorSelect';
 import ClubSelect from './ClubSelect';
@@ -61,7 +62,30 @@ const modalStyles = `
   }
 `;
 
-const CATEGORIES = ['STEM', 'Business', 'Humanities', 'Medical', 'Community Service', 'Arts'] as const;
+const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous'] as const;
+
+// Common sense attributes for filtering
+const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 'Performance'] as const;
+
+// Get category color function - same as club-listings page
+const getCategoryColor = (category: string): string => {
+  const colorMap: Record<string, string> = {
+    'STEM': '#4361EE', // Brighter blue
+    'Business': '#3A0CA3', // Rich purple
+    'Arts': '#F72585', // Vibrant pink
+    'Performing Arts': '#FF0054', // Bright red
+    'Language & Culture': '#E5446D', // Vibrant rose/pink
+    'Community Service': '#4CC9F0', // Bright cyan
+    'Humanities': '#F77F00', // Bright orange
+    'Medical': '#06D6A0', // Bright teal
+    'Sports': '#D90429', // Bright red
+    'Technology': '#7B2CBF', // Deep purple
+    'Academic': '#FFD60A', // Bright yellow
+    'Miscellaneous': '#4895EF' // Bright blue
+  };
+  
+  return colorMap[category] || '#4361EE'; // Default to bright blue
+};
 
 interface VisitData {
   id?: string;
@@ -79,6 +103,7 @@ interface VisitData {
   applicants?: Array<{ name: string; email: string; grade: string; school: string }>;
   status?: 'pending' | 'approved' | 'rejected';
   createdAt?: Date;
+  attributes?: string[];
 }
 
 interface FormData {
@@ -91,6 +116,7 @@ interface FormData {
   endTime: string;
   slots: number;
   description: string;
+  attributes: string[];
 }
 
 // Create a memoized version of SponsorSelect
@@ -120,6 +146,7 @@ export default function VisitModal({
     endTime: '',
     slots: 0,
     description: '',
+    attributes: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -167,6 +194,7 @@ export default function VisitModal({
         endTime: initialData.endTime || '',
         slots: initialData.slots || 0,
         description: initialData.description || '',
+        attributes: initialData.attributes || []
       });
     } else {
       // Reset form when modal is opened without initialData
@@ -180,6 +208,7 @@ export default function VisitModal({
         endTime: '',
         slots: 0,
         description: '',
+        attributes: []
       });
     }
     
@@ -232,6 +261,24 @@ export default function VisitModal({
       ...prev,
       [field]: value
     }));
+  };
+
+  // Toggle attribute selection
+  const toggleAttribute = (attribute: string) => {
+    setFormData(prev => {
+      const currentAttributes = [...prev.attributes];
+      if (currentAttributes.includes(attribute)) {
+        return {
+          ...prev,
+          attributes: currentAttributes.filter(attr => attr !== attribute)
+        };
+      } else {
+        return {
+          ...prev,
+          attributes: [...currentAttributes, attribute]
+        };
+      }
+    });
   };
 
   return (
@@ -317,18 +364,66 @@ export default function VisitModal({
                         Category <span className="text-red-500">*</span>
                       </label>
                       <select
+                        required
                         value={formData.category}
                         onChange={(e) => handleInputChange('category', e.target.value)}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-[#0A2540] min-h-[40px]"
-                        required
+                        className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-[#0A2540] min-h-[40px] ${
+                          formData.category ? 'border-transparent bg-gradient-to-r from-white to-white p-[1px]' : 'border-gray-300'
+                        }`}
+                        style={formData.category ? { 
+                          background: 'white',
+                          backgroundClip: 'padding-box',
+                          border: `1px solid transparent`,
+                          position: 'relative',
+                          boxShadow: `0 0 0 1px ${getCategoryColor(formData.category)}`
+                        } : {}}
                       >
                         <option value="">Select a category</option>
                         {CATEGORIES.map((category) => (
-                          <option key={category} value={category}>
+                          <option 
+                            key={category} 
+                            value={category}
+                          >
                             {category}
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="block text-sm font-medium text-[#0A2540]">
+                        Activity Types
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {ATTRIBUTES.map((attribute) => (
+                          <button
+                            key={attribute}
+                            type="button"
+                            onClick={() => toggleAttribute(attribute)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              formData.attributes.includes(attribute)
+                                ? attribute === 'Competitive' 
+                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md transform -translate-y-0.5' 
+                                  : attribute === 'Leadership'
+                                  ? 'bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-md transform -translate-y-0.5'
+                                  : attribute === 'Teamwork'
+                                  ? 'bg-gradient-to-r from-green-500 to-green-400 text-white shadow-md transform -translate-y-0.5'
+                                  : attribute === 'Public Speaking'
+                                  ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md transform -translate-y-0.5'
+                                  : attribute === 'Performance'
+                                  ? 'bg-gradient-to-r from-pink-500 to-pink-400 text-white shadow-md transform -translate-y-0.5'
+                                  : 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-md transform -translate-y-0.5'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                            }`}
+                          >
+                            {attribute === 'Competitive' && (
+                              <TrophyIcon className="h-3.5 w-3.5 inline-block mr-1" />
+                            )}
+                            {attribute}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-sm text-[#0A2540] opacity-70 mt-1">Optional: Select all that apply</p>
                     </div>
 
                     <div className="form-group">
