@@ -1,309 +1,294 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import PageTransition from '@/components/PageTransition';
-import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { slugify } from '@/utils/stringUtils';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
-// Define interface for club website data
-interface ClubWebsite {
-  id: string;
-  clubName: string;
-  slug: string;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  bannerImage?: string;
-  slogan?: string;
-  officers?: string[];
-  galleryImages?: string[];
-}
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import PageTransition from '@/components/PageTransition';
+import { toast } from 'react-hot-toast';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+import { ClubSite } from '@/types/club';
+import { getColorById } from '@/utils/colors';
 
 export default function Jamboree() {
-  const { user } = useAuth();
   const router = useRouter();
+  const { user } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [clubWebsites, setClubWebsites] = useState<ClubWebsite[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clubWebsites, setClubWebsites] = useState<ClubSite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const [newClubName, setNewClubName] = useState('');
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
-  // Check user role
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (!user?.uid) {
-        setUserRole(null);
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
+        if (!user) {
+          setLoading(false);
+          return;
         }
-        setIsLoading(false);
+
+        // Check user role
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setUserRole(userData?.role || null);
+        }
       } catch (error) {
         console.error('Error fetching user role:', error);
-        setIsLoading(false);
+      }
+    };
+
+    const fetchClubWebsites = async () => {
+      try {
+        // Get all club websites
+        const websitesQuery = query(
+          collection(db, 'clubSites'),
+          orderBy('updatedAt', 'desc')
+        );
+        
+        const websitesSnapshot = await getDocs(websitesQuery);
+        const websites: ClubSite[] = [];
+
+        websitesSnapshot.forEach((doc) => {
+          const data = doc.data();
+          websites.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+            updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt)
+          } as ClubSite);
+        });
+
+        setClubWebsites(websites);
+      } catch (error) {
+        console.error('Error fetching club websites:', error);
+        toast.error('Failed to load club websites');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUserRole();
+    fetchClubWebsites();
   }, [user]);
 
-  // Fetch club websites
-  useEffect(() => {
-    const fetchClubWebsites = async () => {
-      try {
-        const websitesRef = collection(db, 'clubWebsites');
-        const websitesQuery = query(websitesRef, orderBy('clubName', 'asc'));
-        const querySnapshot = await getDocs(websitesQuery);
-        
-        const websites: ClubWebsite[] = [];
-        
-        querySnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          websites.push({
-            id: doc.id,
-            clubName: data.clubName,
-            slug: data.slug,
-            createdBy: data.createdBy,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-            bannerImage: data.bannerImage,
-            slogan: data.slogan,
-            officers: data.officers,
-            galleryImages: data.galleryImages
-          });
-        });
-        
-        setClubWebsites(websites);
-      } catch (error) {
-        console.error('Error fetching club websites:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchClubWebsites();
-  }, []);
-
   const handleCreateClubWebsite = async () => {
+    if (!user) {
+      toast.error('You must be logged in to create a club website');
+      return;
+    }
+
     if (!newClubName.trim()) {
       setError('Please enter a club name');
       return;
     }
 
-    setIsSubmitting(true);
-    setError('');
+    setCreating(true);
+    setError(null);
 
     try {
-      // Generate a slug from club name
-      const slug = slugify(newClubName);
-      
-      // Check if a site with this slug already exists
-      const existingWebsites = clubWebsites.filter(site => site.slug === slug);
-      
-      if (existingWebsites.length > 0) {
-        setError('A website for this club already exists');
-        setIsSubmitting(false);
+      // Create a slug from the club name
+      const slug = newClubName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Check if slug already exists
+      const existingWebsite = clubWebsites.find(
+        (website) => website.slug === slug
+      );
+
+      if (existingWebsite) {
+        setError('A website with this name already exists');
+        setCreating(false);
         return;
       }
-      
-      // Close modal and navigate to the club website builder
-      setIsModalOpen(false);
-      router.push(`/${slug}?edit=true&new=true&name=${encodeURIComponent(newClubName)}`);
+
+      // Navigate to the new club website page with the slug and name
+      router.push(`/${slug}?new=true&name=${encodeURIComponent(newClubName)}`);
     } catch (error) {
       console.error('Error creating club website:', error);
-      setError('Failed to create club website. Please try again.');
-      setIsSubmitting(false);
+      toast.error('Failed to create club website');
+      setCreating(false);
     }
   };
 
-  const canCreateWebsite = userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor';
-
   return (
     <PageTransition>
-      <div className="pt-[100px] min-h-screen bg-[#FAFAFA]">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 py-12 md:py-16">
-          {/* Hero Section */}
-          <motion.div 
-            className="mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h1 className="text-[2.5rem] sm:text-[3.5rem] md:text-[4rem] leading-[1.15] mb-6 text-[#180D39]">
-              Jamboree: <span className="font-bold">Club Sites</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-[#180D39]/70 mb-8 max-w-3xl">
-              Create and explore custom-built websites by your school&apos;s clubs.
-            </p>
-
-            {canCreateWebsite && (
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="bg-gradient-to-r from-[#38BFA1] to-[#2A8E9E] text-white px-6 py-3 rounded-full text-lg font-medium flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
+      <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
+        {/* Hero Section */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+          <div className="text-center">
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-4xl font-bold text-gray-900 sm:text-5xl"
+            >
+              Club Website Jamboree
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto"
+            >
+              Explore club websites or create your own to showcase your club&apos;s activities, members, and resources.
+            </motion.p>
+            {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="mt-8"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Create Club Website
-              </button>
-            )}
-          </motion.div>
-
-          {/* Club Websites Grid */}
-          <div className="mb-24">
-            <h2 className="text-2xl font-bold text-[#180D39] mb-4">Club Websites</h2>
-            <p className="text-[#180D39]/70 mb-8 max-w-3xl">
-              Explore beautiful websites created by clubs at your school. Click on any site to visit or explore featured content.
-            </p>
-            
-            {isLoading ? (
-              <div className="flex justify-center items-center py-16">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : clubWebsites.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clubWebsites.map((website) => (
-                  <motion.div
-                    key={website.id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden group"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ 
-                      y: -5,
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
-                    }}
-                  >
-                    <div 
-                      className="h-48 relative"
-                      style={{
-                        backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundColor: website.bannerImage ? undefined : '#4361EE'
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end">
-                        <div className="p-4 text-white">
-                          <h3 className="text-xl font-bold truncate">{website.clubName}</h3>
-                          {website.slogan && (
-                            <p className="text-sm opacity-90 mt-1 line-clamp-2">{website.slogan}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="text-sm text-gray-500">
-                          Updated {new Date(website.updatedAt).toLocaleDateString()}
-                        </div>
-                        <span className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                      
-                      <div className="flex space-x-2 mb-4">
-                        {website.officers && website.officers.length > 0 && (
-                          <span className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
-                            {website.officers.length} Members
-                          </span>
-                        )}
-                        {website.galleryImages && website.galleryImages.length > 0 && (
-                          <span className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded-full">
-                            {website.galleryImages.length} Photos
-                          </span>
-                        )}
-                      </div>
-                      
-                      <Link 
-                        href={`/${website.slug}`}
-                        className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm font-medium inline-block hover:from-[#2DA891] hover:to-[#259889] transition-colors w-full text-center"
-                      >
-                        Visit Site
-                      </Link>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                <div className="mb-4 text-5xl">🎪</div>
-                <h3 className="text-xl font-semibold text-[#180D39] mb-2">No Club Websites Yet</h3>
-                <p className="text-[#180D39]/70 max-w-md mx-auto">
-                  {canCreateWebsite 
-                    ? 'Be the first to create a beautiful website for your club.' 
-                    : 'Club websites will appear here once they are created by club captains or sponsors.'}
-                </p>
-              </div>
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Create New Website
+                </button>
+              </motion.div>
             )}
           </div>
+        </div>
 
-          {/* Create Club Website Modal */}
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl p-6 max-w-md w-full relative">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                  aria-label="Close"
+        {/* Website Grid */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : clubWebsites.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {clubWebsites.map((website) => (
+                <motion.div
+                  key={website.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <div 
+                    className="h-40 bg-cover bg-center relative" 
+                    style={{ 
+                      backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value,
+                      backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined
+                    }}
+                  >
+                    {!website.bannerImage && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <h2 className="text-3xl font-bold text-white px-4 text-center">
+                          {website.clubName}
+                        </h2>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 flex-grow flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {website.clubName}
+                      </h3>
+                      <p className="text-gray-600 mb-4 line-clamp-3">
+                        {website.slogan || website.description?.substring(0, 100) || 'No description available.'}
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <span className="text-sm text-gray-500">
+                        Updated {new Date(website.updatedAt).toLocaleDateString()}
+                      </span>
+                      <button
+                        onClick={() => router.push(`/${website.slug}`)}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#38BFA1] hover:bg-gray-50 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
+                      >
+                        Visit Site
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <h3 className="text-xl font-medium text-gray-700 mb-2">No Club Websites Yet</h3>
+              <p className="text-gray-500 mb-8">
+                Be the first to create a website for your club!
+              </p>
+              {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Create New Website
                 </button>
-                
-                <h2 className="text-2xl font-bold text-[#0A2540] mb-6">Create Club Website</h2>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Club Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newClubName}
-                    onChange={(e) => setNewClubName(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter club name"
-                  />
-                  {error && (
-                    <p className="mt-2 text-sm text-red-600">{error}</p>
-                  )}
-                </div>
-                
-                <div className="flex justify-end mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="mr-4 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreateClubWebsite}
-                    disabled={isSubmitting || !newClubName.trim()}
-                    className="px-4 py-2 bg-[#38BFA1] text-white font-medium rounded-lg hover:bg-[#2DA891] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Creating...' : 'Create Website'}
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Create Website Modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            >
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Club Website</h2>
+              <p className="text-gray-600 mb-6">
+                Enter your club name to create a new website. You&apos;ll be able to customize it after creation.
+              </p>
+              <div className="mb-6">
+                <label htmlFor="clubName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Club Name
+                </label>
+                <input
+                  type="text"
+                  id="clubName"
+                  value={newClubName}
+                  onChange={(e) => setNewClubName(e.target.value)}
+                  placeholder="Enter club name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                />
+                {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setModalOpen(false);
+                    setNewClubName('');
+                    setError(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateClubWebsite}
+                  disabled={creating}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creating ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" /> Creating...
+                    </>
+                  ) : (
+                    'Create Website'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </PageTransition>
   );

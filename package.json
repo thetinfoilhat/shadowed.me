@@ -8,13 +8,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/uuid": "^10.0.0",
     "all": "^0.0.0",
     "firebase": "^11.4.0",
     "framer-motion": "^12.4.7",
     "next": "^15.2.1",
     "pnpm": "^10.6.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-quill": "^2.0.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@headlessui/react": "^2.2.0",

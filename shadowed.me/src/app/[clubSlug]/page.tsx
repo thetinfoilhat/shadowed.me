@@ -2,48 +2,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageTransition from '@/components/PageTransition';
 import WebsiteEditor from '../../components/WebsiteEditor';
 import WebsiteViewer from '../../components/WebsiteViewer';
 import Link from 'next/link';
-
-// Interface for club website data
-interface ClubWebsiteData {
-  id: string;
-  clubName: string;
-  slug: string;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  bannerImage?: string;
-  slogan?: string;
-  aboutSection?: string;
-  meetingInfo?: string;
-  galleryImages?: string[];
-  galleryImagesMetadata?: {
-    url: string;
-    title?: string;
-    caption?: string;
-    uploadedAt: Date;
-  }[];
-  officers?: {
-    name: string;
-    role: string;
-    photoUrl?: string;
-    bio?: string;
-  }[];
-  contactLinks?: {
-    type: string;
-    url: string;
-    label: string;
-  }[];
-  themeColor?: string;
-  showFeaturedImage?: boolean;
-  featuredImage?: string;
-}
+import { ClubSite } from '@/types/club';
+import { DEFAULT_PRIMARY_COLOR, DEFAULT_TEXT_COLOR } from '@/utils/colors';
+import { DEFAULT_FONT } from '@/utils/fonts';
+import { toast } from 'react-hot-toast';
 
 export default function ClubWebsitePage() {
   const { clubSlug } = useParams();
@@ -51,101 +20,122 @@ export default function ClubWebsitePage() {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [website, setWebsite] = useState<ClubWebsiteData | null>(null);
+  const [website, setWebsite] = useState<ClubSite | null>(null);
   const [, setUserRole] = useState<string | null>(null);
   const [isEditor, setIsEditor] = useState<boolean>(false);
   const [isNewWebsite, setIsNewWebsite] = useState<boolean>(false);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [, setUserClubs] = useState<string[]>([]);
+  const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
 
   // Parse query parameters
   const isEditMode = searchParams.get('edit') === 'true';
   const isNew = searchParams.get('new') === 'true';
+  const isPreview = searchParams.get('preview') === 'true';
   const initialClubName = searchParams.get('name');
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (!user) {
+      if (isPreview) {
+        // Skip auth check for preview mode - just show the current website data
         setLoading(false);
+        return;
+      }
+      
+      if (!user && !isPreview) {
+        // For viewing, non-authenticated users can still see the site
+        try {
+          // Fetch the website data if it exists
+          const websiteRef = doc(db, 'clubSites', clubSlug as string);
+          const websiteDoc = await getDoc(websiteRef);
+          
+          if (websiteDoc.exists()) {
+            const data = websiteDoc.data() as Omit<ClubSite, 'id'>;
+            setWebsite({
+              id: websiteDoc.id,
+              ...data,
+              createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+              updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt)
+            });
+          } else {
+            // Website doesn't exist
+            setError('This club website does not exist.');
+          }
+        } catch (err) {
+          console.error('Error fetching club website:', err);
+          setError('Failed to load club website. Please try again later.');
+        } finally {
+          setLoading(false);
+        }
         return;
       }
 
       try {
         // Get user role
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const role = userDoc.data().role;
-          setUserRole(role);
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            setUserRole(role);
 
-          // If user is admin, they can edit any club
-          if (role === 'admin') {
-            setIsEditor(true);
-          } else if (role === 'captain' || role === 'sponsor') {
-            // Fetch clubs where user is captain or sponsor
-            const clubsRef = collection(db, 'clubs');
-            const captainQuery = query(clubsRef, where('captain', '==', user.email));
-            const sponsorQuery = query(clubsRef, where('sponsorEmail', '==', user.email));
-            
-            const [captainSnapshot, sponsorSnapshot] = await Promise.all([
-              getDocs(captainQuery),
-              getDocs(sponsorQuery)
-            ]);
-            
-            // Extract club names and convert to slugs
-            const clubs: string[] = [];
-            captainSnapshot.docs.forEach(doc => {
-              const data = doc.data();
-              if (data.name) {
-                clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
-              }
-            });
-            
-            sponsorSnapshot.docs.forEach(doc => {
-              const data = doc.data();
-              if (data.name) {
-                clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
-              }
-            });
-            
-            setUserClubs(clubs);
-            
-            // Check if user can edit this specific club
-            if (clubs.includes(clubSlug as string)) {
+            // If user is admin, they can edit any club
+            if (role === 'admin') {
               setIsEditor(true);
+            } else if (role === 'captain' || role === 'sponsor') {
+              // Fetch clubs where user is captain or sponsor
+              const clubsRef = collection(db, 'clubs');
+              const captainQuery = query(clubsRef, where('captain', '==', user.email));
+              const sponsorQuery = query(clubsRef, where('sponsorEmail', '==', user.email));
+              
+              const [captainSnapshot, sponsorSnapshot] = await Promise.all([
+                getDocs(captainQuery),
+                getDocs(sponsorQuery)
+              ]);
+              
+              // Extract club names and convert to slugs
+              const clubs: string[] = [];
+              captainSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.name) {
+                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
+                }
+              });
+              
+              sponsorSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.name) {
+                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
+                }
+              });
+              
+              setUserClubs(clubs);
+              
+              // Check if user can edit this specific club
+              if (clubs.includes(clubSlug as string)) {
+                setIsEditor(true);
+              }
             }
           }
         }
         
         // Fetch the website data if it exists
-        const websiteRef = doc(db, 'clubWebsites', clubSlug as string);
+        const websiteRef = doc(db, 'clubSites', clubSlug as string);
         const websiteDoc = await getDoc(websiteRef);
         
         if (websiteDoc.exists()) {
-          const data = websiteDoc.data();
+          const data = websiteDoc.data() as Omit<ClubSite, 'id'>;
           setWebsite({
             id: websiteDoc.id,
-            clubName: data.clubName,
-            slug: data.slug,
-            createdBy: data.createdBy,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-            bannerImage: data.bannerImage,
-            slogan: data.slogan,
-            aboutSection: data.aboutSection,
-            meetingInfo: data.meetingInfo,
-            galleryImages: data.galleryImages,
-            galleryImagesMetadata: data.galleryImagesMetadata,
-            officers: data.officers,
-            contactLinks: data.contactLinks,
-            themeColor: data.themeColor,
-            showFeaturedImage: data.showFeaturedImage,
-            featuredImage: data.featuredImage
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+            updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt)
           });
-        } else if (isNew) {
+        } else if (isNew && user) {
           // Handle new website creation
           setIsNewWebsite(true);
           setEditMode(true);
+          setIsCreatingNew(true);
           
           // Create initial data for new club website
           if (initialClubName) {
@@ -153,9 +143,14 @@ export default function ClubWebsitePage() {
               id: clubSlug as string,
               clubName: initialClubName,
               slug: clubSlug as string,
-              createdBy: user.email || 'unknown',
+              createdBy: user.uid,
               createdAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              theme: {
+                primaryColor: DEFAULT_PRIMARY_COLOR.id,
+                textColor: DEFAULT_TEXT_COLOR.id,
+                font: DEFAULT_FONT.id
+              }
             });
           }
         } else {
@@ -171,7 +166,7 @@ export default function ClubWebsitePage() {
     };
 
     checkAuth();
-  }, [clubSlug, user, isNew, initialClubName]);
+  }, [clubSlug, user, isNew, initialClubName, isPreview]);
 
   useEffect(() => {
     // Set edit mode based on URL parameter and user permission
@@ -180,25 +175,12 @@ export default function ClubWebsitePage() {
     }
   }, [isEditMode, isEditor]);
 
-  // Toggle between edit and view modes
-  const toggleEditMode = () => {
-    if (!isEditor) return;
-    setEditMode(prev => !prev);
-    
-    // Update URL without reloading the page
-    const newUrl = editMode 
-      ? `/${clubSlug}` 
-      : `/${clubSlug}?edit=true`;
-    
-    window.history.pushState({}, '', newUrl);
-  };
-
   // Save website data
-  const saveWebsite = async (data: Partial<ClubWebsiteData>) => {
-    if (!isEditor || !user) return;
+  const saveWebsite = async (data: Partial<ClubSite>) => {
+    if (!isEditor || !user) return false;
     
     try {
-      const websiteRef = doc(db, 'clubWebsites', clubSlug as string);
+      const websiteRef = doc(db, 'clubSites', clubSlug as string);
       
       // Clean data - remove any undefined values as Firebase doesn't support them
       const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
@@ -208,36 +190,52 @@ export default function ClubWebsitePage() {
         return acc;
       }, {} as Record<string, unknown>);
       
-      // Merge with existing data and update timestamp
-      const updatedData = {
-        ...website,
-        ...cleanData,
-        updatedAt: new Date()
-      };
-      
-      if (isNewWebsite) {
-        // For a new website, also set creation metadata
-        updatedData.createdAt = new Date();
-        updatedData.createdBy = user.email || 'unknown';
-        updatedData.slug = clubSlug as string;
+      // If it's a complete save (not a partial update), add updated timestamp
+      if (!Object.keys(data).includes('updatedAt')) {
+        cleanData.updatedAt = new Date();
       }
       
-      // Update Firestore
-      await setDoc(websiteRef, updatedData, { merge: true });
-      
-      // Update local state
-      setWebsite(updatedData as ClubWebsiteData);
-      
-      // If this was a new website, clear the new flag
-      if (isNewWebsite) {
-        setIsNewWebsite(false);
+      if (isNewWebsite && isCreatingNew) {
+        // For a new website, create full document with metadata
+        const newWebsiteData: ClubSite = {
+          id: clubSlug as string,
+          clubName: initialClubName || 'New Club',
+          slug: clubSlug as string,
+          createdBy: user.uid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          theme: {
+            primaryColor: DEFAULT_PRIMARY_COLOR.id,
+            textColor: DEFAULT_TEXT_COLOR.id,
+            font: DEFAULT_FONT.id
+          },
+          ...cleanData as Partial<ClubSite>
+        };
+        
+        // Set the full document (not merge)
+        await setDoc(websiteRef, newWebsiteData);
+        
+        // Update local state
+        setWebsite(newWebsiteData);
+        
+        // This is no longer a new site being created for the first time
+        setIsCreatingNew(false);
+        toast.success('Website created successfully!');
+        
         // Update URL to remove new parameter
         router.replace(`/${clubSlug}?edit=true`);
+      } else {
+        // For updates to existing site, merge with existing data
+        await setDoc(websiteRef, cleanData, { merge: true });
+        
+        // Update local state with the changes
+        setWebsite(prev => prev ? { ...prev, ...cleanData as Partial<ClubSite> } : null);
       }
       
       return true;
     } catch (err) {
       console.error('Error saving club website:', err);
+      toast.error('Failed to save changes');
       return false;
     }
   };
@@ -253,18 +251,40 @@ export default function ClubWebsitePage() {
   if (error) {
     return (
       <PageTransition>
-        <div className="min-h-screen pt-[100px] flex flex-col items-center justify-center px-4">
-          <div className="text-6xl mb-6">🏫</div>
-          <h1 className="text-3xl font-bold text-[#180D39] mb-4">Oops! Club Not Found</h1>
-          <p className="text-[#180D39]/70 text-center mb-8 max-w-md">
-            {error}
-          </p>
-          <Link 
-            href="/jamboree" 
-            className="bg-[#38BFA1] text-white px-6 py-3 rounded-full font-medium hover:bg-[#2DA891] transition-colors"
-          >
-            Back to Jamboree
-          </Link>
+        <div className="pt-[120px] min-h-screen bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Oops! {error}</h1>
+            <p className="text-gray-600 mb-8">
+              The club website you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
+            </p>
+            <Link 
+              href="/jamboree" 
+              className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2DA891] transition-colors"
+            >
+              Return to Jamboree
+            </Link>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (!website) {
+    return (
+      <PageTransition>
+        <div className="pt-[120px] min-h-screen bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Website Not Found</h1>
+            <p className="text-gray-600 mb-8">
+              This club doesn&apos;t have a website yet.
+            </p>
+            <Link 
+              href="/jamboree" 
+              className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2DA891] transition-colors"
+            >
+              Return to Jamboree
+            </Link>
+          </div>
         </div>
       </PageTransition>
     );
@@ -272,45 +292,15 @@ export default function ClubWebsitePage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pb-16">
-        {/* Control Bar for Editors */}
-        {isEditor && website && (
-          <div className="fixed bottom-6 right-6 z-50 bg-white rounded-full shadow-lg px-4 py-2 flex items-center space-x-3">
-            {editMode ? (
-              <>
-                <button 
-                  onClick={toggleEditMode}
-                  className="bg-[#4361EE] text-white px-4 py-2 rounded-full font-medium hover:bg-[#3A54D4] transition-colors"
-                >
-                  Preview
-                </button>
-              </>
-            ) : (
-              <button 
-                onClick={toggleEditMode}
-                className="bg-[#38BFA1] text-white px-4 py-2 rounded-full font-medium hover:bg-[#2DA891] transition-colors"
-              >
-                Edit
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Render either the editor or viewer based on edit mode */}
-        {website && (
-          editMode && isEditor ? (
-            <WebsiteEditor 
-              website={website} 
-              onSave={saveWebsite} 
-              isNew={isNewWebsite}
-            />
-          ) : (
-            <WebsiteViewer 
-              website={website}
-            />
-          )
-        )}
-      </div>
+      {editMode ? (
+        <WebsiteEditor 
+          website={website} 
+          onSave={saveWebsite} 
+          isNew={isNewWebsite}
+        />
+      ) : (
+        <WebsiteViewer website={website} />
+      )}
     </PageTransition>
   );
 } 

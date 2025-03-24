@@ -2,62 +2,33 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
-
-interface Officer {
-  name: string;
-  role: string;
-  photoUrl?: string;
-  bio?: string;
-}
-
-interface ContactLink {
-  type: string;
-  url: string;
-  label: string;
-}
-
-interface ImageWithMetadata {
-  url: string;
-  title?: string;
-  caption?: string;
-  uploadedAt: Date;
-}
-
-interface ClubWebsiteData {
-  id: string;
-  clubName: string;
-  slug: string;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  bannerImage?: string;
-  slogan?: string;
-  aboutSection?: string;
-  meetingInfo?: string;
-  galleryImages?: string[];
-  galleryImagesMetadata?: ImageWithMetadata[];
-  officers?: Officer[];
-  contactLinks?: ContactLink[];
-  themeColor?: string;
-  showFeaturedImage?: boolean;
-  featuredImage?: string;
-}
+import { ClubSite } from '@/types/club';
+import { getColorById, getTextColorById } from '@/utils/colors';
+import { getFontById } from '@/utils/fonts';
+import { formatDate } from '@/utils/dateUtils';
 
 interface WebsiteViewerProps {
-  website: ClubWebsiteData;
+  website: ClubSite;
 }
 
 export default function WebsiteViewer({ website }: WebsiteViewerProps) {
-  const hasGallery = website.galleryImages && website.galleryImages.length > 0;
-  const hasOfficers = website.officers && website.officers.length > 0;
-  const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
-  const themeColor = website.themeColor || '#38BFA1';
-  
+  // State for lightbox and gallery viewing
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
+  // Check if various sections exist
+  const hasGallery = website.galleryImages && website.galleryImages.length > 0;
+  const hasMembers = website.members && website.members.length > 0;
+  const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
+  const hasPDFs = website.pdfUploads && website.pdfUploads.length > 0;
+  
+  // Get theme values
+  const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
+  const textColor = getTextColorById(website.theme?.textColor || 'dark').value;
+  const fontClass = getFontById(website.theme?.font || 'inter').className;
+
   // Function to get appropriate icon for contact links
   const getLinkIcon = (linkType: string) => {
     switch (linkType) {
@@ -90,6 +61,18 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
         return (
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.5 11h-3v3c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-3h-3c-.83 0-1.5-.67-1.5-1.5S7.67 10 8.5 10h3V7c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v3h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z" />
+          </svg>
+        );
+      case 'discord':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515c-.211.38-.415.77-.596 1.177a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.597-1.177c-1.652.37-3.3.88-4.885 1.515-3.07 4.67-3.906 9.226-3.484 13.727 2.003 1.494 3.913 2.41 5.773 3.014.463-.636.886-1.31 1.246-2.016-.685-.256-1.344-.555-1.971-.895.166-.125.328-.25.49-.379 3.865 1.86 8.104 1.86 11.92 0 .164.13.327.255.49.38-.63.34-1.29.638-1.97.895.36.706.783 1.38 1.246 2.016 1.86-.606 3.77-1.52 5.773-3.014.49-4.977-.72-9.51-3.483-13.728zM8.293 15.311c-1.117 0-2.04-1.043-2.04-2.33s.9-2.33 2.04-2.33c1.142 0 2.068 1.044 2.042 2.33 0 1.287-.9 2.33-2.042 2.33z"/>
+          </svg>
+        );
+      case 'youtube':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
           </svg>
         );
       default:
@@ -125,14 +108,15 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
   };
 
   return (
-    <div className="pt-[80px] min-h-screen bg-[#FAFAFA]">
+    <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
       {/* Banner Image Section */}
       <div 
         className="w-full h-[300px] md:h-[400px] relative bg-gradient-to-r from-blue-500 to-purple-500"
         style={{
           backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined,
           backgroundSize: 'cover',
-          backgroundPosition: 'center'
+          backgroundPosition: 'center',
+          backgroundColor: website.bannerImage ? undefined : primaryColor
         }}
       >
         <div className="absolute inset-0 bg-black/30 flex items-end">
@@ -162,7 +146,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           {/* About Section */}
-          {website.aboutSection && (
+          {website.description && (
             <motion.div 
               className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
@@ -170,15 +154,15 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-2xl font-bold text-[#180D39] mb-4"
-                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
                 About Our Club
               </h2>
-              <div className="prose prose-lg max-w-none text-[#180D39]/80">
-                {website.aboutSection.split('\n').map((paragraph, i) => (
-                  paragraph ? <p key={i}>{paragraph}</p> : <br key={i} />
-                ))}
-              </div>
+              <div 
+                className="prose prose-lg max-w-none" 
+                style={{ color: textColor }} 
+                dangerouslySetInnerHTML={{ __html: website.description }}
+              />
             </motion.div>
           )}
 
@@ -191,13 +175,13 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <h2 className="text-2xl font-bold text-[#180D39] mb-6"
-                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
                 Gallery
               </h2>
               
-              {/* Featured Image (if enabled) */}
-              {website.showFeaturedImage && website.featuredImage && (
+              {/* Featured Image (if available) */}
+              {website.featuredImage && (
                 <motion.div 
                   className="relative h-[250px] md:h-[350px] rounded-lg overflow-hidden mb-6 cursor-pointer"
                   whileHover={{ scale: 1.01 }}
@@ -226,7 +210,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
                 </motion.div>
               )}
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {website.galleryImages?.map((image, index) => (
                   <motion.div 
                     key={`gallery-${index}`} 
@@ -259,8 +243,8 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
             </motion.div>
           )}
 
-          {/* Board Members Section */}
-          {hasOfficers && (
+          {/* Team Members Section */}
+          {hasMembers && (
             <motion.div 
               className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
@@ -268,44 +252,85 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h2 className="text-2xl font-bold text-[#180D39] mb-6"
-                style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
-                Board Members
+                Team Members
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                {website.officers?.map((officer, index) => (
+                {website.members?.map((member, index) => (
                   <motion.div 
-                    key={`officer-${index}`}
+                    key={`member-${index}`}
                     className="flex flex-col sm:flex-row gap-4 rounded-lg p-4"
-                    style={{ backgroundColor: `${themeColor}10` }}
-                    whileHover={{ scale: 1.02, backgroundColor: `${themeColor}20` }}
+                    style={{ backgroundColor: `${primaryColor}10` }}
+                    whileHover={{ scale: 1.02, backgroundColor: `${primaryColor}20` }}
                     transition={{ duration: 0.2 }}
                   >
                     <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 relative">
-                      {officer.photoUrl ? (
+                      {member.photoUrl ? (
                         <Image 
-                          src={officer.photoUrl} 
-                          alt={officer.name || 'Officer'} 
+                          src={member.photoUrl} 
+                          alt={member.name || 'Team member'} 
                           className="object-cover"
                           fill
                           sizes="100px"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#38BFA1]/20"
-                          style={{ backgroundColor: `${themeColor}20` }}
+                        <div className="w-full h-full flex items-center justify-center"
+                          style={{ backgroundColor: `${primaryColor}20` }}
                         >
-                          <UserIcon className="h-8 w-8 text-[#38BFA1]" style={{ color: themeColor }} />
+                          <UserIcon className="h-8 w-8" style={{ color: primaryColor }} />
                         </div>
                       )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-[#180D39] text-lg">{officer.name}</h3>
-                      <p className="font-medium mb-2" style={{ color: themeColor }}>{officer.role}</p>
-                      {officer.bio && (
-                        <p className="text-sm text-[#180D39]/70">{officer.bio}</p>
+                      <h3 className="font-bold text-[#180D39] text-lg">{member.name}</h3>
+                      <p className="font-medium mb-2" style={{ color: primaryColor }}>{member.role}</p>
+                      {member.bio && (
+                        <p className="text-sm text-[#180D39]/70">{member.bio}</p>
                       )}
                     </div>
                   </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Document Downloads Section */}
+          {hasPDFs && (
+            <motion.div 
+              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
+                Documents & Resources
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {website.pdfUploads?.map((pdf, index) => (
+                  <a 
+                    key={`pdf-${index}`}
+                    href={pdf.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0"
+                      style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                    >
+                      <DocumentIcon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate">{pdf.fileName}</h3>
+                      <p className="text-xs text-gray-500">
+                        {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
+                        Uploaded {pdf.uploadedAt ? formatDate(pdf.uploadedAt.toString()) : 'recently'}
+                      </p>
+                    </div>
+                  </a>
                 ))}
               </div>
             </motion.div>
@@ -323,7 +348,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5 }}
             >
               <div className="flex items-center mb-4">
-                <CalendarIcon className="h-5 w-5 mr-2" style={{ color: themeColor }} />
+                <CalendarIcon className="h-5 w-5 mr-2" style={{ color: primaryColor }} />
                 <h2 className="text-xl font-bold text-[#180D39]">
                   Meeting Information
                 </h2>
@@ -345,7 +370,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <div className="flex items-center mb-4">
-                <LinkIcon className="h-5 w-5 mr-2" style={{ color: themeColor }} />
+                <LinkIcon className="h-5 w-5 mr-2" style={{ color: primaryColor }} />
                 <h2 className="text-xl font-bold text-[#180D39]">
                   Contact & Links
                 </h2>
@@ -367,7 +392,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
                       transition={{ duration: 0.2 }}
                     >
                       <span className="flex items-center justify-center w-8 h-8 rounded-full mr-3"
-                        style={{ backgroundColor: `${themeColor}10`, color: themeColor }}
+                        style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}
                       >
                         {getLinkIcon(link.type)}
                       </span>
@@ -384,7 +409,7 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
             <Link 
               href="/jamboree"
               className="flex items-center font-medium hover:underline"
-              style={{ color: themeColor }}
+              style={{ color: primaryColor }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
