@@ -56,6 +56,10 @@ export interface ClubListing {
   bgGradient?: string;
   roomNumber?: string;
   created?: boolean;
+  contactInfoList?: string[];
+  sponsorEmailList?: string[];
+  captains?: string[];
+  sponsorEmails?: string[];
 }
 
 export interface ClubSite {
