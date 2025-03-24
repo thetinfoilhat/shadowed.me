@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageTransition from '@/components/PageTransition';
@@ -240,6 +240,23 @@ export default function ClubWebsitePage() {
     }
   };
 
+  // Add delete website function
+  const deleteWebsite = async () => {
+    if (!isEditor || !user) return;
+    
+    try {
+      const websiteRef = doc(db, 'clubSites', clubSlug as string);
+      await deleteDoc(websiteRef);
+      
+      // Redirect to jamboree page after successful deletion
+      router.push('/jamboree');
+      toast.success('Website deleted successfully');
+    } catch (err) {
+      console.error('Error deleting club website:', err);
+      toast.error('Failed to delete website');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -299,7 +316,11 @@ export default function ClubWebsitePage() {
           isNew={isNewWebsite}
         />
       ) : (
-        <WebsiteViewer website={website} />
+        <WebsiteViewer 
+          website={website} 
+          isEditor={isEditor}
+          onDelete={deleteWebsite}
+        />
       )}
     </PageTransition>
   );

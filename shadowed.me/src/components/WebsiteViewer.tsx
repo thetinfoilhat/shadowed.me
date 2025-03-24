@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { ClubSite } from '@/types/club';
 import { getColorById, getTextColorById } from '@/utils/colors';
@@ -11,9 +11,11 @@ import { formatDate } from '@/utils/dateUtils';
 
 interface WebsiteViewerProps {
   website: ClubSite;
+  isEditor?: boolean;
+  onDelete?: () => Promise<void>;
 }
 
-export default function WebsiteViewer({ website }: WebsiteViewerProps) {
+export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteViewerProps) {
   // State for lightbox and gallery viewing
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -109,6 +111,32 @@ export default function WebsiteViewer({ website }: WebsiteViewerProps) {
 
   return (
     <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
+      {/* Add floating action buttons for editors */}
+      {isEditor && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+          <Link
+            href={`/${website.slug}?edit=true`}
+            className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+            title="Edit Website"
+          >
+            <PencilIcon className="h-6 w-6 text-gray-700" />
+          </Link>
+          <button
+            onClick={async () => {
+              if (window.confirm('Are you sure you want to delete this website? This action cannot be undone.')) {
+                if (onDelete) {
+                  await onDelete();
+                }
+              }
+            }}
+            className="bg-red-500 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+            title="Delete Website"
+          >
+            <TrashIcon className="h-6 w-6 text-white" />
+          </button>
+        </div>
+      )}
+
       {/* Banner Image Section */}
       <div 
         className="w-full h-[300px] md:h-[400px] relative bg-gradient-to-r from-blue-500 to-purple-500"
