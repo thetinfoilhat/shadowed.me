@@ -1,13 +1,12 @@
 'use client';
 import { useState, ChangeEvent, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
 import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { COLOR_OPTIONS, TEXT_COLORS, getColorById, getTextColorById } from '@/utils/colors';
 import { FONT_OPTIONS, getFontById } from '@/utils/fonts';
-import { uploadImage, uploadPDF } from '@/utils/fileUpload';
+import { uploadImage, uploadPDF, deleteFile } from '@/utils/fileUpload';
 
 // Icon imports
 import { 
@@ -429,13 +428,11 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       
       const toastId = toast.loading('Deleting file...');
       
-      // Delete from storage
-      try {
-        // The deleteObject function is called internally by deleteFile
-        await deleteObject(ref(getStorage(), fileUrl));
-      } catch (error) {
-        console.warn('Error deleting from storage, may be already deleted:', error);
-        // Continue with UI update even if storage delete fails
+      // Delete from storage using the utility function
+      const deleted = await deleteFile(fileUrl);
+      if (!deleted) {
+        toast.error('Failed to delete file from storage', { id: toastId });
+        return;
       }
       
       // Update state based on file type

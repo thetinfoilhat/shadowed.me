@@ -12,18 +12,30 @@ export const ALLOWED_PDF_TYPES = ['application/pdf'];
 
 // File upload error types
 export enum FileUploadError {
-  SIZE_EXCEEDED = 'File size exceeded',
+  SIZE_EXCEEDED = 'File size exceeds limit',
   INVALID_TYPE = 'Invalid file type',
   UPLOAD_FAILED = 'Upload failed'
 }
 
-interface UploadResult {
+export interface UploadResult {
   success: boolean;
   url?: string;
-  error?: FileUploadError | string;
-  fileName?: string;
+  error?: FileUploadError;
+  fileName: string;
   fileSize?: number;
 }
+
+// Get storage path from URL
+export const getStoragePathFromUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    const path = decodeURIComponent(urlObj.pathname.split('/o/')[1].split('?')[0]);
+    return path;
+  } catch (error) {
+    console.error('Error getting storage path from URL:', error);
+    throw new Error('Invalid file URL');
+  }
+};
 
 // Upload image to Firebase Storage
 export const uploadImage = async (
@@ -55,7 +67,7 @@ export const uploadImage = async (
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const fileName = `${fileId}.${fileExtension}`;
     
-    // Create storage reference
+    // Create storage reference with proper path
     const storageRef = ref(storage, `clubsites/${clubSlug}/${type}/${fileName}`);
     
     // Upload file
@@ -109,7 +121,7 @@ export const uploadPDF = async (
     const fileId = uuidv4();
     const fileName = `${fileId}-${safeFileName}`;
     
-    // Create storage reference
+    // Create storage reference with proper path
     const storageRef = ref(storage, `clubsites/${clubSlug}/pdfs/${fileName}`);
     
     // Upload file
@@ -137,12 +149,11 @@ export const uploadPDF = async (
 // Delete file from Firebase Storage
 export const deleteFile = async (fileUrl: string): Promise<boolean> => {
   try {
-    // Extract the path from the URL
-    const url = new URL(fileUrl);
-    const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
+    // Get the storage path from the URL
+    const storagePath = getStoragePathFromUrl(fileUrl);
     
     // Create storage reference
-    const storageRef = ref(storage, path);
+    const storageRef = ref(storage, storagePath);
     
     // Delete file
     await deleteObject(storageRef);

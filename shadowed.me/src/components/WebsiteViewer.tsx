@@ -200,72 +200,37 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.5 }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
-                Gallery
+                Photo Gallery
               </h2>
-              
-              {/* Featured Image (if available) */}
-              {website.featuredImage && (
-                <motion.div 
-                  className="relative h-[250px] md:h-[350px] rounded-lg overflow-hidden mb-6 cursor-pointer"
-                  whileHover={{ scale: 1.01 }}
-                  onClick={() => {
-                    setSelectedImage(website.featuredImage!);
-                    const index = website.galleryImages?.findIndex(img => img === website.featuredImage) || 0;
-                    setCurrentImageIndex(index >= 0 ? index : 0);
-                  }}
-                >
-                  <Image 
-                    src={website.featuredImage}
-                    alt={getImageTitle(website.featuredImage) || `${website.clubName} featured image`}
-                    className="object-cover rounded-lg"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 800px"
-                  />
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
-                    <div className="p-4 text-white">
-                      {getImageTitle(website.featuredImage) && (
-                        <h3 className="text-xl font-medium">{getImageTitle(website.featuredImage)}</h3>
-                      )}
-                      <p className="text-sm opacity-90 mt-1">Featured image • Click to enlarge</p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {website.galleryImages?.map((image, index) => (
-                  <motion.div 
-                    key={`gallery-${index}`} 
-                    className="relative h-[200px] rounded-lg cursor-pointer group"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.2 }}
+                {website.galleryImages?.map((imageUrl, index) => (
+                  <div 
+                    key={`gallery-${index}`}
+                    className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
                     onClick={() => {
-                      setSelectedImage(image);
+                      setSelectedImage(imageUrl);
                       setCurrentImageIndex(index);
                     }}
                   >
-                    <Image 
-                      src={image}
-                      alt={getImageTitle(image) || `${website.clubName} gallery image ${index + 1}`}
-                      className="object-cover rounded-lg"
+                    <Image
+                      src={imageUrl}
+                      alt={getImageTitle(imageUrl) || `Gallery image ${index + 1}`}
                       fill
-                      sizes="(max-width: 768px) 100vw, 400px"
+                      className="object-cover transition-transform group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
-                    
-                    {getImageTitle(image) && (
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-end transition-colors">
-                        <div className="p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <p className="font-medium">{getImageTitle(image)}</p>
-                        </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center p-4">
+                        <h3 className="font-medium mb-1">{getImageTitle(imageUrl) || `Image ${index + 1}`}</h3>
+                        <p className="text-sm opacity-80">Click to view</p>
                       </div>
-                    )}
-                  </motion.div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -323,18 +288,18 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             </motion.div>
           )}
           
-          {/* Document Downloads Section */}
+          {/* PDF Documents Section */}
           {hasPDFs && (
             <motion.div 
               className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.5 }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
-                Documents & Resources
+                Documents
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {website.pdfUploads?.map((pdf, index) => (
@@ -448,23 +413,17 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         </div>
       </div>
       
-      {/* Image Lightbox */}
+      {/* Lightbox for Gallery Images */}
       <AnimatePresence>
         {selectedImage && (
-          <motion.div 
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedImage(null)}
           >
-            <button 
-              className="absolute top-4 right-4 text-white p-2 rounded-full bg-black/50 hover:bg-black/70"
-              onClick={() => setSelectedImage(null)}
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-            
+            {/* Navigation buttons */}
             {website.galleryImages && website.galleryImages.length > 1 && (
               <>
                 <button 
@@ -493,6 +452,15 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               </>
             )}
             
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 text-white hover:text-gray-300"
+              onClick={() => setSelectedImage(null)}
+            >
+              <XMarkIcon className="h-8 w-8" />
+            </button>
+            
+            {/* Image container */}
             <div className="relative h-[80vh] w-[80vw] max-w-[1200px]" onClick={(e) => e.stopPropagation()}>
               <Image 
                 src={selectedImage}
@@ -500,6 +468,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 className="object-contain"
                 fill
                 sizes="80vw"
+                priority
               />
               
               {getImageTitle(selectedImage) && (
