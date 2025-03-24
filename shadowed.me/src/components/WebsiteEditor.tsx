@@ -3,8 +3,7 @@ import { useState, ChangeEvent, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
-import { COLOR_OPTIONS, TEXT_COLORS, getColorById, getTextColorById } from '@/utils/colors';
-import { FONT_OPTIONS, getFontById } from '@/utils/fonts';
+import { COLOR_OPTIONS, getColorById } from '@/utils/colors';
 import { uploadImage, uploadPDF, deleteFile } from '@/utils/fileUpload';
 
 // Icon imports
@@ -657,7 +656,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#180D39]">Customize Theme</h2>
+              <h2 className="text-lg font-semibold text-[#180D39]">Theme Color</h2>
               <button 
                 onClick={() => setShowThemeEditor(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -666,13 +665,13 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
               {/* Primary Color */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Primary Color
+                  Theme Color
                 </label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
                   {COLOR_OPTIONS.map((color) => (
                     <button
                       key={color.id}
@@ -691,56 +690,13 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                 <p className="text-xs text-gray-500 mt-2">
                   Selected: {getColorById(formData.theme.primaryColor).name}
                 </p>
-              </div>
-              
-              {/* Text Color */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Text Color
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {TEXT_COLORS.map((color) => (
-                    <button
-                      key={color.id}
-                      onClick={() => handleThemeChange('textColor', color.id)}
-                      className={`w-full py-2 rounded-md transition-all flex items-center justify-center ${
-                        formData.theme.textColor === color.id 
-                          ? 'ring-2 ring-offset-2 ring-black' 
-                          : 'hover:opacity-80'
-                      }`}
-                      style={{ 
-                        backgroundColor: color.value,
-                        color: color.id === 'dark' ? 'white' : 'black'
-                      }}
-                    >
-                      {color.name}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Selected: {getTextColorById(formData.theme.textColor).name}
-                </p>
-              </div>
-              
-              {/* Font Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Font
-                </label>
-                <div className="space-y-2">
-                  {FONT_OPTIONS.map((font) => (
-                    <button
-                      key={font.id}
-                      onClick={() => handleThemeChange('font', font.id)}
-                      className={`w-full py-2 px-3 rounded-md transition-all text-left ${
-                        formData.theme.font === font.id 
-                          ? 'bg-gray-100 border-l-4 border-blue-500' 
-                          : 'hover:bg-gray-50 border-l-4 border-transparent'
-                      }`}
-                    >
-                      <span className={font.className}>{font.name}</span>
-                    </button>
-                  ))}
+                
+                <div className="mt-4 p-4 rounded-lg" style={{ 
+                  backgroundColor: getColorById(formData.theme.primaryColor).value,
+                  color: getColorById(formData.theme.primaryColor).textDark ? '#111827' : '#F8FAFC' 
+                }}>
+                  <p className="font-medium">Color Preview</p>
+                  <p className="text-sm opacity-80">This is how your color looks</p>
                 </div>
               </div>
             </div>
@@ -940,25 +896,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       
                       <div className="bg-white rounded-lg mb-2 min-h-[200px] border border-gray-300">
                         <div className="p-2 border-b border-gray-200 bg-gray-50 flex gap-2">
-                          <button 
-                            className="px-2 py-1 rounded hover:bg-gray-200" 
-                            onClick={() => {
-                              // Insert h2 tag at cursor position or wrap selected text
-                              const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const text = textarea.value;
-                              const selectedText = text.substring(start, end);
-                              
-                              const newText = text.substring(0, start) + 
-                                `<h2>${selectedText}</h2>` + 
-                                text.substring(end);
-                              
-                              setEditorContent(newText);
-                            }}
-                          >
-                            H2
-                          </button>
                           <button 
                             className="px-2 py-1 rounded hover:bg-gray-200" 
                             onClick={() => {
@@ -1305,15 +1242,15 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               <>
                 {/* Theme Section */}
                 <section className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                  <h2 className="text-xl font-bold text-[#180D39] mb-6">Theme Customization</h2>
+                  <h2 className="text-xl font-bold text-[#180D39] mb-6">Theme Color</h2>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
                     {/* Primary Color */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Primary Color
+                        Theme Color
                       </label>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
                         {COLOR_OPTIONS.map((color) => (
                           <button
                             key={color.id}
@@ -1339,73 +1276,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       }}>
                         <p className="font-medium">Color Preview</p>
                         <p className="text-sm opacity-80">This is how your color looks</p>
-                      </div>
-                    </div>
-                    
-                    {/* Text Color */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Text Color
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {TEXT_COLORS.map((color) => (
-                          <button
-                            key={color.id}
-                            onClick={() => handleThemeChange('textColor', color.id)}
-                            className={`w-full py-2 rounded-md transition-all flex items-center justify-center ${
-                              formData.theme.textColor === color.id 
-                                ? 'ring-2 ring-offset-2 ring-black' 
-                                : 'hover:opacity-80'
-                            }`}
-                            style={{ 
-                              backgroundColor: color.value,
-                              color: color.id === 'dark' ? 'white' : 'black'
-                            }}
-                          >
-                            {color.name}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Selected: {getTextColorById(formData.theme.textColor).name}
-                      </p>
-                      
-                      <div className="mt-4 p-4 rounded-lg border" style={{ 
-                        color: getTextColorById(formData.theme.textColor).value
-                      }}>
-                        <p className="font-medium">Text Color Preview</p>
-                        <p className="text-sm">This is how your text will appear</p>
-                      </div>
-                    </div>
-                    
-                    {/* Font Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Font
-                      </label>
-                      <div className="space-y-2">
-                        {FONT_OPTIONS.map((font) => (
-                          <button
-                            key={font.id}
-                            onClick={() => handleThemeChange('font', font.id)}
-                            className={`w-full py-2 px-3 rounded-md transition-all text-left ${
-                              formData.theme.font === font.id 
-                                ? 'bg-gray-100 border-l-4 border-blue-500' 
-                                : 'hover:bg-gray-50 border-l-4 border-transparent'
-                            }`}
-                          >
-                            <span className={font.className}>{font.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <div className="mt-4 p-4 rounded-lg border">
-                        <p className={`font-medium ${getFontById(formData.theme.font).className}`}>
-                          Font Preview: {getFontById(formData.theme.font).name}
-                        </p>
-                        <p className={`text-sm ${getFontById(formData.theme.font).className}`}>
-                          The quick brown fox jumps over the lazy dog.
-                        </p>
                       </div>
                     </div>
                   </div>
