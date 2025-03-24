@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { ClubListing } from '@/types/club';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import SponsorSelect from './SponsorSelect';
 
 // Enhanced categories for filtering - match with club-listings page
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous'] as const;
@@ -232,11 +233,25 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     }));
   };
 
+  const handleSponsorChange = (email: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sponsorEmail: email
+    }));
+  };
+
   const addSponsorEmail = () => {
     if (!newSponsorEmail.trim()) return;
     
     if (!newSponsorEmail.includes('@')) {
       toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    // Check if email already exists in the list
+    if (formData.sponsorEmailList.includes(newSponsorEmail.trim()) || 
+        newSponsorEmail.trim() === formData.sponsorEmail) {
+      toast.error('This sponsor email is already added');
       return;
     }
     
@@ -524,13 +539,10 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
                     Primary Sponsor Email
                   </label>
-                  <input
-                    type="email"
-                    id="sponsorEmail"
+                  <SponsorSelect
                     value={formData.sponsorEmail}
-                    onChange={(e) => setFormData({ ...formData, sponsorEmail: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="sponsor@example.com"
+                    onChange={handleSponsorChange}
+                    required={true}
                   />
                 </div>
 
@@ -560,20 +572,18 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                     </div>
                   )}
                   
-                  <div className="mt-2 flex">
-                    <input
-                      type="email"
+                  <div className="mt-2">
+                    <SponsorSelect
                       value={newSponsorEmail}
-                      onChange={(e) => setNewSponsorEmail(e.target.value)}
-                      placeholder="Add another sponsor email"
-                      className="flex-grow rounded-l-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      onChange={setNewSponsorEmail}
+                      required={false}
                     />
                     <button
                       type="button"
                       onClick={addSponsorEmail}
-                      className="rounded-r-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
+                      className="mt-2 w-full rounded-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
                     >
-                      Add
+                      Add Additional Sponsor
                     </button>
                   </div>
                   <p className="text-xs text-black opacity-70 mt-1">
