@@ -8,6 +8,7 @@ import { ClubSite } from '@/types/club';
 import { getColorById, getTextColorById } from '@/utils/colors';
 import { getFontById } from '@/utils/fonts';
 import { formatDate } from '@/utils/dateUtils';
+import { toast } from 'react-hot-toast';
 
 interface WebsiteViewerProps {
   website: ClubSite;
@@ -19,6 +20,12 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   // State for lightbox and gallery viewing
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [showInterestForm, setShowInterestForm] = useState(false);
+  const [interestFormData, setInterestFormData] = useState({
+    name: '',
+    email: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Check if various sections exist
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
@@ -107,6 +114,38 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     
     const metadata = website.galleryImagesMetadata.find(meta => meta.url === url);
     return metadata?.title;
+  };
+
+  // Handle interest form submission
+  const handleInterestFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/submit-interest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          websiteId: website.id,
+          ...interestFormData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit interest form');
+      }
+
+      toast.success('Thank you for your interest!');
+      setShowInterestForm(false);
+      setInterestFormData({ name: '', email: '' });
+    } catch (error) {
+      console.error('Error submitting interest form:', error);
+      toast.error('Failed to submit interest form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -484,6 +523,87 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 </div>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Interest Form Button - Always visible */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <button
+          onClick={() => setShowInterestForm(true)}
+          className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        >
+          Are you interested?
+        </button>
+      </div>
+
+      {/* Interest Form Modal */}
+      <AnimatePresence>
+        {showInterestForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowInterestForm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-[#180D39]">Interested in {website.clubName}?</h2>
+                <button
+                  onClick={() => setShowInterestForm(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleInterestFormSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Name (Last, First)
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    required
+                    value={interestFormData.name}
+                    onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                    placeholder="Enter your name (Last, First)"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    required
+                    value={interestFormData.email}
+                    onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg font-medium hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Interest'}
+                </button>
+              </form>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

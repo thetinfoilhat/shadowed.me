@@ -104,4 +104,12 @@ export interface ClubSite {
   }[];
   lastUpdated?: Date;
   featuredImage?: string;    // URL to featured image from gallery
+  interestForm?: {
+    enabled: boolean;
+    submissions: {
+      name: string;
+      email: string;
+      timestamp: number;
+    }[];
+  };
 } 
