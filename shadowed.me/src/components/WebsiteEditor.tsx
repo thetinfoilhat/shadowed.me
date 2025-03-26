@@ -558,14 +558,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     setAutosaveTimeout(timeout);
   };
   
-  // Handle preview toggle
-  const handleTogglePreview = async () => {
-    // Save all changes before redirecting
-    await handleSaveAll();
-    // Redirect to the website preview with force refresh
-    window.location.href = `/${formData.slug}`;
-  };
-  
   // Handle view site
   const handleViewSite = () => {
     window.location.href = `/${formData.slug}`;
@@ -604,14 +596,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
             )}
             
             {/* Action buttons */}
-            <button
-              onClick={handleTogglePreview}
-              className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center hover:bg-gray-200"
-            >
-              <EyeIcon className="h-4 w-4 mr-1" />
-              Preview
-            </button>
-            
             <button
               onClick={handleViewSite}
               className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center hover:bg-gray-200"
