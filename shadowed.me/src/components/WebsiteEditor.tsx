@@ -66,6 +66,14 @@ export interface ClubSite {
   }[];
   lastUpdated?: Date;
   featuredImage?: string;    // URL to featured image from gallery
+  interestForm?: {
+    enabled: boolean;
+    submissions: {
+      name: string;
+      email: string;
+      timestamp: number;
+    }[];
+  };
 }
 
 // Member interface (formerly Officer)
@@ -107,7 +115,7 @@ interface WebsiteEditorProps {
 
 export default function WebsiteEditor({ website, onSave, isNew = false }: WebsiteEditorProps) {
   // State variables
-  const [activeTab, setActiveTab] = useState<'content' | 'media' | 'members' | 'design'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'media' | 'members' | 'design' | 'form'>('content');
   const [formData, setFormData] = useState<ClubSite>({ ...website });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -745,6 +753,18 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   <UserIcon className="h-5 w-5 mr-2" />
                   Team Members
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('form')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center mb-1 ${
+                    activeTab === 'form' 
+                      ? 'bg-blue-50 text-blue-700 font-medium' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <DocumentIcon className="h-5 w-5 mr-2" />
+                  Interest Form
+                </button>
                 
                 <button
                   onClick={() => setActiveTab('design')}
@@ -1215,6 +1235,41 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         <PlusIcon className="h-4 w-4 mr-1" />
                         Add Your First Team Member
                       </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Interest Form Tab */}
+            {activeTab === 'form' && (
+              <section className="bg-white rounded-xl p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-[#180D39] mb-6">Interest Form Submissions</h2>
+                
+                <div className="space-y-4">
+                  {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 ? (
+                    <div className="border border-gray-200 rounded-lg divide-y">
+                      {formData.interestForm.submissions.map((submission, index) => (
+                        <div key={index} className="p-4 hover:bg-gray-50">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium text-gray-900">{submission.name}</h3>
+                              <p className="text-sm text-gray-500">{submission.email}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                Submitted {new Date(submission.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <DocumentIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-700 font-medium mb-2">No submissions yet</p>
+                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        When visitors click the &ldquo;Are you interested?&rdquo; button on your website, their responses will appear here.
+                      </p>
                     </div>
                   )}
                 </div>
