@@ -96,12 +96,20 @@ export interface ClubSite {
     photoUrl?: string;
     bio?: string;
   }[];
+  resources?: {
+    type: 'pdf' | 'link';
+    title: string;
+    description?: string;
+    url: string;
+    uploadedAt: Date;
+    fileSize?: number;  // Only for PDFs
+  }[];
   pdfUploads?: {
     fileName: string;
     url: string;
     uploadedAt: Date;
     fileSize?: number;
-  }[];
+  }[];  // Deprecated: Use resources instead
   lastUpdated?: Date;
   featuredImage?: string;    // URL to featured image from gallery
   interestForm?: {

@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
 import { COLOR_OPTIONS, getColorById } from '@/utils/colors';
-import { uploadImage, uploadPDF, deleteFile } from '@/utils/fileUpload';
+import { uploadImage, uploadPDF, deleteFile, uploadPDFResource} from '@/utils/fileUpload';
 
 // Icon imports
 import { 
@@ -20,10 +20,20 @@ import {
   SwatchIcon,
   PaintBrushIcon,
   DocumentTextIcon,
-  CheckIcon
+  CheckIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
-// Import the ClubSite type
+// Resource type definition
+interface Resource {
+  type: 'pdf' | 'link';
+  title: string;
+  description?: string;
+  url: string;
+  uploadedAt: Date;
+  fileSize?: number;
+}
+
 export interface ClubSite {
   id: string;
   slug: string;
@@ -58,12 +68,13 @@ export interface ClubSite {
     photoUrl?: string;
     bio?: string;
   }[];
+  resources?: Resource[];
   pdfUploads?: {
     fileName: string;
     url: string;
     uploadedAt: Date;
     fileSize?: number;
-  }[];
+  }[];  // Deprecated: Use resources instead
   lastUpdated?: Date;
   featuredImage?: string;    // URL to featured image from gallery
   interestForm?: {
@@ -126,13 +137,14 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   // Refs for scrolling to sections
   const sectionsRef = useRef<Record<string, HTMLElement | null>>({});
   
-  // UI States
+  // UI states
+  /* Commented out as no longer used - dropdown functionality removed
   const [expandedSection, setExpandedSection] = useState<string | null>('banner');
+  */
   
   // Media upload states
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingMemberPhoto, setUploadingMemberPhoto] = useState<number | null>(null);
-  const [uploadingPDF, setUploadingPDF] = useState(false);
   
   // Theme customization state
   const [showThemeEditor, setShowThemeEditor] = useState(false);
@@ -215,6 +227,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   }, [autosaveTimeout]);
   
   // Handle content editor tabs
+  /* Commented out as no longer used - dropdown functionality removed
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
     
@@ -225,6 +238,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       }
     }, 100);
   };
+  */
 
   // Update description when editor content changes
   useEffect(() => {
@@ -387,7 +401,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       return;
     }
     
-    setUploadingPDF(true);
     const toastId = toast.loading('Uploading PDF...');
     
     try {
@@ -418,7 +431,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       console.error('Error uploading PDF:', error);
       toast.error('Failed to upload PDF. Please try again.', { id: toastId });
     } finally {
-      setUploadingPDF(false);
       e.target.value = '';
     }
   };
@@ -569,6 +581,131 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   // Handle view site
   const handleViewSite = () => {
     window.location.href = `/${formData.slug}`;
+  };
+
+  // Handle resource upload
+  const handleResourceUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      e.target.value = '';
+      return;
+    }
+    
+    const title = prompt('Enter a title for this resource:');
+    if (!title) {
+      e.target.value = '';
+      return;
+    }
+
+    const description = prompt('Enter a description (optional):') || undefined;
+    
+    const toastId = toast.loading('Uploading resource...');
+    
+    try {
+      const result = await uploadPDFResource(file, formData.slug, title, description);
+      
+      if (!result.success) {
+        toast.error(`Failed to upload resource: ${result.error}`, { id: toastId });
+        return;
+      }
+      
+      if (!result.url) {
+        toast.error('Failed to get resource URL', { id: toastId });
+        return;
+      }
+
+      const newResource: Resource = {
+        type: 'pdf',
+        title: result.title,
+        description: result.description,
+        url: result.url,
+        uploadedAt: result.uploadedAt,
+        fileSize: result.fileSize
+      };
+      
+      const updatedResources = [...(formData.resources || []), newResource];
+      
+      setFormData(prev => ({
+        ...prev,
+        resources: updatedResources
+      }));
+      
+      await handleSave({ resources: updatedResources });
+      toast.success('Resource uploaded successfully', { id: toastId });
+    } catch (error) {
+      console.error('Error uploading resource:', error);
+      toast.error('Failed to upload resource. Please try again.', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // Handle adding a link resource
+  const handleAddLinkResource = async () => {
+    const title = prompt('Enter a title for this resource:');
+    if (!title) return;
+
+    let url = prompt('Enter the URL:');
+    if (!url) return;
+
+    // Ensure URL has protocol
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+
+    const description = prompt('Enter a description (optional):') || '';
+
+    const newResource: Resource = {
+      type: 'link',
+      title,
+      description,
+      url,
+      uploadedAt: new Date(),
+      fileSize: 0
+    };
+    
+    const updatedResources = [...(formData.resources || []), newResource];
+    
+    setFormData(prev => ({
+      ...prev,
+      resources: updatedResources
+    }));
+    
+    await handleSave({ resources: updatedResources });
+    toast.success('Link resource added successfully');
+  };
+
+  // Handle resource deletion
+  const handleResourceDelete = async (resource: Resource) => {
+    try {
+      const confirmDelete = window.confirm('Are you sure you want to delete this resource? This cannot be undone.');
+      if (!confirmDelete) return;
+      
+      const toastId = toast.loading('Deleting resource...');
+      
+      // For PDF resources, delete the file from storage
+      if (resource.type === 'pdf') {
+        const deleted = await deleteFile(resource.url);
+        if (!deleted) {
+          toast.error('Failed to delete resource file', { id: toastId });
+          return;
+        }
+      }
+      
+      // Update state
+      const updatedResources = formData.resources?.filter(r => r.url !== resource.url) || [];
+      
+      setFormData(prev => ({
+        ...prev,
+        resources: updatedResources
+      }));
+      
+      await handleSave({ resources: updatedResources });
+      toast.success('Resource deleted successfully', { id: toastId });
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      toast.error('Failed to delete resource. Please try again.');
+    }
   };
 
   return (
@@ -739,19 +876,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   }`}
                 >
                   <PhotoIcon className="h-5 w-5 mr-2" />
-                  Media Gallery
-                </button>
-                
-                <button
-                  onClick={() => setActiveTab('members')}
-                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center mb-1 ${
-                    activeTab === 'members' 
-                      ? 'bg-blue-50 text-blue-700 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <UserIcon className="h-5 w-5 mr-2" />
-                  Team Members
+                  Media
                 </button>
 
                 <button
@@ -801,86 +926,82 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   className="bg-white rounded-xl p-6 shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]" onClick={() => toggleSection('banner')} style={{cursor: 'pointer'}}>Banner & Club Identity</h3>
+                    <h3 className="text-xl font-bold text-[#180D39]">Banner & Club Identity</h3>
                   </div>
                   
-                  {expandedSection === 'banner' && (
-                    <>
-                      <div 
-                        className="relative h-[300px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 mb-6 border-2 border-dashed border-gray-300 group"
-                        style={{
-                          backgroundImage: formData.bannerImage ? `url(${formData.bannerImage})` : undefined,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          borderStyle: formData.bannerImage ? 'solid' : 'dashed'
-                        }}
-                      >
-                        {uploadingBanner ? (
-                          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-                            <LoadingSpinner size="lg" />
-                            <p className="text-white mt-4 font-medium">Uploading image...</p>
-                          </div>
-                        ) : (
-                          <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-black/30 group-hover:bg-black/50 transition-all">
-                            <div className="bg-white/90 text-black px-6 py-3 rounded-lg flex items-center hover:bg-white transition-colors shadow-lg">
-                              <PhotoIcon className="h-5 w-5 mr-2" />
-                              {formData.bannerImage ? 'Change Banner Image' : 'Add Banner Image'}
-                            </div>
-                            {!formData.bannerImage && (
-                              <p className="text-white mt-4 text-sm font-medium">
-                                Recommended size: 1200 × 400 pixels
-                              </p>
-                            )}
-                            <input 
-                              type="file" 
-                              accept="image/png, image/jpeg, image/jpg" 
-                              className="hidden"
-                              onChange={(e) => handleImageUpload(e, 'banner')}
-                            />
-                          </label>
+                  <div 
+                    className="relative h-[300px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 mb-6 border-2 border-dashed border-gray-300 group"
+                    style={{
+                      backgroundImage: formData.bannerImage ? `url(${formData.bannerImage})` : undefined,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      borderStyle: formData.bannerImage ? 'solid' : 'dashed'
+                    }}
+                  >
+                    {uploadingBanner ? (
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                        <LoadingSpinner size="lg" />
+                        <p className="text-white mt-4 font-medium">Uploading image...</p>
+                      </div>
+                    ) : (
+                      <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-black/30 group-hover:bg-black/50 transition-all">
+                        <div className="bg-white/90 text-black px-6 py-3 rounded-lg flex items-center hover:bg-white transition-colors shadow-lg">
+                          <PhotoIcon className="h-5 w-5 mr-2" />
+                          {formData.bannerImage ? 'Change Banner Image' : 'Add Banner Image'}
+                        </div>
+                        {!formData.bannerImage && (
+                          <p className="text-white mt-4 text-sm font-medium">
+                            Recommended size: 1200 × 400 pixels
+                          </p>
                         )}
-                      </div>
-                      
-                      <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg mb-6">
-                        <p className="font-medium mb-2">Banner Image Tips:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Use a high-quality landscape image (recommended size: 1200 × 400 pixels)</li>
-                          <li>Keep file size under 5MB for faster loading</li>
-                          <li>Choose an image that represents your club&apos;s identity</li>
-                          <li>Ensure good contrast with text that will appear on top</li>
-                        </ul>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Club Name
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.clubName}
-                            onChange={(e) => handleInputChange('clubName', e.target.value)}
-                            className="w-full px-4 py-3 text-xl font-bold rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                            placeholder="Your Club Name"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Slogan or Tagline
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.slogan || ''}
-                            onChange={(e) => handleInputChange('slogan', e.target.value)}
-                            className="w-full px-4 py-3 text-lg rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                            placeholder="Add a short, catchy phrase to describe your club"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">A brief statement that captures the essence of your club</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                        <input 
+                          type="file" 
+                          accept="image/png, image/jpeg, image/jpg" 
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, 'banner')}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg mb-6">
+                    <p className="font-medium mb-2">Banner Image Tips:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Use a high-quality landscape image (recommended size: 1200 × 400 pixels)</li>
+                      <li>Keep file size under 5MB for faster loading</li>
+                      <li>Choose an image that represents your club&apos;s identity</li>
+                      <li>Ensure good contrast with text that will appear on top</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Club Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.clubName}
+                        onChange={(e) => handleInputChange('clubName', e.target.value)}
+                        className="w-full px-4 py-3 text-xl font-bold rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                        placeholder="Your Club Name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Slogan or Tagline
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.slogan || ''}
+                        onChange={(e) => handleInputChange('slogan', e.target.value)}
+                        className="w-full px-4 py-3 text-lg rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                        placeholder="Add a short, catchy phrase to describe your club"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">A brief statement that captures the essence of your club</p>
+                    </div>
+                  </div>
                 </section>
                 
                 {/* About Section */}
@@ -889,441 +1010,366 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   className="bg-white rounded-xl p-6 shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]" onClick={() => toggleSection('about')} style={{cursor: 'pointer'}}>About Our Club</h3>
+                    <h3 className="text-xl font-bold text-[#180D39]">About Our Club</h3>
                   </div>
                   
-                  {expandedSection === 'about' && (
-                    <>
-                      <div className="mb-2 text-sm text-gray-600">
-                        Share your club&apos;s story, mission, and what makes it special. Make it compelling!
-                      </div>
-                      
-                      <div className="bg-white rounded-lg mb-2 min-h-[200px] border border-gray-300">
-                        <div className="p-2 border-b border-gray-200 bg-gray-50 flex gap-2">
-                          <button 
-                            className="px-2 py-1 rounded hover:bg-gray-200" 
-                            onClick={() => {
-                              const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const text = textarea.value;
-                              const selectedText = text.substring(start, end);
-                              
-                              const newText = text.substring(0, start) + 
-                                `<strong>${selectedText}</strong>` + 
-                                text.substring(end);
-                              
-                              setEditorContent(newText);
-                            }}
-                          >
-                            Bold
-                          </button>
-                          <button 
-                            className="px-2 py-1 rounded hover:bg-gray-200" 
-                            onClick={() => {
-                              const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const text = textarea.value;
-                              const selectedText = text.substring(start, end);
-                              
-                              const newText = text.substring(0, start) + 
-                                `<em>${selectedText}</em>` + 
-                                text.substring(end);
-                              
-                              setEditorContent(newText);
-                            }}
-                          >
-                            Italic
-                          </button>
-                          <button 
-                            className="px-2 py-1 rounded hover:bg-gray-200" 
-                            onClick={() => {
-                              const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const text = textarea.value;
-                              const selectedText = text.substring(start, end).split('\n').filter(line => line.trim() !== '');
-                              
-                              let listItems = '';
-                              if (selectedText.length > 0) {
-                                selectedText.forEach(item => {
-                                  listItems += `<li>${item}</li>`;
-                                });
-                              } else {
-                                listItems = '<li></li>';
-                              }
-                              
-                              const newText = text.substring(0, start) + 
-                                `<ul>${listItems}</ul>` + 
-                                text.substring(end);
-                              
-                              setEditorContent(newText);
-                            }}
-                          >
-                            List
-                          </button>
-                        </div>
-                        <textarea
-                          id="description-editor"
-                          value={editorContent}
-                          onChange={(e) => setEditorContent(e.target.value)}
-                          className="w-full p-4 min-h-[200px] resize-y"
-                          placeholder="Describe your club, its mission, and what members do..."
-                        />
-                      </div>
-                      
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-500 mb-2">Preview:</p>
-                        <div 
-                          className="p-4 border rounded-lg bg-white"
-                          dangerouslySetInnerHTML={{ __html: editorContent || '...' }} 
-                        />
-                      </div>
-                      
-                      <div className="flex justify-between mt-2 text-xs text-gray-500">
-                        <span>Use formatting tools to organize your content</span>
-                        <span>{editorContent ? 
-                          `${editorContent.replace(/<[^>]*>/g, '').length} characters` : 
-                          '0 characters'}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                  <div className="mb-2 text-sm text-gray-600">
+                    Share your club&apos;s story, mission, and what makes it special. Make it compelling!
+                  </div>
+                  
+                  <div className="bg-white rounded-lg mb-2 min-h-[200px] border border-gray-300">
+                    <div className="p-2 border-b border-gray-200 bg-gray-50 flex gap-2">
+                      <button 
+                        className="px-2 py-1 rounded hover:bg-gray-200" 
+                        onClick={() => {
+                          const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
+                          const start = textarea.selectionStart;
+                          const end = textarea.selectionEnd;
+                          const text = textarea.value;
+                          const selectedText = text.substring(start, end);
+                          
+                          const newText = text.substring(0, start) + 
+                            `<strong>${selectedText}</strong>` + 
+                            text.substring(end);
+                          
+                          setEditorContent(newText);
+                        }}
+                      >
+                        Bold
+                      </button>
+                      <button 
+                        className="px-2 py-1 rounded hover:bg-gray-200" 
+                        onClick={() => {
+                          const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
+                          const start = textarea.selectionStart;
+                          const end = textarea.selectionEnd;
+                          const text = textarea.value;
+                          const selectedText = text.substring(start, end);
+                          
+                          const newText = text.substring(0, start) + 
+                            `<em>${selectedText}</em>` + 
+                            text.substring(end);
+                          
+                          setEditorContent(newText);
+                        }}
+                      >
+                        Italic
+                      </button>
+                      <button 
+                        className="px-2 py-1 rounded hover:bg-gray-200" 
+                        onClick={() => {
+                          const textarea = document.getElementById('description-editor') as HTMLTextAreaElement;
+                          const start = textarea.selectionStart;
+                          const end = textarea.selectionEnd;
+                          const text = textarea.value;
+                          const selectedText = text.substring(start, end).split('\n').filter(line => line.trim() !== '');
+                          
+                          let listItems = '';
+                          if (selectedText.length > 0) {
+                            selectedText.forEach(item => {
+                              listItems += `<li>${item}</li>`;
+                            });
+                          } else {
+                            listItems = '<li></li>';
+                          }
+                          
+                          const newText = text.substring(0, start) + 
+                            `<ul>${listItems}</ul>` + 
+                            text.substring(end);
+                          
+                          setEditorContent(newText);
+                        }}
+                      >
+                        List
+                      </button>
+                    </div>
+                    <textarea
+                      id="description-editor"
+                      value={editorContent}
+                      onChange={(e) => setEditorContent(e.target.value)}
+                      className="w-full p-4 min-h-[200px] resize-y"
+                      placeholder="Describe your club, its mission, and what members do..."
+                    />
+                  </div>
+                  
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 mb-2">Preview:</p>
+                    <div 
+                      className="p-4 border rounded-lg bg-white"
+                      dangerouslySetInnerHTML={{ __html: editorContent || '...' }} 
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span>Use formatting tools to organize your content</span>
+                    <span>{editorContent ? 
+                      `${editorContent.replace(/<[^>]*>/g, '').length} characters` : 
+                      '0 characters'}
+                    </span>
+                  </div>
                 </section>
-                
-                {/* Meeting Info Section */}
-                <section 
-                  ref={(el) => { sectionsRef.current['meeting'] = el; }} 
-                  className="bg-white rounded-xl p-6 shadow-sm"
-                >
+
+                {/* Team Members Section */}
+                <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]" onClick={() => toggleSection('meeting')} style={{cursor: 'pointer'}}>Meeting Information</h3>
+                    <h3 className="text-xl font-bold text-[#180D39]">Team Members</h3>
+                    <button
+                      onClick={handleAddMember}
+                      className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Add Member
+                    </button>
                   </div>
-                  
-                  {expandedSection === 'meeting' && (
-                    <>
-                      <div className="mb-2 text-sm text-gray-600">
-                        Provide details about when and where your club meets, and what new members should know.
-                      </div>
-                      <textarea
-                        value={formData.meetingInfo || ''}
-                        onChange={(e) => handleInputChange('meetingInfo', e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] min-h-[150px]"
-                        placeholder="When and where does your club meet? What should new members expect? Include any important details..."
-                      />
-                      <div className="flex justify-end mt-2 text-xs text-gray-500">
-                        <span>{formData.meetingInfo?.length || 0} characters</span>
-                      </div>
-                    </>
-                  )}
-                </section>
-                
-                {/* PDF Documents Section */}
-                <section 
-                  ref={(el) => { sectionsRef.current['documents'] = el; }} 
-                  className="bg-white rounded-xl p-6 shadow-sm"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]" onClick={() => toggleSection('documents')} style={{cursor: 'pointer'}}>Documents & Resources</h3>
-                  </div>
-                  
-                  {expandedSection === 'documents' && (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Upload PDFs such as schedules, rule books, forms, or any other important documents for your members.
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {/* PDF Upload List */}
-                        {formData.pdfUploads && formData.pdfUploads.length > 0 ? (
-                          <div className="border border-gray-200 rounded-lg divide-y">
-                            {formData.pdfUploads.map((pdf, index) => (
-                              <div key={`pdf-${index}`} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                                <div className="flex items-center">
-                                  <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
-                                  <div>
-                                    <h3 className="font-medium text-gray-800">{pdf.fileName}</h3>
-                                    <p className="text-xs text-gray-500">
-                                      {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
-                                      Uploaded {pdf.uploadedAt ? new Date(pdf.uploadedAt).toLocaleDateString() : 'recently'}
-                                    </p>
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <p className="text-sm text-gray-600 mb-6">
+                      Add your club&apos;s team members with photos, names, roles, and short bios.
+                    </p>
+                    <div className="space-y-6">
+                      {formData.members?.map((member, index) => (
+                        <div key={`member-${index}`} className="border border-gray-200 rounded-lg p-4 relative hover:shadow-md transition-all">
+                          <button
+                            onClick={() => handleRemoveMember(index)}
+                            className="absolute top-3 right-3 text-red-500 hover:text-red-700 bg-white rounded-full p-1 shadow-sm"
+                            aria-label="Remove member"
+                            title="Remove member"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                          
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <div className="w-full md:w-[150px] flex-shrink-0">
+                              <div 
+                                className="h-[150px] w-full md:w-[150px] rounded-lg bg-gray-100 mb-2 overflow-hidden relative border border-gray-200"
+                              >
+                                {member.photoUrl ? (
+                                  <Image 
+                                    src={member.photoUrl} 
+                                    alt={member.name || 'Member photo'} 
+                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="150px"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                                    <UserIcon className="h-12 w-12 text-gray-400 mb-2" />
+                                    <span className="text-xs text-gray-500">Add photo</span>
                                   </div>
+                                )}
+                                
+                                {uploadingMemberPhoto === index ? (
+                                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                                    <LoadingSpinner size="sm" />
+                                    <span className="text-white text-xs mt-2">Uploading...</span>
+                                  </div>
+                                ) : (
+                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all">
+                                    <label className="cursor-pointer bg-white/90 text-black px-3 py-1 rounded-md text-sm shadow-sm hover:shadow-md">
+                                      {member.photoUrl ? 'Change Photo' : 'Add Photo'}
+                                      <input 
+                                        type="file" 
+                                        accept="image/png, image/jpeg, image/jpg" 
+                                        className="hidden"
+                                        onChange={(e) => handleImageUpload(e, 'member', index)}
+                                      />
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={member.name}
+                                    onChange={(e) => handleMemberChange(index, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                    placeholder="Member name"
+                                  />
                                 </div>
                                 
-                                <div className="flex space-x-2">
-                                  <a 
-                                    href={pdf.url} 
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
-                                    title="View PDF"
-                                  >
-                                    <EyeIcon className="h-5 w-5" />
-                                  </a>
-                                  <button
-                                    onClick={() => handleFileDelete(pdf.url, 'pdf')}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                                    title="Delete PDF"
-                                  >
-                                    <TrashIcon className="h-5 w-5" />
-                                  </button>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Role / Position
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={member.role}
+                                    onChange={(e) => handleMemberChange(index, 'role', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                    placeholder="e.g., President, Treasurer, etc."
+                                  />
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                            <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-500 mb-2">No documents uploaded yet</p>
-                            <p className="text-sm text-gray-400 mb-4">PDFs up to 10MB are supported</p>
-                          </div>
-                        )}
-                        
-                        {/* Upload button */}
-                        <div className="mt-4">
-                          <label className="cursor-pointer inline-flex items-center bg-white border border-gray-300 hover:bg-gray-50 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 shadow-sm">
-                            <ArrowUpTrayIcon className="h-5 w-5 mr-2 text-gray-500" />
-                            {uploadingPDF ? 'Uploading...' : 'Upload PDF Document'}
-                            <input 
-                              type="file" 
-                              accept="application/pdf" 
-                              className="hidden"
-                              onChange={handlePDFUpload}
-                              disabled={uploadingPDF}
-                            />
-                          </label>
-                          
-                          <p className="text-xs text-gray-500 mt-2">
-                            Max file size: 10MB
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </section>
-              </>
-            )}
-
-            {/* Team Members Tab */}
-            {activeTab === 'members' && (
-              <section className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-[#180D39]">Team Members</h2>
-                  <button
-                    onClick={handleAddMember}
-                    className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add Member
-                  </button>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-6">
-                  Add your club&apos;s team members with photos, names, roles, and short bios.
-                </p>
-                
-                <div className="space-y-6">
-                  {formData.members?.map((member, index) => (
-                    <div key={`member-${index}`} className="border border-gray-200 rounded-lg p-4 relative hover:shadow-md transition-all">
-                      <button
-                        onClick={() => handleRemoveMember(index)}
-                        className="absolute top-3 right-3 text-red-500 hover:text-red-700 bg-white rounded-full p-1 shadow-sm"
-                        aria-label="Remove member"
-                        title="Remove member"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                      
-                      <div className="flex flex-col md:flex-row gap-6">
-                        <div className="w-full md:w-[150px] flex-shrink-0">
-                          <div 
-                            className="h-[150px] w-full md:w-[150px] rounded-lg bg-gray-100 mb-2 overflow-hidden relative border border-gray-200"
-                          >
-                            {member.photoUrl ? (
-                              <Image 
-                                src={member.photoUrl} 
-                                alt={member.name || 'Member photo'} 
-                                className="w-full h-full object-cover"
-                                fill
-                                sizes="150px"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
-                                <UserIcon className="h-12 w-12 text-gray-400 mb-2" />
-                                <span className="text-xs text-gray-500">Add photo</span>
-                              </div>
-                            )}
-                            
-                            {uploadingMemberPhoto === index ? (
-                              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-                                <LoadingSpinner size="sm" />
-                                <span className="text-white text-xs mt-2">Uploading...</span>
-                              </div>
-                            ) : (
-                              <div className="absolute inset-0 bg-black/0 hover:bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all">
-                                <label className="cursor-pointer bg-white/90 text-black px-3 py-1 rounded-md text-sm shadow-sm hover:shadow-md">
-                                  {member.photoUrl ? 'Change Photo' : 'Add Photo'}
-                                  <input 
-                                    type="file" 
-                                    accept="image/png, image/jpeg, image/jpg" 
-                                    className="hidden"
-                                    onChange={(e) => handleImageUpload(e, 'member', index)}
-                                  />
+                              
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Bio <span className="text-gray-500 font-normal">(Optional)</span>
                                 </label>
+                                <textarea
+                                  value={member.bio || ''}
+                                  onChange={(e) => handleMemberChange(index, 'bio', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                  placeholder="Brief bio or statement (interests, goals, etc.)"
+                                  rows={3}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">A short personal statement, relevant experience, or contact info</p>
                               </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Name
-                              </label>
-                              <input
-                                type="text"
-                                value={member.name}
-                                onChange={(e) => handleMemberChange(index, 'name', e.target.value)}
-                                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                                placeholder="Member name"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Role / Position
-                              </label>
-                              <input
-                                type="text"
-                                value={member.role}
-                                onChange={(e) => handleMemberChange(index, 'role', e.target.value)}
-                                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                                placeholder="e.g., President, Treasurer, etc."
-                              />
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Bio <span className="text-gray-500 font-normal">(Optional)</span>
-                            </label>
-                            <textarea
-                              value={member.bio || ''}
-                              onChange={(e) => handleMemberChange(index, 'bio', e.target.value)}
-                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                              placeholder="Brief bio or statement (interests, goals, etc.)"
-                              rows={3}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">A short personal statement, relevant experience, or contact info</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {(!formData.members || formData.members.length === 0) && (
-                    <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                      <UserIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-700 font-medium mb-2">No team members added yet</p>
-                      <p className="text-gray-500 mb-6 max-w-md mx-auto">Showcase your club&apos;s team by adding photos and information about your members.</p>
-                      <button
-                        onClick={handleAddMember}
-                        className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
-                      >
-                        <PlusIcon className="h-4 w-4 mr-1" />
-                        Add Your First Team Member
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* Interest Form Tab */}
-            {activeTab === 'form' && (
-              <section className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-[#180D39] mb-6">Interest Form Submissions</h2>
-                
-                <div className="space-y-4">
-                  {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 ? (
-                    <div className="border border-gray-200 rounded-lg divide-y">
-                      {formData.interestForm.submissions.map((submission, index) => (
-                        <div key={index} className="p-4 hover:bg-gray-50">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium text-gray-900">{submission.name}</h3>
-                              <p className="text-sm text-gray-500">{submission.email}</p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                Submitted {new Date(submission.timestamp).toLocaleString()}
-                              </p>
                             </div>
                           </div>
                         </div>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                      <DocumentIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-700 font-medium mb-2">No submissions yet</p>
-                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        When visitors click the &ldquo;Are you interested?&rdquo; button on your website, their responses will appear here.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* Design & Links Tab */}
-            {activeTab === 'design' && (
-              <>
-                {/* Theme Section */}
-                <section className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                  <h2 className="text-xl font-bold text-[#180D39] mb-6">Theme Color</h2>
-                  
-                  <div>
-                    {/* Primary Color */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Theme Color
-                      </label>
-                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
-                        {COLOR_OPTIONS.map((color) => (
-                          <button
-                            key={color.id}
-                            onClick={() => handleThemeChange('primaryColor', color.id)}
-                            className={`w-full aspect-square rounded-md transition-all ${
-                              formData.theme.primaryColor === color.id 
-                                ? 'ring-2 ring-offset-2 ring-black scale-110' 
-                                : 'hover:scale-105'
-                            }`}
-                            style={{ backgroundColor: color.value }}
-                            title={color.name}
-                            aria-label={`Select ${color.name} color`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Selected: {getColorById(formData.theme.primaryColor).name}
-                      </p>
                       
-                      <div className="mt-4 p-4 rounded-lg" style={{ 
-                        backgroundColor: getColorById(formData.theme.primaryColor).value,
-                        color: getColorById(formData.theme.primaryColor).textDark ? '#111827' : '#F8FAFC' 
-                      }}>
-                        <p className="font-medium">Color Preview</p>
-                        <p className="text-sm opacity-80">This is how your color looks</p>
-                      </div>
+                      {(!formData.members || formData.members.length === 0) && (
+                        <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                          <UserIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-700 font-medium mb-2">No team members added yet</p>
+                          <p className="text-gray-500 mb-6 max-w-md mx-auto">Showcase your club&apos;s team by adding photos and information about your members.</p>
+                          <button
+                            onClick={handleAddMember}
+                            className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                            Add Your First Team Member
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </section>
-                
-                {/* Contact Links Section */}
-                <section className="bg-white rounded-xl p-6 shadow-sm">
+                </div>
+
+                {/* Documents & Resources Section */}
+                <section className="bg-white rounded-xl p-6 shadow-sm mt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-[#180D39]">Contact Links</h2>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#180D39]">Documents & Resources</h3>
+                      <p className="text-sm text-gray-600 mt-1">Share important documents and links with your members</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
+                        <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                        Upload PDF
+                        <input 
+                          type="file" 
+                          accept="application/pdf" 
+                          className="hidden"
+                          onChange={handleResourceUpload}
+                        />
+                      </label>
+                      <button
+                        onClick={handleAddLinkResource}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                      >
+                        <GlobeAltIcon className="h-4 w-4 mr-1" />
+                        Add Link
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 mt-6">
+                    {formData.resources?.map((resource, index) => (
+                      <div 
+                        key={`resource-${index}`}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            {resource.type === 'pdf' ? (
+                              <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                            ) : (
+                              <GlobeAltIcon className="h-8 w-8 text-blue-500 mr-3" />
+                            )}
+                            <div>
+                              <h3 className="font-medium text-gray-800">
+                                {resource.title}
+                              </h3>
+                              {resource.description && (
+                                <p className="text-sm text-gray-600">{resource.description}</p>
+                              )}
+                              <p className="text-xs text-gray-500">
+                                {resource.type === 'pdf' && resource.fileSize && 
+                                  `${Math.round(resource.fileSize / 1024)} KB • `
+                                }
+                                Added {resource.uploadedAt ? new Date(resource.uploadedAt).toLocaleDateString() : 'recently'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <a 
+                              href={resource.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                              title={resource.type === 'pdf' ? "View PDF" : "Open Link"}
+                            >
+                              <EyeIcon className="h-5 w-5" />
+                            </a>
+                            <button
+                              onClick={() => handleResourceDelete(resource)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                              title="Delete Resource"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!formData.resources || formData.resources.length === 0) && (
+                      <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                        <DocumentTextIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-700 font-medium mb-2">No resources added yet</p>
+                        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                          Share important documents and links with your members by uploading PDFs or adding external links.
+                        </p>
+                        <div className="flex justify-center space-x-4">
+                          <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
+                            <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                            Upload PDF
+                            <input 
+                              type="file" 
+                              accept="application/pdf" 
+                              className="hidden"
+                              onChange={handleResourceUpload}
+                            />
+                          </label>
+                          <button
+                            onClick={handleAddLinkResource}
+                            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                          >
+                            <GlobeAltIcon className="h-4 w-4 mr-1" />
+                            Add Link
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.resources && formData.resources.length > 0 && (
+                    <div className="mt-4 text-sm text-gray-500">
+                      <p className="font-medium mb-2">Resource Tips:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Keep PDF file sizes under 10MB</li>
+                        <li>Use clear, descriptive titles</li>
+                        <li>Add helpful descriptions to make resources easy to find</li>
+                        <li>Ensure links are valid and accessible</li>
+                        <li>Organize resources by type (PDF/Link) and purpose</li>
+                      </ul>
+                    </div>
+                  )}
+                </section>
+
+                {/* Contact Links Section */}
+                <section className="bg-white rounded-xl p-6 shadow-sm mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-[#180D39]">Contact Links</h3>
                     <button
                       onClick={handleAddContactLink}
                       className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
@@ -1418,6 +1464,186 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         </button>
                       </div>
                     )}
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* Media Gallery Tab */}
+            {activeTab === 'media' && (
+              <section className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-[#180D39]">Informational PDF</h2>
+                    <p className="text-sm text-gray-600 mt-1">Upload and manage your club&apos;s informational PDF</p>
+                  </div>
+                  <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
+                    <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                    Upload PDF
+                    <input 
+                      type="file" 
+                      accept="application/pdf" 
+                      className="hidden"
+                      onChange={handlePDFUpload}
+                    />
+                  </label>
+                </div>
+
+                {/* PDF List */}
+                {formData.pdfUploads && formData.pdfUploads.length > 0 ? (
+                  <div className="space-y-4">
+                    {formData.pdfUploads.map((pdf, index) => (
+                      <div 
+                        key={`pdf-${index}`}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                            <div>
+                              <h3 className="font-medium text-gray-800">
+                                {pdf.fileName}
+                              </h3>
+                              <p className="text-xs text-gray-500">
+                                {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
+                                Uploaded {pdf.uploadedAt ? new Date(pdf.uploadedAt).toLocaleDateString() : 'recently'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <a 
+                              href={pdf.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                              title="View PDF"
+                            >
+                              <EyeIcon className="h-5 w-5" />
+                            </a>
+                            <button
+                              onClick={() => handleFileDelete(pdf.url, 'pdf')}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                              title="Delete PDF"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                    <DocumentTextIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-700 font-medium mb-2">No PDF documents uploaded</p>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      Upload PDF documents such as club guidelines, event schedules, or important forms.
+                    </p>
+                    <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
+                      <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                      Upload Your First PDF
+                      <input 
+                        type="file" 
+                        accept="application/pdf" 
+                        className="hidden"
+                        onChange={handlePDFUpload}
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {formData.pdfUploads && formData.pdfUploads.length > 0 && (
+                  <div className="mt-4 text-sm text-gray-500">
+                    <p className="font-medium mb-2">PDF Upload Tips:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Create the PDF from a Google Slides presentation</li>
+                      <li>Keep file sizes under 10MB for faster loading</li>
+                      <li>Use clear, descriptive filenames</li>
+                      <li>Ensure PDFs are properly formatted and readable</li>
+                      <li>Please upload only one PDF at a time</li>
+                    </ul>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Interest Form Tab */}
+            {activeTab === 'form' && (
+              <section className="bg-white rounded-xl p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-[#180D39] mb-6">Interest Form Submissions</h2>
+                
+                <div className="space-y-4">
+                  {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 ? (
+                    <div className="border border-gray-200 rounded-lg divide-y">
+                      {formData.interestForm.submissions.map((submission, index) => (
+                        <div key={index} className="p-4 hover:bg-gray-50">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium text-gray-900">{submission.name}</h3>
+                              <p className="text-sm text-gray-500">{submission.email}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                Submitted {new Date(submission.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <DocumentIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-700 font-medium mb-2">No submissions yet</p>
+                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        When visitors click the &ldquo;Are you interested?&rdquo; button on your website, their responses will appear here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Design & Links Tab */}
+            {activeTab === 'design' && (
+              <>
+                {/* Theme Section */}
+                <section className="bg-white rounded-xl p-6 shadow-sm mb-8">
+                  <h2 className="text-xl font-bold text-[#180D39] mb-6">Theme Color</h2>
+                  
+                  <div>
+                    {/* Primary Color */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Theme Color
+                      </label>
+                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                        {COLOR_OPTIONS.map((color) => (
+                          <button
+                            key={color.id}
+                            onClick={() => handleThemeChange('primaryColor', color.id)}
+                            className={`w-full aspect-square rounded-md transition-all ${
+                              formData.theme.primaryColor === color.id 
+                                ? 'ring-2 ring-offset-2 ring-black scale-110' 
+                                : 'hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: color.value }}
+                            title={color.name}
+                            aria-label={`Select ${color.name} color`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Selected: {getColorById(formData.theme.primaryColor).name}
+                      </p>
+                      
+                      <div className="mt-4 p-4 rounded-lg" style={{ 
+                        backgroundColor: getColorById(formData.theme.primaryColor).value,
+                        color: getColorById(formData.theme.primaryColor).textDark ? '#111827' : '#F8FAFC' 
+                      }}>
+                        <p className="font-medium">Color Preview</p>
+                        <p className="text-sm opacity-80">This is how your color looks</p>
+                      </div>
+                    </div>
                   </div>
                 </section>
               </>

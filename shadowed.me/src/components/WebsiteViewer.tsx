@@ -2,13 +2,22 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon, PencilIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { ClubSite } from '@/types/club';
 import { getColorById, getTextColorById } from '@/utils/colors';
 import { getFontById } from '@/utils/fonts';
-import { formatDate } from '@/utils/dateUtils';
 import { toast } from 'react-hot-toast';
+
+// Format date for display
+const formatUploadDate = (date: Date | string): string => {
+  try {
+    const d = new Date(date);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return 'Invalid date';
+  }
+};
 
 interface WebsiteViewerProps {
   website: ClubSite;
@@ -233,6 +242,56 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             </motion.div>
           )}
 
+          {/* PDF Documents Section */}
+          {hasPDFs && (
+            <motion.div 
+              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
+                Information
+              </h2>
+              <div className="space-y-8">
+                {website.pdfUploads?.map((pdf, index) => (
+                  <div key={`pdf-viewer-${index}`} className="w-full max-w-3xl mx-auto rounded-lg overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between bg-gray-50 p-3 border-b">
+                      <div className="flex items-center max-w-[70%] overflow-hidden">
+                        <DocumentIcon className="h-5 w-5 text-gray-700 mr-2 flex-shrink-0" />
+                        <h3 className="font-medium text-gray-800 truncate">{pdf.fileName}</h3>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500 flex-shrink-0">
+                        {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
+                        {pdf.uploadedAt ? formatUploadDate(pdf.uploadedAt) : 'recently'}
+                        <a 
+                          href={pdf.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3 text-blue-600 hover:text-blue-800 flex-shrink-0"
+                          title="Open in new tab"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                    <div className="w-full h-[380px] bg-gray-50">
+                      <iframe
+                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdf.url)}&embedded=true`}
+                        className="w-full h-full border-none"
+                        title={pdf.fileName}
+                      ></iframe>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* Gallery Section */}
           {hasGallery && (
             <motion.div 
@@ -326,47 +385,6 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               </div>
             </motion.div>
           )}
-          
-          {/* PDF Documents Section */}
-          {hasPDFs && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
-                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
-              >
-                Documents
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {website.pdfUploads?.map((pdf, index) => (
-                  <a 
-                    key={`pdf-${index}`}
-                    href={pdf.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0"
-                      style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                    >
-                      <DocumentIcon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 truncate">{pdf.fileName}</h3>
-                      <p className="text-xs text-gray-500">
-                        {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
-                        Uploaded {pdf.uploadedAt ? formatDate(pdf.uploadedAt.toString()) : 'recently'}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </motion.div>
-          )}
         </div>
 
         {/* Sidebar */}
@@ -432,6 +450,51 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                     </motion.a>
                   );
                 })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Documents & Resources Card */}
+          {website.resources && website.resources.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white rounded-xl p-6 shadow-sm mb-6"
+            >
+              <h3 className="text-xl font-bold text-[#180D39] mb-4">Documents & Resources</h3>
+              <div className="space-y-3">
+                {website.resources.map((resource, index) => (
+                  <motion.a
+                    key={`resource-${index}`}
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="mr-3 text-gray-700">
+                      {resource.type === 'pdf' ? (
+                        <DocumentIcon className="h-5 w-5" />
+                      ) : (
+                        <GlobeAltIcon className="h-5 w-5" />
+                      )}
+                    </span>
+                    <div className="flex-1">
+                      <span className="font-medium text-[#180D39]">{resource.title}</span>
+                      {resource.description && (
+                        <p className="text-sm text-gray-600">{resource.description}</p>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        {resource.type === 'pdf' && resource.fileSize && 
+                          `${Math.round(resource.fileSize / 1024)} KB • `
+                        }
+                        Added {formatUploadDate(resource.uploadedAt)}
+                      </div>
+                    </div>
+                  </motion.a>
+                ))}
               </div>
             </motion.div>
           )}

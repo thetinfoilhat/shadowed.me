@@ -25,6 +25,13 @@ export interface UploadResult {
   fileSize?: number;
 }
 
+export interface ResourceUploadResult extends UploadResult {
+  type: 'pdf' | 'link';
+  title: string;
+  description?: string;
+  uploadedAt: Date;
+}
+
 // Get storage path from URL
 export const getStoragePathFromUrl = (url: string): string => {
   try {
@@ -92,7 +99,96 @@ export const uploadImage = async (
   }
 };
 
-// Upload PDF to Firebase Storage
+// Upload PDF to Firebase Storage as a resource
+export const uploadPDFResource = async (
+  file: File,
+  clubSlug: string,
+  title: string,
+  description?: string
+): Promise<ResourceUploadResult> => {
+  try {
+    // Validate file size
+    if (file.size > MAX_PDF_SIZE) {
+      return {
+        success: false,
+        error: FileUploadError.SIZE_EXCEEDED,
+        fileName: file.name,
+        type: 'pdf',
+        title,
+        description,
+        uploadedAt: new Date()
+      };
+    }
+
+    // Validate file type
+    if (!ALLOWED_PDF_TYPES.includes(file.type)) {
+      return {
+        success: false,
+        error: FileUploadError.INVALID_TYPE,
+        fileName: file.name,
+        type: 'pdf',
+        title,
+        description,
+        uploadedAt: new Date()
+      };
+    }
+
+    // Create safe filename
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fileId = uuidv4();
+    const fileName = `${fileId}-${safeFileName}`;
+    
+    // Create storage reference with proper path
+    const storageRef = ref(storage, `clubsites/${clubSlug}/resources/${fileName}`);
+    
+    // Upload file
+    await uploadBytes(storageRef, file);
+    
+    // Get download URL
+    const downloadUrl = await getDownloadURL(storageRef);
+    
+    return {
+      success: true,
+      url: downloadUrl,
+      fileName: file.name,
+      fileSize: file.size,
+      type: 'pdf',
+      title,
+      description,
+      uploadedAt: new Date()
+    };
+  } catch (error) {
+    console.error('Error uploading PDF:', error);
+    return {
+      success: false,
+      error: FileUploadError.UPLOAD_FAILED,
+      fileName: file.name,
+      type: 'pdf',
+      title,
+      description,
+      uploadedAt: new Date()
+    };
+  }
+};
+
+// Create a link resource
+export const createLinkResource = (
+  url: string,
+  title: string,
+  description?: string
+): ResourceUploadResult => {
+  return {
+    success: true,
+    url,
+    fileName: url,
+    type: 'link',
+    title,
+    description,
+    uploadedAt: new Date()
+  };
+};
+
+// Upload PDF to Firebase Storage (legacy support)
 export const uploadPDF = async (
   file: File,
   clubSlug: string
