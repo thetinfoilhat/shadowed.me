@@ -317,22 +317,22 @@ export default function Header() {
                   Jamboree
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link 
                   href="/school-clubs"
                   className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                 >
                   Club Visits
                 </Link>
-              </li>
-              <li>
+              </li> */}
+              {/* <li>
                 <Link 
                   href="/club-listings"
                   className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                 >
                   Club Lists
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link 
                   href="/what-fits-you"
@@ -517,7 +517,7 @@ export default function Header() {
                   Jamboree
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link 
                   href="/school-clubs"
                   className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
@@ -525,8 +525,8 @@ export default function Header() {
                 >
                   Club Visits
                 </Link>
-              </li>
-              <li>
+              </li> */}
+              {/* <li>
                 <Link 
                   href="/club-listings"
                   className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
@@ -534,7 +534,7 @@ export default function Header() {
                 >
                   Club Lists
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link 
                   href="/what-fits-you"
@@ -564,7 +564,7 @@ export default function Header() {
                     Dashboard
                   </Link>
                 </li>
-              ) : (userRole === 'captain' || userRole === 'admin') ? (
+              ) : (userRole === 'admin' || userRole === 'captain') ? (
                 <>
                   <li>
                     <Link 
@@ -575,25 +575,38 @@ export default function Header() {
                       Student Dashboard
                     </Link>
                   </li>
-                  <li>
-                    <Link 
-                      href="/captain-dashboard"
-                      className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Captain Dashboard
-                    </Link>
-                  </li>
-                  {userRole === 'admin' && (
+                  {userRole === 'captain' && (
                     <li>
                       <Link 
-                        href="/admin-dashboard"
+                        href="/captain-dashboard"
                         className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                         onClick={() => setIsOpen(false)}
                       >
-                        Admin Dashboard
+                        Captain Dashboard
                       </Link>
                     </li>
+                  )}
+                  {userRole === 'admin' && (
+                    <>
+                      <li>
+                        <Link 
+                          href="/captain-dashboard"
+                          className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          Captain Dashboard
+                        </Link>
+                      </li>
+                      <li>
+                        <Link 
+                          href="/admin-dashboard"
+                          className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          Admin Dashboard
+                        </Link>
+                      </li>
+                    </>
                   )}
                 </>
               ) : userRole === 'sponsor' ? (
