@@ -134,22 +134,48 @@ export default function Jamboree() {
   return (
     <PageTransition>
       <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
+        {/* Navigation Tabs */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-6xl mx-auto mb-6 flex justify-center"
+        >
+          <div className="bg-white rounded-lg p-1 inline-flex gap-1">
+            <button
+              className="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+              style={{
+                color: '#38BFA1',
+              }}
+            >
+              Websites
+            </button>
+            <button
+              onClick={() => router.push('/club-listings')}
+              className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 transition-all hover:bg-gray-50"
+            >
+              All Clubs
+            </button>
+          </div>
+        </motion.div>
+
         {/* Hero Section */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="text-center">
             <motion.h1
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-4xl font-bold text-gray-900 sm:text-5xl"
+              className="text-6xl font-bold text-[#38BFA1]"
             >
-              Club Website Jamboree
+              Club Showcase
             </motion.h1>
+            
             <motion.p
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto"
+              className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto"
             >
               Explore club websites or create your own to showcase your club&apos;s activities, members, and resources.
             </motion.p>
@@ -159,7 +185,7 @@ export default function Jamboree() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-8 max-w-2xl mx-auto"
+              className="mt-6 max-w-xl mx-auto"
             >
               <div className="relative">
                 <input
@@ -167,10 +193,10 @@ export default function Jamboree() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search clubs by name, description, or members..."
-                  className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
                 />
                 <svg
-                  className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+                  className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -189,13 +215,13 @@ export default function Jamboree() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-8"
+                className="mt-6"
               >
                 <button
                   onClick={() => setModalOpen(true)}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-colors"
                 >
-                  <PlusIcon className="h-5 w-5 mr-2" />
+                  <PlusIcon className="h-4 w-4 mr-2" />
                   Create New Website
                 </button>
               </motion.div>
@@ -274,7 +300,7 @@ export default function Jamboree() {
               {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
                 <button
                   onClick={() => setModalOpen(true)}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-[#38BFA1] to-[#2DA891] hover:from-[#2DA891] hover:to-[#38BFA1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transform hover:scale-105 transition-all"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Create New Website
