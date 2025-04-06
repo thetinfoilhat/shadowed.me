@@ -1046,268 +1046,310 @@ const clubs: Club[] = [
 
 // Sample questions
 const questions: Question[] = [
-  // 🔹 General Interest & Personality
+  // CORE INTERESTS
   {
     id: 1,
-    text: "Do you enjoy solving mysteries or puzzles?",
-    type: "yes-no",
+    text: "What kinds of things do you enjoy doing most?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["problem-solving", "analytical", "strategy", "logic"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Creating or appreciating art", value: "art", attributes: ["artistic", "creative", "visual arts", "design", "aesthetic", "self-expression"] },
+      { label: "Figuring out how things work", value: "analytical", attributes: ["analytical", "problem-solving", "research", "technical", "science", "logical thinking"] },
+      { label: "Helping and connecting with people", value: "social", attributes: ["social", "community service", "communication", "empathy", "team-based", "mentoring"] },
+      { label: "Leading and organizing activities", value: "leadership", attributes: ["leadership", "organization", "management", "planning", "coordination", "initiative"] },
+      { label: "Playing sports or being active", value: "physical", attributes: ["athletics", "physical activity", "sports", "coordination", "teamwork", "active lifestyle"] }
     ]
   },
   {
     id: 2,
-    text: "How much do you enjoy working with your hands?",
-    type: "slider",
-    min: 1,
-    max: 5,
-    minLabel: "Not at all",
-    maxLabel: "Very much",
-    attributes: {
-      1: [],
-      2: ["casual interest"],
-      3: ["hands-on", "craftsmanship"],
-      4: ["hands-on", "technical", "design"],
-      5: ["hands-on", "technical", "creative", "engineering"]
-    }
+    text: "Which of these school subjects do you find most interesting?",
+    type: "multiple-choice",
+    options: [
+      { label: "Math", value: "math", attributes: ["mathematics", "numerical reasoning", "analytical", "logical thinking", "problem-solving"] },
+      { label: "Science", value: "science", attributes: ["science", "research", "experiments", "laboratory", "analytical", "discovery"] },
+      { label: "English/Literature", value: "english", attributes: ["language", "reading", "writing", "literature", "communication", "expression"] },
+      { label: "History/Social Studies", value: "social-studies", attributes: ["history", "social studies", "global awareness", "cultural knowledge"] },
+      { label: "Art/Music", value: "arts", attributes: ["artistic", "creative", "visual arts", "music", "performance", "expression"] }
+    ]
   },
   {
     id: 3,
-    text: "Do you prefer structured rules or open-ended creativity?",
+    text: "How do you prefer to spend time with friends?",
     type: "multiple-choice",
     options: [
-      { label: "Structured", value: "structured", attributes: ["structured", "logical", "rules", "organization"] },
-      { label: "Open-ended", value: "open-ended", attributes: ["creative", "innovation", "self-expression"] },
-      { label: "Both", value: "both", attributes: ["adaptable", "versatile"] }
+      { label: "Discussing ideas and conversations", value: "discussing", attributes: ["intellectual", "discussion", "debate", "communication", "exchange of ideas"] },
+      { label: "Creating things together", value: "creating", attributes: ["creative collaboration", "projects", "artistic", "hands-on", "making"] },
+      { label: "Playing games or sports", value: "games", attributes: ["gaming", "sports", "recreation", "competition", "physical activity", "teamwork"] },
+      { label: "Going to events and activities", value: "events", attributes: ["social events", "community", "cultural activities", "participation", "shared experiences"] },
+      { label: "Helping others or volunteering", value: "volunteering", attributes: ["community service", "helping others", "social impact", "volunteering", "contribution"] }
     ]
   },
-  // 🔹 Academic Interests
   {
     id: 4,
-    text: "What subjects do you enjoy the most?",
+    text: "When faced with a problem, how do you usually solve it?",
     type: "multiple-choice",
     options: [
-      { label: "Science", value: "science", attributes: ["science", "research", "experiments", "analytical"] },
-      { label: "Math", value: "math", attributes: ["math", "logical thinking", "numbers"] },
-      { label: "Literature", value: "literature", attributes: ["writing", "reading", "storytelling", "analysis"] },
-      { label: "Social Studies", value: "social-studies", attributes: ["policy analysis", "global issues", "debate"] },
-      { label: "Arts", value: "arts", attributes: ["artistic", "design", "self-expression"] }
+      { label: "Analyze it logically step by step", value: "logical", attributes: ["analytical", "logical reasoning", "systematic", "methodical", "structured"] },
+      { label: "Find a creative or innovative solution", value: "creative", attributes: ["creative problem-solving", "innovative", "thinking outside the box", "design thinking"] },
+      { label: "Discuss with others to get different perspectives", value: "collaborative", attributes: ["teamwork", "communication", "collaboration", "social problem-solving"] },
+      { label: "Research and gather information first", value: "research", attributes: ["research-oriented", "information gathering", "knowledge-based", "learning"] },
+      { label: "Trust my instincts and experience", value: "instinct", attributes: ["intuitive", "experiential", "quick-thinking", "adaptable"] }
     ]
   },
   {
     id: 5,
-    text: "Do you enjoy conducting science experiments or working in a lab?",
+    text: "Do you enjoy performing or presenting in front of others?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["science", "experiments", "laboratory", "hands-on"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["performance", "public speaking", "stage presence", "confidence", "showmanship", "presentation skills"] },
+      { label: "No", value: "no", attributes: ["behind-the-scenes", "supportive roles", "private work", "individual contribution"] }
     ]
   },
   {
     id: 6,
-    text: "Are you interested in leading or mentoring others?",
-    type: "yes-no",
+    text: "What kind of environment helps you do your best work?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["leadership", "mentoring", "community service"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Quiet, focused and independent", value: "quiet", attributes: ["independent work", "focus", "self-directed", "individual responsibility", "autonomy"] },
+      { label: "Collaborative with lots of discussion", value: "collaborative", attributes: ["teamwork", "collaboration", "communication", "group dynamics", "social learning"] },
+      { label: "Hands-on and active", value: "hands-on", attributes: ["hands-on learning", "practical application", "physical activity", "experiential", "interactive"] },
+      { label: "Creative and flexible", value: "creative", attributes: ["creative environment", "flexibility", "adaptability", "open-ended", "innovation"] },
+      { label: "Structured with clear guidelines", value: "structured", attributes: ["structured", "organized", "systematic", "procedure-following", "clear expectations"] }
     ]
   },
   {
     id: 7,
-    text: "How important is teamwork to you?",
+    text: "How competitive are you?",
+    type: "slider",
+    min: 1,
+    max: 5,
+    minLabel: "Not competitive at all",
+    maxLabel: "Very competitive",
+    attributes: {
+      1: ["collaborative", "non-competitive", "cooperation-focused", "supportive"],
+      2: ["casually competitive", "friendly challenge", "low-pressure"],
+      3: ["moderately competitive", "balanced approach", "healthy competition"],
+      4: ["competition-driven", "achievement-oriented", "winning-focused"],
+      5: ["highly competitive", "excellence-seeking", "tournament-focused", "competitive spirit"]
+    }
+  },
+  {
+    id: 8,
+    text: "How much do you enjoy working with technology?",
+    type: "slider",
+    min: 1,
+    max: 5,
+    minLabel: "Not at all",
+    maxLabel: "Love it",
+    attributes: {
+      1: ["analog", "traditional methods", "low-tech"],
+      2: ["basic tech use", "tech-aware", "casual technology user"],
+      3: ["tech-comfortable", "digital literacy", "regular technology user"],
+      4: ["tech-savvy", "digital tools", "programming-curious"],
+      5: ["tech-passionate", "coding", "digital mastery", "technological", "software development"]
+    }
+  },
+  {
+    id: 9,
+    text: "Are you interested in learning languages or exploring different cultures?",
+    type: "yes-no",
+    options: [
+      { label: "Yes", value: "yes", attributes: ["language learning", "cultural awareness", "global perspective", "international", "multicultural", "diversity"] },
+      { label: "No", value: "no", attributes: ["local focus", "specialized interests", "monolingual", "other priorities"] }
+    ]
+  },
+  {
+    id: 10,
+    text: "Which of these creative activities do you enjoy most?",
+    type: "multiple-choice",
+    options: [
+      { label: "Visual arts (drawing, painting, photography)", value: "visual", attributes: ["visual arts", "drawing", "painting", "artistic", "photography", "creative expression"] },
+      { label: "Performing (acting, dancing, music)", value: "performing", attributes: ["performance", "acting", "theater", "dance", "music", "stage presence"] },
+      { label: "Writing and storytelling", value: "writing", attributes: ["writing", "creative writing", "storytelling", "poetry", "narrative", "literary"] },
+      { label: "Making or building things", value: "making", attributes: ["crafting", "building", "hands-on creation", "3D design", "construction"] },
+      { label: "Digital creation (design, video)", value: "digital", attributes: ["digital media", "design", "technology", "visual communication", "online creation"] }
+    ]
+  },
+  {
+    id: 11,
+    text: "How important is it for you to help others or make a difference?",
     type: "slider",
     min: 1,
     max: 5,
     minLabel: "Not important",
     maxLabel: "Very important",
     attributes: {
-      1: ["independent", "self-directed"],
-      2: ["casual teamwork"],
-      3: ["collaboration"],
-      4: ["teamwork", "group projects"],
-      5: ["team leadership", "coaching", "mentoring"]
+      1: ["personal focus", "individual interests", "self-development"],
+      2: ["occasionally helpful", "selective service", "balanced priorities"],
+      3: ["community-minded", "helpful", "socially conscious"],
+      4: ["service-oriented", "social responsibility", "community focused"],
+      5: ["humanitarian", "social justice", "changemaker", "advocacy", "community leadership"]
     }
-  },
-  {
-    id: 8,
-    text: "Would you be interested in planning school-wide events or fundraisers?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["event planning", "fundraising", "organization", "networking"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
-  },
-  // 🔹 Business & Financial Literacy
-  {
-    id: 9,
-    text: "Would you like to learn about investing, stocks, or business strategy?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["finance", "investing", "economics", "business", "wealth management"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
-  },
-  {
-    id: 10,
-    text: "Do you enjoy problem-solving through real-world business case studies?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["business", "entrepreneurship", "strategy", "problem-solving"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
-  },
-  // 🔹 STEM & Technology
-  {
-    id: 11,
-    text: "Would you be interested in learning how to code or build software?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["coding", "technology", "software development", "engineering"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
   },
   {
     id: 12,
-    text: "How much do you enjoy working with robotics or AI?",
-    type: "slider",
-    min: 1,
-    max: 5,
-    minLabel: "Not at all",
-    maxLabel: "Very much",
-    attributes: {
-      1: [],
-      2: ["casual interest"],
-      3: ["robotics", "engineering"],
-      4: ["robotics", "engineering", "automation"],
-      5: ["robotics", "engineering", "AI", "cutting-edge technology"]
-    }
+    text: "Which science areas interest you most?",
+    type: "multiple-choice",
+    options: [
+      { label: "Living things (biology, medicine)", value: "life", attributes: ["biology", "life science", "medicine", "healthcare", "organisms", "ecosystems"] },
+      { label: "Physical world (physics, astronomy)", value: "physical", attributes: ["physics", "astronomy", "mechanics", "energy", "space", "physical principles"] },
+      { label: "Chemistry and materials", value: "chem", attributes: ["chemistry", "biochemistry", "materials", "reactions", "compounds", "molecular"] },
+      { label: "Earth and environment", value: "earth", attributes: ["environmental science", "ecology", "sustainability", "conservation", "climate", "earth science"] },
+      { label: "Technology and computing", value: "tech", attributes: ["computer science", "technology", "programming", "digital systems", "computational thinking"] }
+    ]
   },
-  // 🔹 Creative & Performing Arts
   {
     id: 13,
-    text: "Do you enjoy creating art in any form (painting, sculpting, digital design)?",
+    text: "Do you enjoy games that involve strategy and critical thinking?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["art", "creative", "visual arts", "design"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["strategic thinking", "games", "critical thinking", "analytical", "problem-solving", "logical reasoning"] },
+      { label: "No", value: "no", attributes: ["intuitive", "spontaneous", "other recreational preferences"] }
     ]
   },
   {
     id: 14,
-    text: "What type of performance interests you most?",
-    type: "multiple-choice",
-    options: [
-      { label: "Acting", value: "acting", attributes: ["acting", "theater", "performance", "drama"] },
-      { label: "Singing", value: "singing", attributes: ["music", "singing", "choir"] },
-      { label: "Dance", value: "dance", attributes: ["dance", "choreography", "movement"] },
-      { label: "Instrumental Music", value: "instrumental", attributes: ["music", "instrumental", "ensemble"] },
-      { label: "None", value: "none", attributes: [] }
-    ]
+    text: "How do you feel about business, entrepreneurship, or economics?",
+    type: "slider",
+    min: 1,
+    max: 5,
+    minLabel: "Not interested",
+    maxLabel: "Very interested",
+    attributes: {
+      1: ["non-business", "creative focus", "other interests"],
+      2: ["business-aware", "basic understanding", "consumer knowledge"],
+      3: ["business-interested", "economic awareness", "curious about enterprise"],
+      4: ["business-oriented", "entrepreneurial", "market-minded"],
+      5: ["business passion", "entrepreneurship", "finance", "commercial", "economics"]
+    }
   },
   {
     id: 15,
-    text: "Would you enjoy designing costumes, makeup, or set pieces for theater?",
-    type: "yes-no",
+    text: "What type of physical activities do you enjoy?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["design", "theater", "costume", "production"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Team sports", value: "team", attributes: ["team sports", "teamwork", "athletics", "coordination", "collaboration", "competitive"] },
+      { label: "Individual sports/activities", value: "individual", attributes: ["individual sports", "personal achievement", "self-discipline", "fitness", "personal challenge"] },
+      { label: "Outdoor adventures", value: "outdoor", attributes: ["outdoor recreation", "nature", "adventure", "exploration", "environmental"] },
+      { label: "Dance or movement arts", value: "dance", attributes: ["dance", "movement", "choreography", "rhythm", "performance", "artistic expression"] },
+      { label: "Casual activity or fitness", value: "casual", attributes: ["casual recreation", "fitness", "wellness", "health", "balance", "low-pressure activity"] }
     ]
   },
-  // 🔹 Sports & Outdoor Activities
   {
     id: 16,
-    text: "Do you enjoy being active or playing sports?",
+    text: "Do you like to take leadership roles in group activities?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["sports", "athletics", "physical activity", "teamwork"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["leadership", "initiative", "coordination", "management", "responsibility", "decision-making"] },
+      { label: "No", value: "no", attributes: ["supportive role", "team member", "contributor", "collaboration", "follower"] }
     ]
   },
-  // 🔹 Community & Global Awareness
   {
     id: 17,
-    text: "Would you like to volunteer and give back to the community?",
-    type: "yes-no",
+    text: "What social or community issues matter most to you?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["community service", "social impact", "philanthropy"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Education and youth development", value: "education", attributes: ["education", "youth development", "learning", "teaching", "mentoring", "knowledge sharing"] },
+      { label: "Environment and sustainability", value: "environment", attributes: ["environment", "sustainability", "conservation", "climate action", "ecological awareness"] },
+      { label: "Health and wellness", value: "health", attributes: ["health", "wellness", "mental health", "healthcare", "well-being", "self-care"] },
+      { label: "Diversity, equity and inclusion", value: "diversity", attributes: ["diversity", "inclusion", "equity", "cultural awareness", "social justice", "representation"] },
+      { label: "Community support and development", value: "community", attributes: ["community building", "local support", "neighborhood development", "civic engagement"] }
     ]
   },
   {
     id: 18,
-    text: "Do you enjoy learning about different cultures and global affairs?",
+    text: "Are you interested in debate, politics, or current events?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["cultural awareness", "international relations", "global perspective"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["debate", "politics", "current events", "civic engagement", "public policy", "government", "argumentation"] },
+      { label: "No", value: "no", attributes: ["apolitical", "other interests", "private focus", "personal matters"] }
     ]
   },
   {
     id: 19,
-    text: "Do you prefer high-energy environments or relaxed activities?",
-    type: "multiple-choice",
-    options: [
-      { label: "High-Energy", value: "high-energy", attributes: ["competitive", "high-intensity", "fast-paced"] },
-      { label: "Relaxed", value: "relaxed", attributes: ["calm", "mindfulness", "meditative"] },
-      { label: "Both", value: "both", attributes: ["adaptable", "versatile"] }
-    ]
+    text: "How comfortable are you with public speaking?",
+    type: "slider",
+    min: 1,
+    max: 5,
+    minLabel: "Very uncomfortable",
+    maxLabel: "Very comfortable",
+    attributes: {
+      1: ["behind-the-scenes", "private communication", "written expression", "audience-avoidant"],
+      2: ["small group speaking", "selective presentation", "developing comfort"],
+      3: ["moderately comfortable", "growing confidence", "situational speaking"],
+      4: ["presentation-confident", "public speaking", "verbal communication"],
+      5: ["public speaking passion", "presentation excellence", "oratory skills", "audience engagement"]
+    }
   },
   {
     id: 20,
-    text: "Would you be interested in a club that focuses on mental health and well-being?",
-    type: "yes-no",
+    text: "Which of these niche interests appeal to you?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["mental health", "wellness", "self-care", "stress management"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Robotics or engineering", value: "robotics", attributes: ["robotics", "engineering", "technical building", "mechanics", "design", "technological"] },
+      { label: "Film, media, or journalism", value: "media", attributes: ["film", "media", "journalism", "reporting", "storytelling", "documentation"] },
+      { label: "Fashion or costume design", value: "fashion", attributes: ["fashion", "costume design", "textiles", "sewing", "style", "clothing"] },
+      { label: "Gaming (video, tabletop, strategy)", value: "gaming", attributes: ["gaming", "video games", "tabletop games", "strategy", "competition", "digital entertainment"] },
+      { label: "Food, cooking, or culinary arts", value: "culinary", attributes: ["cooking", "food", "culinary arts", "recipes", "gastronomy", "nutrition"] }
     ]
   },
   {
     id: 21,
-    text: "Do you enjoy photography, filmmaking, or digital media creation?",
+    text: "Are you interested in wellness, mindfulness, or mental health?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["photography", "digital media", "visual storytelling", "film production"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["wellness", "mental health", "mindfulness", "self-care", "balance", "emotional well-being"] },
+      { label: "No", value: "no", attributes: ["other focuses", "different priorities", "alternative interests"] }
     ]
   },
   {
     id: 22,
-    text: "Do you enjoy building things, whether it's with Legos, wood, or mechanical parts?",
-    type: "yes-no",
+    text: "How do you feel about being part of a performance or production?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["hands-on", "engineering", "design", "mechanics", "problem-solving"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "I'd love to be on stage performing", value: "performer", attributes: ["performance", "stage presence", "acting", "singing", "dance", "public presentation"] },
+      { label: "I'd enjoy directing or organizing it", value: "director", attributes: ["directing", "production management", "leadership", "creative direction", "organization"] },
+      { label: "I'd prefer working on technical aspects", value: "technical", attributes: ["technical production", "behind-the-scenes", "equipment", "support roles", "stage management"] },
+      { label: "I'd like creating sets, costumes or visuals", value: "visual", attributes: ["design", "artistic creation", "visual elements", "costumes", "sets", "props"] },
+      { label: "I'd rather not be involved in performances", value: "non-performance", attributes: ["non-performance", "other interests", "audience member", "alternative activities"] }
     ]
   },
   {
     id: 23,
-    text: "Would you be interested in participating in a math or science competition?",
+    text: "Do you enjoy teaching or sharing knowledge with others?",
     type: "yes-no",
     options: [
-      { label: "Yes", value: "yes", attributes: ["math", "science", "competitions", "problem-solving", "critical thinking"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "Yes", value: "yes", attributes: ["teaching", "knowledge sharing", "tutoring", "explanation", "education", "mentoring"] },
+      { label: "No", value: "no", attributes: ["personal learning", "individual focus", "self-directed", "other forms of contribution"] }
     ]
   },
   {
     id: 24,
-    text: "Are you interested in public policy, debating, or learning how government works?",
-    type: "yes-no",
-    options: [
-      { label: "Yes", value: "yes", attributes: ["government", "debate", "politics", "civic engagement", "public speaking"] },
-      { label: "No", value: "no", attributes: [] }
-    ]
+    text: "How do you handle working under pressure or meeting deadlines?",
+    type: "slider",
+    min: 1,
+    max: 5,
+    minLabel: "Struggle with pressure",
+    maxLabel: "Thrive under pressure",
+    attributes: {
+      1: ["low-pressure", "relaxed pace", "stress-sensitive", "flexible timeline"],
+      2: ["moderate structure", "reasonable deadlines", "balance-seeking"],
+      3: ["deadline-aware", "organized", "managed pressure"],
+      4: ["deadline-driven", "focused under pressure", "efficient"],
+      5: ["pressure-thriving", "deadline excellence", "high-performance", "stress-motivated"]
+    }
   },
   {
     id: 25,
-    text: "Do you enjoy outdoor activities like hiking, fishing, or exploring nature?",
-    type: "yes-no",
+    text: "What would you most like to gain from joining a club?",
+    type: "multiple-choice",
     options: [
-      { label: "Yes", value: "yes", attributes: ["outdoors", "nature", "conservation", "recreation", "environmental awareness"] },
-      { label: "No", value: "no", attributes: [] }
+      { label: "New skills and knowledge", value: "skills", attributes: ["skill development", "learning", "knowledge acquisition", "practical abilities", "expertise"] },
+      { label: "Friends and social connections", value: "social", attributes: ["social connection", "friendship", "community", "belonging", "relationships"] },
+      { label: "Leadership experience", value: "leadership", attributes: ["leadership experience", "responsibility", "management", "initiative", "resume-building"] },
+      { label: "Creative or athletic outlet", value: "expression", attributes: ["self-expression", "creativity", "athletic outlet", "talent development", "performance"] },
+      { label: "Making a difference or helping others", value: "impact", attributes: ["social impact", "community service", "helping others", "contribution", "meaningful work"] }
     ]
-  },
-  
+  }
 ];
 
 const ClubQuiz: React.FC = () => {
@@ -1574,586 +1616,335 @@ const ClubQuiz: React.FC = () => {
 
   // Calculate matches based on user responses
   const calculateMatches = () => {
-    try {
-      // Define question weights (higher number = more important)
-      const questionWeights: Record<number, number> = {
-        1: 1.2,  // Public speaking
-        2: 1.5,  // Team vs independent
-        3: 1.3,  // Competitiveness
-        4: 2.0,  // Subject preferences (high weight as it's a key indicator)
-        5: 1.4,  // Problem solving
-        6: 1.6,  // Business interest
-        7: 1.5,  // Technology interest
-        8: 1.4,  // STEM competitions
-        9: 1.3,  // Writing interest
-        10: 1.7, // Performing arts
-        11: 1.5, // Global issues
-        12: 1.6, // Volunteering
-        13: 1.3, // Event planning
-        14: 1.6, // Hands-on activities
-        15: 1.5, // Photography/visual arts
-        16: 1.5, // Newspaper/yearbook
-        17: 1.3, // Strategic thinking
-        18: 1.5, // Creative expression
-        19: 1.6, // Structured vs creative
-        20: 1.4, // Language learning
-        21: 1.5, // Advocacy for diversity
-        22: 1.6, // Robotics/coding
-        23: 1.5  // Medical/health
-      };
-
-      // Define category mappings (for better organization in results)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // Define club categories for better organization and matching
       const categoryMapping: Record<string, string[]> = {
-        "Arts": ["art", "creative", "design", "music", "theater", "dance", "film", "photography", "writing", "poetry"],
-        "Language & Culture": ["language", "culture", "international", "global", "diversity", "heritage", "ethnic", "multicultural"],
-        "STEM": ["science", "technology", "engineering", "math", "coding", "robotics", "research", "academic", "medicine", "health"],
-        "Business & Entrepreneurship": ["business", "entrepreneurship", "finance", "economics", "marketing", "leadership", "management"],
-        "Social Impact": ["volunteer", "service", "community", "activism", "advocacy", "social justice", "environment", "sustainability"],
-        "Sports & Recreation": ["sports", "athletics", "fitness", "outdoor", "recreation", "games", "competition"]
-      };
+      "Arts & Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Creative Writing Club", "Costume Crew", "Vertigo (Literary Magazine)"],
+      "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)", "Science Olympiad", "Science Bowl", "Chemistry Club", "Environmental Science Club", "GEMS", "NNHS Medical Club", "Rocketry Club"],
+      "Language & Culture": ["ASL (American Sign Language) Club", "French Club", "Spanish Club", "German Club", "Korean Club", "Filipino Culture Club", "ISA (Indian Students Association)", "LASA (Latin American Student Assn)", "Mandarin Club", "MENA Club", "MSA (Muslim Student Association)"],
+      "Performing Arts": ["Bella Corda", "Jazz Band", "Marching Band", "Pep Band", "Fall Play", "Spring Play", "Frosh/Soph Play", "Children's Show", "Show Choir", "Theatre Club", "International Thespian Society", "Improv Club", "Orchestra Council", "Color Guard", "Northern Lights", "Orchesis"],
+      "Business & Leadership": ["DECA", "BPA (Business Professionals of America)", "Investment Club", "Student Government, Head", "Junior Board", "Senior Board", "NNHS Ambassadors"],
+      "Community Service": ["Girl Up", "Interact Club", "UNICEF Club", "Best Buddies", "Caregiver Club", "Red Cross Club", "Helping Hands Club", "Tutors for the Future", "Seva Circle"],
+      "Advocacy & Awareness": ["GSA (Gender-Sexuality Alliance)", "BSLA (Black Student Leadership Assoc.)", "Spectrum", "Project Positivity NNHS", "Red Ribbon Club", "Humane Huskies", "OASIS", "Veterans Club"],
+      "Debate & Academic": ["Debate", "Model UN", "Huskie Book Club", "Civil Leaders of America", "Speech Team (Forensics)", "Scholastic Bowl", "Youth and Government"],
+      "Sports & Recreation": ["Chess Club & Team", "Esports Club", "Esports Competitive Teams", "Field Hockey", "Hockey", "Fresh/Soph Wheel Dawgs", "Pickleball Club", "Table Tennis Team & Club", "Ultimate Frisbee Club", "Bass Fishing Team", "Ski & Snowboard Club", "Yoga Club", "Dawg Pound"],
+      "Technical & Media": ["Tech Crew", "North Star (Newspaper)", "Yearbook", "Auto Club", "Aviation Club", "Chinese Yo-Yo Club"]
+    };
+    
+    // Enhanced primary attribute mapping - maps key attributes to clubs that strongly feature them
+    const primaryAttributeMapping: Record<string, string[]> = {
+      "art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Costume Crew"],
+      "music": ["Bella Corda", "Jazz Band", "Marching Band", "Pep Band", "Orchestra Council", "Show Choir"],
+      "dance": ["Orchesis", "Color Guard", "Northern Lights"],
+      "theater": ["Fall Play", "Spring Play", "Frosh/Soph Play", "Children's Show", "Theatre Club", "International Thespian Society", "Improv Club"],
+      "writing": ["Creative Writing Club", "Vertigo (Literary Magazine)", "North Star (Newspaper)"],
+      "science": ["Astronomy Club", "Biochemistry Club", "Chemistry Club", "Environmental Science Club", "Science Olympiad", "Science Bowl", "NNHS Medical Club"],
+      "technology": ["Computer Science Club", "Robotics Team (FIRST Robotics)", "Esports Club", "Tech Crew"],
+      "math": ["Math Team", "Statistics & Card Game Club"],
+      "language": ["ASL (American Sign Language) Club", "French Club", "Spanish Club", "German Club", "Korean Club", "Mandarin Club", "NFHS (National French Honor Society)", "NSHS (National Spanish Honor Society)"],
+      "culture": ["Filipino Culture Club", "ISA (Indian Students Association)", "LASA (Latin American Student Assn)", "MENA Club", "MSA (Muslim Student Association)", "Spectrum"],
+      "business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
+      "leadership": ["Student Government, Head", "Junior Board", "Senior Board", "NNHS Ambassadors", "Top Dawgs", "Huskie Crew"],
+      "service": ["Girl Up", "Interact Club", "UNICEF Club", "Best Buddies", "Caregiver Club", "Red Cross Club", "Helping Hands Club", "Tutors for the Future", "Seva Circle"],
+      "debate": ["Debate", "Model UN", "Civil Leaders of America", "Speech Team (Forensics)", "Youth and Government"],
+      "sports": ["Field Hockey", "Hockey", "Fresh/Soph Wheel Dawgs", "Pickleball Club", "Table Tennis Team & Club", "Ultimate Frisbee Club", "Bass Fishing Team", "Ski & Snowboard Club"],
+      "games": ["Chess Club & Team", "Esports Club", "Esports Competitive Teams", "Table Top Game Club"],
+      "health": ["NNHS Medical Club", "HOSA", "Red Cross Club", "Caregiver Club", "OASIS", "Yoga Club", "Project Positivity NNHS"],
+      "environment": ["Environmental Science Club", "Humane Huskies", "FFA (Future Farmers of America)"]
+    };
+    
+    // Define core required attributes for perfect matches
+    const coreRequiredAttributes: Record<string, string[]> = {
+      "Art Club": ["art", "creative", "visual arts"],
+      "Ceramics Society": ["art", "hands-on", "pottery"],
+      "Photography Club": ["photography", "visual arts"],
+      "Henna Club": ["art", "cultural"],
+      "ASL (American Sign Language) Club": ["language", "accessibility", "communication"],
+      "French Club": ["language", "French", "cultural"],
+      "Spanish Club": ["language", "Spanish", "cultural"],
+      "German Club": ["language", "German", "cultural"],
+      "Korean Club": ["language", "Korean", "cultural"],
+      "Astronomy Club": ["science", "space", "exploration"],
+      "Biochemistry Club": ["science", "biology", "chemistry"],
+      "Computer Science Club": ["coding", "technology", "computer science"],
+      "Math Team": ["math", "problem-solving", "competition"],
+      "Robotics Team (FIRST Robotics)": ["robotics", "engineering", "technology"],
+      "Science Olympiad": ["science", "competition"],
+      "Debate": ["debate", "public speaking", "critical thinking"],
+      "Model UN": ["global issues", "debate", "public speaking"],
+      "Creative Writing Club": ["writing", "creative", "literary"],
+      "DECA": ["business", "marketing", "competition"],
+      "BPA (Business Professionals of America)": ["business", "professional development"],
+      "Investment Club": ["finance", "economics", "investing"],
+      "Theater Club": ["theater", "acting", "performance"],
+      "Jazz Band": ["music", "instrumental", "performance"],
+      "Marching Band": ["music", "marching", "performance"],
+      "Show Choir": ["singing", "performance", "music"],
+      "Orchesis": ["dance", "choreography", "performance"],
+      "Chess Club & Team": ["strategy", "critical thinking", "games"],
+      "Esports Club": ["gaming", "competition", "digital"],
+      "Environmental Science Club": ["environment", "sustainability", "science"],
+      "Girl Up": ["gender equality", "advocacy", "leadership"],
+      "GSA (Gender-Sexuality Alliance)": ["LGBTQ+", "inclusion", "advocacy"]
+    };
 
-      // Define attribute weights (higher = more important for matching)
-      const attributeWeights: Record<string, number> = {
-        // Core interests and skills (highest weight)
-        "coding": 2.0,
-        "science": 1.8,
-        "math": 1.8,
-        "engineering": 1.8,
-        "writing": 1.8,
-        "acting": 1.8,
-        "singing": 1.8,
-        "dancing": 1.8,
-        "language": 1.8,
-        "business": 1.8,
-        "finance": 1.8,
-        "volunteering": 1.8,
-        "photography": 1.8,
-        "design": 1.8,
-        "pottery": 1.8,
-        "painting": 1.8,
-        "drawing": 1.8,
-        
-        // Secondary attributes (medium weight)
-        "teamwork": 1.5,
-        "leadership": 1.5,
-        "problem-solving": 1.5,
-        "critical thinking": 1.5,
-        "creativity": 1.5,
-        "performance": 1.5,
-        "public speaking": 1.5,
-        "debate": 1.5,
-        "research": 1.5,
-        "competition": 1.5,
-        "cultural awareness": 1.5,
-        "global awareness": 1.5,
-        "advocacy": 1.5,
-        
-        // Tertiary attributes (lower weight)
-        "collaboration": 1.2,
-        "communication": 1.2,
-        "innovation": 1.2,
-        "strategy": 1.2,
-        "analytical": 1.2,
-        "organization": 1.2,
-        "discipline": 1.2
-      };
+    // Define negative correlations - attributes that don't align with certain clubs
+    const negativeCorrelations: Record<string, string[]> = {
+      "STEM Clubs": ["strongly artistic", "performance-focused", "non-technical"],
+      "Arts Clubs": ["highly analytical", "technical", "data-focused"],
+      "Performance Clubs": ["behind-the-scenes only", "non-public facing", "quiet collaboration"],
+      "Debate Clubs": ["non-verbal", "shy", "conflict-averse"],
+      "Sports Clubs": ["non-physical", "sedentary", "low-energy"],
+      "Service Clubs": ["self-focused", "competitive-only", "individualistic"],
+      "Business Clubs": ["anti-competition", "exclusively creative", "non-structured"]
+    };
 
-      // Define club categories for better grouping
-      const clubCategories: Record<string, string[]> = {
-        "Art": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club"],
-        "Language & Culture": ["ASL (American Sign Language & Culture) Club", "French Club", "Spanish Club", "German Club", "Korean Club"],
-        "STEM": ["Astronomy Club", "Biochemistry Club", "Computer Science Club", "Math Team", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
-        "Performing Arts": ["Drama Club", "Marching Band", "Show Choir", "Orchesis"],
-        "Business": ["DECA", "BPA (Business Professionals of America)", "Investment Club"],
-        "Community Service": ["Girl Up", "Interact Club", "UNICEF Club"],
-        "Academic & Humanities": ["Debate", "Model UN", "Huskie Book Club"],
-        "Competitive": ["Chess Club & Team", "Esports Club", "Debate", "Math Team", "DECA", "BPA (Business Professionals of America)", "Robotics Team (FIRST Robotics)", "Science Olympiad"],
-        "Creative": ["Art Club", "Ceramics Society", "Photography Club", "Henna Club", "Drama Club", "Show Choir", "Orchesis", "Yearbook"],
-        "Advocacy": ["Girl Up", "UNICEF Club", "Model UN"],
-        "Medical": ["Biochemistry Club"]
-      };
-
-      // Define required attributes for perfect matches (clubs must have these to get 90%+ scores)
-      const clubRequiredAttributes: Record<string, string[]> = {
-        "Art Club": ["creativity", "artistic"],
-        "Ceramics Society": ["pottery", "hands-on"],
-        "Photography Club": ["photography", "visual storytelling"],
-        "Henna Club": ["art", "cultural awareness"],
-        "ASL (American Sign Language & Culture) Club": ["language", "cultural awareness"],
-        "French Club": ["language", "cultural awareness"],
-        "Spanish Club": ["language", "cultural awareness"],
-        "German Club": ["language", "cultural awareness"],
-        "Korean Club": ["language", "cultural awareness"],
-        "Astronomy Club": ["space", "science"],
-        "Biochemistry Club": ["science", "experiments"],
-        "Computer Science Club": ["coding", "technology"],
-        "Math Team": ["math", "competitive"],
-        "Robotics Team (FIRST Robotics)": ["engineering", "technology"],
-        "Science Olympiad": ["science", "competitive"],
-        "Drama Club": ["acting", "performance"],
-        "Marching Band": ["music", "performance"],
-        "Show Choir": ["singing", "performance"],
-        "Orchesis": ["dance", "performance"],
-        "DECA": ["business", "competitive"],
-        "BPA (Business Professionals of America)": ["business", "leadership"],
-        "Investment Club": ["finance", "business"],
-        "Girl Up": ["advocacy", "leadership"],
-        "Interact Club": ["volunteering", "community service"],
-        "UNICEF Club": ["volunteering", "global awareness"],
-        "Debate": ["debate", "public speaking"],
-        "Model UN": ["global issues", "debate"],
-        "Huskie Book Club": ["reading", "literature"],
-        "Chess Club & Team": ["strategy", "critical thinking"],
-        "Esports Club": ["gaming", "competitive"],
-        "Yearbook": ["photography", "design"]
-      };
-
-      // Create a map to track attribute matches for each club
-      const clubMatches = new Map<Club, { 
-        matchedAttributes: string[], 
-        negativeAttributes: string[],
-        matchScore: number,
-        weightedScore: number,
-        totalPossibleScore: number,
-        categoryMatch: string | null,
-        confidenceScore: number,
-        attributeMatchStrength: number,
-        userPreferredAttributes: string[],
-        requiredAttributesMatched: number,
-        totalRequiredAttributes: number,
-        diminishingReturnsApplied: boolean
-      }>();
-
-      // Initialize club matches
+    // Map clubs to their negative correlation groups
+    const clubNegativeGroups: Record<string, string[]> = {};
       clubs.forEach(club => {
-        // Find which categories this club belongs to
-        const categories: string[] = [];
-        for (const [cat, clubNames] of Object.entries(clubCategories)) {
-          if (clubNames.includes(club.name)) {
-            categories.push(cat);
-          }
+      clubNegativeGroups[club.name] = [];
+      // Add club to appropriate negative correlation groups
+      Object.entries(categoryMapping).forEach(([category, clubList]) => {
+        if (clubList.includes(club.name)) {
+          if (category.includes("STEM")) clubNegativeGroups[club.name].push("STEM Clubs");
+          if (category.includes("Arts") || category.includes("Creative")) clubNegativeGroups[club.name].push("Arts Clubs");
+          if (category.includes("Performing")) clubNegativeGroups[club.name].push("Performance Clubs");
+          if (category.includes("Debate")) clubNegativeGroups[club.name].push("Debate Clubs");
+          if (category.includes("Sports")) clubNegativeGroups[club.name].push("Sports Clubs");
+          if (category.includes("Community") || category.includes("Service")) clubNegativeGroups[club.name].push("Service Clubs");
+          if (category.includes("Business")) clubNegativeGroups[club.name].push("Business Clubs");
         }
-
-        // Get required attributes for this club
-        const requiredAttributes = clubRequiredAttributes[club.name] || [];
-
-        clubMatches.set(club, { 
-          matchedAttributes: [], 
-          negativeAttributes: [],
-          matchScore: 0,
-          weightedScore: 0,
-          totalPossibleScore: 0, // Will be calculated based on weighted attributes
-          categoryMatch: categories.length > 0 ? categories[0] : null,
-          confidenceScore: 0,
-          attributeMatchStrength: 0,
-          userPreferredAttributes: [],
-          requiredAttributesMatched: 0,
-          totalRequiredAttributes: requiredAttributes.length,
-          diminishingReturnsApplied: false
         });
       });
 
-      // Track user's preferred categories based on answers
-      const categoryScores: Record<string, number> = {
-        "Art": 0,
-        "Language & Culture": 0,
-        "STEM": 0,
-        "Performing Arts": 0,
-        "Business": 0,
-        "Community Service": 0,
-        "Academic & Humanities": 0,
-        "Competitive": 0,
-        "Creative": 0,
-        "Advocacy": 0,
-        "Medical": 0
-      };
-
-      // Collect all user's preferred attributes
-      const userAttributes: string[] = [];
-      const userNegativeAttributes: string[] = [];
+    const matches: ClubMatch[] = clubs.map(club => {
+      let matchedAttributes: string[] = [];
+        let negativeAttributes: string[] = [];
+      let totalPossibleAttributes = 0;
+      let weightedScore = 0;
+      let confidenceScore = 0;
+      let categoryBoosts: string[] = [];
+      let primaryAttributeMatches = 0;
+      let negativeCorrelationCount = 0;
       
-      // Process each user response
-      answers.forEach(response => {
-        const question = questions.find(q => q.id === response.questionId);
+      // Find club categories for this club
+      const clubCategories: string[] = Object.entries(categoryMapping)
+        .filter(([, clubNames]) => clubNames.includes(club.name))
+        .map(([category]) => category);
+
+      // Get primary attributes for this club
+      const primaryAttributes: string[] = [];
+      Object.entries(primaryAttributeMapping).forEach(([attribute, clubList]) => {
+        if (clubList.includes(club.name)) {
+          primaryAttributes.push(attribute);
+        }
+      });
+      
+      // Get core required attributes for perfect matches
+      const coreAttributes = coreRequiredAttributes[club.name] || [];
+      
+      // Process each answer
+      answers.forEach(answer => {
+        const question = questions.find(q => q.id === answer.questionId);
         if (!question) return;
 
-        // Get the weight for this question
-        const questionWeight = questionWeights[question.id] || 1.0;
+        // Determine base weight for this question type
+        const weight = question.type === 'yes-no' ? 2.0 : 
+                    question.type === 'multiple-choice' ? 1.5 : 1.2;
         
-        let responseAttributes: string[] = [];
-        let negativeAttributes: string[] = [];
-        const categoryBoosts: string[] = [];
-
-        // Extract attributes based on question type
-        if (question.type === 'yes-no' || question.type === 'multiple-choice') {
-          if (question.options && response.selectedOptions && response.selectedOptions.length > 0) {
-            // Handle multiple selected options for multiple-choice questions
-            response.selectedOptions.forEach(selectedValue => {
-              const selectedOption = question.options?.find(opt => opt.value === selectedValue);
-              if (selectedOption) {
-                responseAttributes = [...responseAttributes, ...selectedOption.attributes];
-                
-                // Add category boosts based on specific answers
-                if (question.id === 4) { // Subject preferences
-                  if (selectedValue === 'math') categoryBoosts.push("STEM", "Academic & Humanities");
-                  if (selectedValue === 'science') categoryBoosts.push("STEM", "Medical");
-                  if (selectedValue === 'english') categoryBoosts.push("Academic & Humanities");
-                  if (selectedValue === 'history') categoryBoosts.push("Academic & Humanities");
-                  if (selectedValue === 'arts') categoryBoosts.push("Art", "Performing Arts", "Creative");
-                }
-                
-                if (question.id === 10) { // Performing arts preferences
-                  if (selectedValue === 'acting') categoryBoosts.push("Performing Arts");
-                  if (selectedValue === 'singing') categoryBoosts.push("Performing Arts");
-                  if (selectedValue === 'dancing') categoryBoosts.push("Performing Arts");
-                }
-                
-                if (question.id === 6 && selectedValue === 'yes') { // Business interest
-                  categoryBoosts.push("Business");
-                }
-                
-                if (question.id === 11 && selectedValue === 'yes') { // Global issues
-                  categoryBoosts.push("Language & Culture", "Advocacy");
-                }
-                
-                if (question.id === 12 && selectedValue === 'yes') { // Volunteering
-                  categoryBoosts.push("Community Service", "Advocacy");
-                }
-                
-                // New questions category boosts
-                if (question.id === 19) { // Structured vs creative
-                  if (selectedValue === 'creative') categoryBoosts.push("Creative", "Art");
-                  if (selectedValue === 'structured') categoryBoosts.push("Academic & Humanities", "Business");
-                }
-                
-                if (question.id === 20 && selectedValue === 'yes') { // Language learning
-                  categoryBoosts.push("Language & Culture");
-                }
-                
-                if (question.id === 21 && selectedValue === 'yes') { // Diversity and inclusion
-                  categoryBoosts.push("Advocacy", "Community Service");
-                }
-                
-                if (question.id === 22 && selectedValue === 'yes') { // Robotics/coding
-                  categoryBoosts.push("STEM");
-                }
-                
-                if (question.id === 23 && selectedValue === 'yes') { // Medical/health
-                  categoryBoosts.push("Medical", "STEM");
-                }
-              }
-            });
+        // Process attribute matching based on question type
+        if (question.type === 'slider' && typeof answer.sliderValue === 'number') {
+          const sliderValue = answer.sliderValue; // Store value after type check
+          const sliderAttributes = question.attributes || {};
+          const nearestValues = Object.keys(sliderAttributes)
+            .map(Number)
+            .sort((a, b) => Math.abs(a - sliderValue) - Math.abs(b - sliderValue));
+          
+          const primaryValue = nearestValues[0];
+          const attributes = sliderAttributes[primaryValue] || [];
+          
+          // Check against club's attributes
+          attributes.forEach(attr => {
+            totalPossibleAttributes++;
             
-            // For "No" answers in yes-no questions, add negative attributes
-            if (question.type === 'yes-no' && response.selectedOptions.includes('no')) {
-              // Find the "yes" option to get attributes to avoid
-              const yesOption = question.options.find(opt => opt.value === 'yes');
-              if (yesOption) {
-                negativeAttributes = yesOption.attributes;
-                userNegativeAttributes.push(...yesOption.attributes);
-              }
-            }
-          }
-        } else if (question.type === 'slider') {
-          const sliderValue = response.sliderValue;
-          if (question.attributes && sliderValue !== undefined && question.attributes[sliderValue]) {
-            responseAttributes = question.attributes[sliderValue];
-            
-            // Add category boosts based on slider values
-            if (question.id === 3 && sliderValue >= 4) { // Competitiveness
-              categoryBoosts.push("Competitive");
-            }
-            
-            if (question.id === 7 && sliderValue >= 4) { // Technology interest
-              categoryBoosts.push("STEM");
-            }
-            
-            if (question.id === 18 && sliderValue >= 4) { // Creative expression
-              categoryBoosts.push("Creative", "Art", "Performing Arts");
-            } else if (question.id === 18 && sliderValue <= 2) {
-              // If user doesn't value creative expression, add negative attributes
-              negativeAttributes.push("creative", "artistic", "self-expression");
-              userNegativeAttributes.push("creative", "artistic", "self-expression");
-            }
-          } else if (question.attributes && sliderValue !== undefined) {
-            // Handle case where exact slider value doesn't have attributes
-            // Find the closest value that has attributes
-            const availableValues = Object.keys(question.attributes).map(Number).sort((a, b) => a - b);
-            if (availableValues.length > 0) {
-              let closestValue = availableValues[0];
-              let minDiff = Math.abs(sliderValue - closestValue);
+            if (club.attributes.some(clubAttr => clubAttr.includes(attr) || attr.includes(clubAttr))) {
+              matchedAttributes.push(attr);
               
-              for (const val of availableValues) {
-                const diff = Math.abs(sliderValue - val);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  closestValue = val;
+              // Higher weights for primary attributes
+              const isHighPriority = primaryAttributes.some(prime => attr.includes(prime) || prime.includes(attr));
+              const attributeMultiplier = isHighPriority ? 1.8 : 1.0;
+              
+              // Add category-specific weighting
+              let categoryMultiplier = 1.0;
+              clubCategories.forEach(category => {
+                // Match question topics to relevant categories
+                if ((category.includes("STEM") && ["science", "math", "technical", "research", "engineering"].some(t => attr.includes(t))) ||
+                    (category.includes("Arts") && ["art", "creative", "visual", "artistic"].some(t => attr.includes(t))) ||
+                    (category.includes("Performance") && ["performance", "stage", "dance", "music", "singing"].some(t => attr.includes(t))) ||
+                    (category.includes("Debate") && ["debate", "speech", "argument", "public speaking"].some(t => attr.includes(t))) ||
+                    (category.includes("Service") && ["service", "volunteer", "community", "helping"].some(t => attr.includes(t))) ||
+                    (category.includes("Business") && ["business", "finance", "marketing", "enterprise"].some(t => attr.includes(t)))) {
+                  categoryMultiplier = 1.5;
+                  categoryBoosts.push(category);
                 }
-              }
+              });
               
-              responseAttributes = question.attributes[closestValue] || [];
-            }
-          }
-        }
-
-        // Add user's preferred attributes
-        userAttributes.push(...responseAttributes);
-
-        // Boost category scores based on answers
-        categoryBoosts.forEach(category => {
-          if (categoryScores[category] !== undefined) {
-            categoryScores[category] += questionWeight;
-          }
-        });
-
-        // Update club matches based on response attributes
-        clubs.forEach(club => {
-          const clubMatch = clubMatches.get(club);
-          if (!clubMatch) return;
-
-          // Get required attributes for this club
-          const requiredAttributes = clubRequiredAttributes[club.name] || [];
-
-          // Check for attribute matches
-          responseAttributes.forEach(attr => {
-            if (club.attributes.includes(attr) && !clubMatch.matchedAttributes.includes(attr)) {
-              clubMatch.matchedAttributes.push(attr);
+              // Calculate final weight with all multipliers and proximity to slider value
+              const proximityFactor = 1 - Math.abs(primaryValue - sliderValue) / question.max!;
+              weightedScore += weight * attributeMultiplier * categoryMultiplier * proximityFactor;
               
-              // Apply attribute weight if defined, otherwise use default weight of 1.0
-              const attrWeight = attributeWeights[attr] || 1.0;
-              clubMatch.matchScore += 1;
+              // Check if this matches a primary attribute
+              if (isHighPriority) primaryAttributeMatches++;
               
-              // Apply diminishing returns for clubs with many attributes
-              // This makes it harder for clubs with many attributes to get high scores
-              const diminishingReturnFactor = Math.max(0.7, 1 - (clubMatch.matchedAttributes.length * 0.03));
-              clubMatch.weightedScore += questionWeight * attrWeight * diminishingReturnFactor;
-              
-              if (diminishingReturnFactor < 1) {
-                clubMatch.diminishingReturnsApplied = true;
-              }
-              
-              // Track user's preferred attributes that match this club
-              clubMatch.userPreferredAttributes.push(attr);
-              
-              // Check if this is a required attribute
-              if (requiredAttributes.includes(attr)) {
-                clubMatch.requiredAttributesMatched += 1;
+              // Check if this matches a core attribute
+              if (coreAttributes.some(core => attr.includes(core) || core.includes(attr))) {
+                weightedScore += 2.0; // Bonus for core attribute match
               }
             }
           });
           
-          // Check for negative attribute matches (attributes to avoid)
-          negativeAttributes.forEach(attr => {
-            if (club.attributes.includes(attr) && !clubMatch.negativeAttributes.includes(attr)) {
-              clubMatch.negativeAttributes.push(attr);
-              // We'll use this for confidence calculation later
-            }
-          });
+          confidenceScore += 1;
+        } else if ((question.type === 'yes-no' || question.type === 'multiple-choice') && answer.selectedOptions) {
+          const selectedOpts = question.options?.filter(opt => 
+            answer.selectedOptions?.includes(opt.value)
+          ) || [];
+          
+          selectedOpts.forEach(opt => {
+            opt.attributes.forEach(attr => {
+              totalPossibleAttributes++;
+              
+              // Check for attribute match with club
+              if (club.attributes.some(clubAttr => clubAttr.includes(attr) || attr.includes(clubAttr))) {
+                matchedAttributes.push(attr);
+                
+                // Higher weights for primary attributes
+                const isHighPriority = primaryAttributes.some(prime => attr.includes(prime) || prime.includes(attr));
+                const attributeMultiplier = isHighPriority ? 1.8 : 1.0;
+                
+                // Add category-specific weighting
+                let categoryMultiplier = 1.0;
+                clubCategories.forEach(category => {
+                  // Check for category-specific attribute matching
+                  if ((category.includes("STEM") && ["science", "math", "technical", "research", "engineering"].some(t => attr.includes(t))) ||
+                      (category.includes("Arts") && ["art", "creative", "visual", "artistic"].some(t => attr.includes(t))) ||
+                      (category.includes("Performance") && ["performance", "stage", "dance", "music", "singing"].some(t => attr.includes(t))) ||
+                      (category.includes("Debate") && ["debate", "speech", "argument", "public speaking"].some(t => attr.includes(t))) ||
+                      (category.includes("Service") && ["service", "volunteer", "community", "helping"].some(t => attr.includes(t))) ||
+                      (category.includes("Business") && ["business", "finance", "marketing", "enterprise"].some(t => attr.includes(t)))) {
+                    categoryMultiplier = 1.5;
+                    categoryBoosts.push(category);
+                  }
+                });
+                
+                weightedScore += weight * attributeMultiplier * categoryMultiplier;
+                
+                // Check if this matches a primary attribute
+                if (isHighPriority) primaryAttributeMatches++;
+                
+                // Check if this matches a core attribute
+                if (coreAttributes.some(core => attr.includes(core) || core.includes(attr))) {
+                  weightedScore += 2.0; // Bonus for core attribute match
+                }
+              } 
+              // Check for negative correlations
+              else {
+                // Check if attribute is a negative correlation for this club's groups
+                const clubGroups = clubNegativeGroups[club.name] || [];
+                
+                clubGroups.forEach(group => {
+                  const negatives = negativeCorrelations[group] || [];
+                  if (negatives.some(neg => attr.includes(neg) || neg.includes(attr))) {
+                    negativeAttributes.push(attr);
+                    negativeCorrelationCount++;
+                  }
+                });
+              }
         });
       });
 
-      // Calculate total possible score for each club based on weighted attributes
-      clubs.forEach(club => {
-        const clubMatch = clubMatches.get(club);
-        if (!clubMatch) return;
-        
-        // Calculate total possible weighted score
-        let totalPossibleScore = 0;
-        club.attributes.forEach(attr => {
-          const attrWeight = attributeWeights[attr] || 1.0;
-          totalPossibleScore += attrWeight;
-        });
-        
-        clubMatch.totalPossibleScore = totalPossibleScore;
-        
-        // Calculate attribute match strength (how many of the user's preferred attributes match this club)
-        const uniqueUserAttributes = [...new Set(userAttributes)];
-        if (uniqueUserAttributes.length > 0) {
-          const matchingAttributes = clubMatch.matchedAttributes.length;
-          clubMatch.attributeMatchStrength = matchingAttributes / uniqueUserAttributes.length;
+          confidenceScore += selectedOpts.length > 0 ? 1 : 0;
         }
       });
 
-      // Find the top categories
-      const sortedCategories = Object.entries(categoryScores)
-        .sort((a, b) => b[1] - a[1])
-        .filter(([, score]) => score > 0)
-        .map(([category]) => category);
+      // Remove duplicates
+      matchedAttributes = [...new Set(matchedAttributes)];
+      negativeAttributes = [...new Set(negativeAttributes)];
+      categoryBoosts = [...new Set(categoryBoosts)];
       
-      const topCategories = sortedCategories.slice(0, 3);
-
-      // Calculate match percentages, confidence scores, and sort by weighted score
-      const results = Array.from(clubMatches.entries())
-        .map(([club, match]) => {
-          // Calculate match percentage with a more nuanced approach
-          const rawPercentage = Math.round((match.matchScore / Math.max(1, club.attributes.length)) * 100);
-          
-          // Calculate weighted percentage based on the weighted score and total possible score
-          const weightedPercentage = Math.round((match.weightedScore / Math.max(1, match.totalPossibleScore)) * 100);
-          
-          // Calculate negative attribute penalty
-          const negativeAttributePenalty = match.negativeAttributes.length * 8; // Increased from 5 to 8
-          
-          // Calculate required attribute penalty
-          // If the club has required attributes but the user didn't match them all, apply a penalty
-          let requiredAttributePenalty = 0;
-          if (match.totalRequiredAttributes > 0) {
-            const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
-            if (requiredAttributeRatio < 1) {
-              // Apply a significant penalty if not all required attributes are matched
-              requiredAttributePenalty = Math.round((1 - requiredAttributeRatio) * 25);
-            }
-          }
-          
-          // Calculate final match percentage with a balanced approach
-          let matchPercentage = Math.round((weightedPercentage * 0.6) + (rawPercentage * 0.4));
-          
-          // Apply negative attribute penalty
-          matchPercentage = Math.max(5, matchPercentage - negativeAttributePenalty);
-          
-          // Apply required attribute penalty
-          matchPercentage = Math.max(5, matchPercentage - requiredAttributePenalty);
-          
-          // Boost percentage if club is in a top category (but less than before)
-          if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
-            matchPercentage += 8; // Reduced from 10 to 8
-          }
-          
-          // Apply a scaling factor to make high percentages harder to achieve
-          // This creates a more bell-curve distribution of scores
-          if (matchPercentage > 70) {
-            const scalingFactor = 0.8; // Reduce high scores more aggressively
-            matchPercentage = 70 + Math.round((matchPercentage - 70) * scalingFactor);
-          }
-          
-          // Apply diminishing returns penalty for clubs with many attributes
-          if (match.diminishingReturnsApplied) {
-            matchPercentage = Math.max(5, matchPercentage - 5);
-          }
-          
-          // Apply a penalty based on the number of questions answered
-          // If the user answered fewer questions, be more conservative with high scores
-          const questionCompletionRatio = answers.length / questions.length;
-          if (questionCompletionRatio < 0.7 && matchPercentage > 60) {
-            const incompletenessAdjustment = Math.round((1 - questionCompletionRatio) * 20);
-            matchPercentage = Math.max(60, matchPercentage - incompletenessAdjustment);
-          }
-          
-          // Make it extremely difficult to get 100%
-          if (matchPercentage > 90) {
-            // Check if all required attributes are matched
-            if (match.totalRequiredAttributes > 0 && match.requiredAttributesMatched < match.totalRequiredAttributes) {
-              matchPercentage = Math.min(matchPercentage, 90);
-            }
-            
-            // Check if there are any negative attributes
-            if (match.negativeAttributes.length > 0) {
-              matchPercentage = Math.min(matchPercentage, 85);
-            }
-            
-            // Check if the user answered enough questions
-            if (questionCompletionRatio < 0.8) {
-              matchPercentage = Math.min(matchPercentage, 88);
-            }
-          }
-          
-          // Cap at 95% unless it's a perfect match
-          const isPerfectMatch = match.totalRequiredAttributes > 0 && 
-                                match.requiredAttributesMatched === match.totalRequiredAttributes && 
-                                match.negativeAttributes.length === 0 &&
-                                questionCompletionRatio > 0.8 &&
-                                match.matchedAttributes.length >= Math.ceil(club.attributes.length * 0.8);
+      // Calculate final scores with enhanced weighting
+      const maxPossibleScore = totalPossibleAttributes * 2.0;
+      const normalizedScore = maxPossibleScore > 0 ? (weightedScore / maxPossibleScore) : 0;
+      
+      // Calculate confidence-adjusted match percentage
+      const totalQuestions = questions.length;
+      const confidenceAdjustment = confidenceScore / totalQuestions;
+      
+      // Calculate primary attribute and category match boosts
+      const primaryAttributeBoost = primaryAttributes.length > 0 ? 
+        (primaryAttributeMatches / primaryAttributes.length) * 0.2 : 0;
+      
+      const categoryBoost = categoryBoosts.length * 0.04;
+      
+      // Calculate negative penalty (less aggressive)
+      const negativePenalty = negativeCorrelationCount * 0.03;
+      
+      // Enhanced scoring with multiple factors
+      let matchPercentage = Math.round(
+        ((normalizedScore * 0.5) + 
+         (confidenceAdjustment * 0.1) + 
+         (primaryAttributeBoost * 0.2) + 
+         (categoryBoost * 0.2) - 
+         (negativePenalty)) * 100
+      );
+      
+      // Apply various boosts and adjustments
+      
+      // Boost for matching core attributes
+      const coreAttributeMatches = coreAttributes.filter(core => 
+        matchedAttributes.some(attr => attr.includes(core) || core.includes(attr))
+      ).length;
+      
+      if (coreAttributes.length > 0) {
+        const coreMatchRatio = coreAttributeMatches / coreAttributes.length;
+        matchPercentage += Math.round(coreMatchRatio * 20); // Up to 20% boost
+      }
+      
+      // Boost for category-specific matches
+      matchPercentage += Math.min(15, categoryBoosts.length * 5);
+      
+      // Ensure minimum percentage (set base higher)
+      matchPercentage = Math.max(45, matchPercentage);
+      
+      // Apply scaling to ensure more results in 75-95% range
+      if (matchPercentage > 60 && matchPercentage < 80) {
+        matchPercentage = Math.round(60 + (matchPercentage - 60) * 1.2);
+      }
+      
+      // Cap at maximum for non-perfect matches
+      const isPerfectMatch = coreAttributes.length > 0 && 
+                             coreAttributeMatches === coreAttributes.length &&
+                             primaryAttributeMatches >= primaryAttributes.length * 0.8 &&
+                             negativeCorrelationCount === 0;
           
           if (!isPerfectMatch) {
-            matchPercentage = Math.min(95, matchPercentage);
-          }
-          
-          // Cap at 100%
-          matchPercentage = Math.min(100, matchPercentage);
-          
-          // Calculate confidence score (0-100)
-          let confidence = 50; // Start at neutral
-          
-          // Boost confidence if the club is in a top category
-          if (match.categoryMatch && topCategories.includes(match.categoryMatch)) {
-            confidence += 15;
-          }
-          
-          // Boost confidence based on number of matched attributes and their weights
-          const matchedAttributesBoost = Math.min(25, match.matchedAttributes.length * 3);
-          confidence += matchedAttributesBoost;
-          
-          // Boost confidence based on attribute match strength
-          confidence += Math.round(match.attributeMatchStrength * 15);
-          
-          // Reduce confidence based on negative attributes
-          confidence -= Math.min(40, match.negativeAttributes.length * 10);
-          
-          // Adjust confidence based on the number of answers provided
-          const answerRatio = answers.length / questions.length;
-          if (answerRatio < 0.5) {
-            confidence -= 15; // Reduce confidence if user answered less than half the questions
-          } else if (answerRatio > 0.8) {
-            confidence += 10; // Boost confidence if user answered most questions
-          }
-          
-          // Adjust confidence based on required attributes
-          if (match.totalRequiredAttributes > 0) {
-            const requiredAttributeRatio = match.requiredAttributesMatched / match.totalRequiredAttributes;
-            if (requiredAttributeRatio < 0.5) {
-              confidence -= 20; // Significant confidence reduction if less than half of required attributes matched
-            } else if (requiredAttributeRatio === 1) {
-              confidence += 15; // Boost confidence if all required attributes matched
-            }
-          }
-          
-          // Ensure confidence is between 0-100
-          confidence = Math.max(0, Math.min(100, confidence));
+        matchPercentage = Math.min(96, matchPercentage);
+      }
+      
+      // Apply final range limits
+      matchPercentage = Math.min(100, Math.max(40, matchPercentage));
           
           return {
             club,
-            matchedAttributes: match.matchedAttributes,
-            negativeAttributes: match.negativeAttributes,
-            score: match.weightedScore,
+        score: weightedScore,
+        matchedAttributes,
+        negativeAttributes,
             matchPercentage,
-            confidenceScore: confidence,
-            categoryMatch: match.categoryMatch,
-            requiredAttributesMatched: match.requiredAttributesMatched,
-            totalRequiredAttributes: match.totalRequiredAttributes
-          };
-        })
-        .sort((a, b) => {
-          // Sort by match percentage first
-          if (b.matchPercentage !== a.matchPercentage) {
-            return b.matchPercentage - a.matchPercentage;
-          }
-          // If percentages are equal, sort by confidence score
-          return b.confidenceScore - a.confidenceScore;
-        });
+        confidenceScore: confidenceAdjustment * 100,
+        categoryMatch: clubCategories[0] || null
+      };
+    });
 
-      // Return top matches (clubs with at least 20% match)
-      const topMatches = results.filter(result => result.matchPercentage >= 20);
-      
-      // Group matches by category for better organization and limit to 11 results
-      const categorizedMatches = topMatches.length > 0 
-        ? topMatches.slice(0, 11) 
-        : results.slice(0, 5);
-      
-      return categorizedMatches;
-    } catch (error) {
-      console.error("Error calculating matches:", error);
-      // Return a safe fallback
-      return clubs.slice(0, 5).map(club => ({
-        club,
-        matchedAttributes: [],
-        negativeAttributes: [],
-        score: 0,
-        matchPercentage: 20,
-        confidenceScore: 10,
-        categoryMatch: null
-      }));
-    }
+    // Sort by match percentage descending
+    return matches.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
   };
 
   // Calculate quiz results

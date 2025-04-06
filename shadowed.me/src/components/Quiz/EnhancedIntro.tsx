@@ -28,7 +28,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#3B82F6] to-[#38BFA1] rounded-full mb-6 shadow-lg"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.2 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </motion.div>
         
@@ -38,7 +38,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="text-3xl font-bold text-[#0A2540] mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#0A2540] to-[#3B82F6]"
         >
-          Find Your Perfect Club Match
+          Discover Your Perfect Club Match
         </motion.h2>
         
         <motion.p 
@@ -47,7 +47,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="text-gray-600 mb-6 max-w-lg mx-auto leading-relaxed"
         >
-          Answer questions about your interests and preferences, and our advanced matching algorithm will suggest clubs that might be a great fit for you!
+          Tell us about your interests, skills, and preferences through our personalized quiz, and we&apos;ll match you with the clubs that align perfectly with your unique profile.
         </motion.p>
 
         <motion.div
@@ -57,7 +57,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           className="bg-blue-50 p-4 rounded-lg mb-8 max-w-lg mx-auto"
         >
           <p className="text-sm text-gray-700 leading-relaxed">
-            <span className="font-semibold text-blue-600">How it works:</span> Our algorithm analyzes your responses to find clubs that match your core interests. A high match percentage (90%+) means the club aligns exceptionally well with your preferences. Most matches will fall in the 60-85% range, indicating good compatibility.
+            <span className="font-semibold text-blue-600">How it works:</span> Our advanced matching algorithm analyzes 40 personalized questions about your interests, skills, and preferences to find your ideal club matches from over 100 options. The higher the match percentage, the better the club aligns with your unique profile.
           </p>
         </motion.div>
         
@@ -80,7 +80,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white font-medium mr-3 shadow-md transition-transform group-hover:scale-110 duration-300">
               2
             </div>
-            <span className="text-sm text-gray-600 group-hover:text-[#3B82F6] transition-colors duration-300">Get matched</span>
+            <span className="text-sm text-gray-600 group-hover:text-[#3B82F6] transition-colors duration-300">Get personalized matches</span>
           </div>
           
           <div className="hidden sm:block w-12 h-[2px] bg-gradient-to-r from-[#3B82F6] to-[#38BFA1]"></div>
@@ -89,7 +89,7 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#38BFA1] text-white font-medium mr-3 shadow-md transition-transform group-hover:scale-110 duration-300">
               3
             </div>
-            <span className="text-sm text-gray-600 group-hover:text-[#3B82F6] transition-colors duration-300">Explore clubs</span>
+            <span className="text-sm text-gray-600 group-hover:text-[#3B82F6] transition-colors duration-300">Discover your clubs</span>
           </div>
         </motion.div>
         
@@ -100,11 +100,11 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
           className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10 max-w-2xl mx-auto"
         >
           {[
-            { emoji: "🎨", name: "Art Clubs", delay: 0.7 },
-            { emoji: "🌎", name: "Language & Culture", delay: 0.75 },
-            { emoji: "🔬", name: "STEM Clubs", delay: 0.8 },
+            { emoji: "🎨", name: "Arts & Creative", delay: 0.7 },
+            { emoji: "🔬", name: "STEM", delay: 0.75 },
+            { emoji: "🌎", name: "Language & Culture", delay: 0.8 },
             { emoji: "🎭", name: "Performing Arts", delay: 0.85 },
-            { emoji: "💼", name: "Business Clubs", delay: 0.9 },
+            { emoji: "💼", name: "Business & Leadership", delay: 0.9 },
             { emoji: "❤️", name: "Community Service", delay: 0.95 }
           ].map((category, index) => (
             <motion.div
@@ -119,6 +119,17 @@ const EnhancedIntro: React.FC<EnhancedIntroProps> = ({ onStartQuiz }) => {
               <span className="text-xs font-medium text-[#0A2540]">{category.name}</span>
             </motion.div>
           ))}
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.85 }}
+          className="mb-8 max-w-lg mx-auto"
+        >
+          <p className="text-sm text-gray-700 leading-relaxed">
+            Our quiz analyzes your personality, interests, and skills across multiple dimensions including academics, creativity, leadership, technical abilities, and more to find your ideal club matches.
+          </p>
         </motion.div>
         
         <motion.button
