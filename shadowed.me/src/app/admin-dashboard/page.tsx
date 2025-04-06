@@ -806,7 +806,7 @@ export default function AdminDashboard() {
         {/* Club Management */}
         <div className="mt-12 bg-white rounded-xl p-8 shadow-sm">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Clubs</h2>
+            <h2 className="text-xl font-semibold text-black">Clubs</h2>
             <div className="flex gap-2">
               <button
                 onClick={() => {

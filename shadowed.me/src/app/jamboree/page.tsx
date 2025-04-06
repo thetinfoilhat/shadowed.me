@@ -12,6 +12,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
 import { getColorById } from '@/utils/colors';
+import Link from 'next/link';
 
 export default function Jamboree() {
   const router = useRouter();
@@ -19,11 +20,10 @@ export default function Jamboree() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [clubWebsites, setClubWebsites] = useState<ClubSite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [newClubName, setNewClubName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [clubName, setClubName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   // Filter websites based on search query
   const filteredWebsites = clubWebsites.filter(website => 
@@ -90,23 +90,20 @@ export default function Jamboree() {
     fetchClubWebsites();
   }, [user]);
 
-  const handleCreateClubWebsite = async () => {
+  const handleCreateWebsite = () => {
     if (!user) {
       toast.error('You must be logged in to create a club website');
       return;
     }
 
-    if (!newClubName.trim()) {
+    if (!clubName.trim()) {
       setError('Please enter a club name');
       return;
     }
 
-    setCreating(true);
-    setError(null);
-
     try {
       // Create a slug from the club name
-      const slug = newClubName
+      const slug = clubName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
@@ -118,16 +115,14 @@ export default function Jamboree() {
 
       if (existingWebsite) {
         setError('A website with this name already exists');
-        setCreating(false);
         return;
       }
 
       // Navigate to the new club website page with the slug and name
-      router.push(`/${slug}?new=true&name=${encodeURIComponent(newClubName)}`);
+      router.push(`/${slug}?new=true&name=${encodeURIComponent(clubName)}`);
     } catch (error) {
       console.error('Error creating club website:', error);
       toast.error('Failed to create club website');
-      setCreating(false);
     }
   };
 
@@ -135,38 +130,29 @@ export default function Jamboree() {
     <PageTransition>
       <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
         {/* Navigation Tabs */}
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="max-w-6xl mx-auto mb-6 flex justify-center"
-        >
-          <div className="bg-white rounded-lg p-1 inline-flex gap-1">
-            <button
-              className="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
-              style={{
-                color: '#38BFA1',
-              }}
-            >
-              Websites
-            </button>
-            <button
-              onClick={() => router.push('/club-listings')}
-              className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 transition-all hover:bg-gray-50"
-            >
-              All Clubs
-            </button>
-          </div>
-        </motion.div>
+        <div className="flex justify-center gap-4 mb-12">
+          <Link
+            href="/jamboree"
+            className="px-6 py-2 rounded-lg font-medium transition-colors bg-[#38BFA1] text-white"
+          >
+            Websites
+          </Link>
+          <Link
+            href="/club-listings"
+            className="px-6 py-2 rounded-lg font-medium transition-colors bg-white text-[#180D39] hover:bg-gray-50"
+          >
+            All Clubs
+          </Link>
+        </div>
 
         {/* Hero Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="text-center">
             <motion.h1
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-6xl font-bold text-[#38BFA1]"
+              className="text-6xl font-bold text-[#180D39] text-center mb-6"
             >
               Club Showcase
             </motion.h1>
@@ -175,40 +161,26 @@ export default function Jamboree() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto"
+              className="text-[#180D39] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
             >
-              Explore club websites or create your own to showcase your club&apos;s activities, members, and resources.
+              Explore club websites or create your own to showcase your club&apos;s activities,
+              members, and resources.
             </motion.p>
 
-            {/* Search Bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-6 max-w-xl mx-auto"
-            >
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search clubs by name, description, or members..."
-                  className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                />
-                <svg
-                  className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
+            <div className="relative max-w-2xl mx-auto mt-8">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-[#180D39]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
               </div>
-            </motion.div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Find your next club..."
+                className="w-full pl-12 pr-4 py-3 text-[#180D39] placeholder-[#180D39]/60 bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
+              />
+            </div>
 
             {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
               <motion.div
@@ -218,7 +190,7 @@ export default function Jamboree() {
                 className="mt-6"
               >
                 <button
-                  onClick={() => setModalOpen(true)}
+                  onClick={() => setShowCreateModal(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-colors"
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
@@ -299,7 +271,7 @@ export default function Jamboree() {
               </p>
               {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
                 <button
-                  onClick={() => setModalOpen(true)}
+                  onClick={() => setShowCreateModal(true)}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-[#38BFA1] to-[#2DA891] hover:from-[#2DA891] hover:to-[#38BFA1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transform hover:scale-105 transition-all"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
@@ -311,58 +283,56 @@ export default function Jamboree() {
         </div>
 
         {/* Create Website Modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Club Website</h2>
-              <p className="text-gray-600 mb-6">
-                Enter your club name to create a new website. You&apos;ll be able to customize it after creation.
-              </p>
-              <div className="mb-6">
-                <label htmlFor="clubName" className="block text-sm font-medium text-gray-700 mb-2">
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl">
+              <div className="p-6 border-b border-[#38BFA1]/10">
+                <h2 className="text-2xl font-bold text-[#180D39]">Create New Club Website</h2>
+                <p className="text-[#180D39] mt-2">
+                  Enter your club name to create a new website. You&apos;ll be able to customize it after creation.
+                </p>
+              </div>
+              
+              <div className="p-6">
+                <label className="block text-[#180D39] font-medium mb-2">
                   Club Name
                 </label>
                 <input
                   type="text"
-                  id="clubName"
-                  value={newClubName}
-                  onChange={(e) => setNewClubName(e.target.value)}
+                  value={clubName}
+                  onChange={(e) => setClubName(e.target.value)}
+                  className="w-full px-4 py-3 text-[#180D39] bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
                   placeholder="Enter club name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#38BFA1] focus:border-[#38BFA1]"
                 />
-                {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+                {error && (
+                  <p className="mt-2 text-red-600 text-sm">{error}</p>
+                )}
               </div>
-              <div className="flex justify-end space-x-3">
+
+              <div className="p-6 border-t border-[#38BFA1]/10 flex justify-end gap-4">
                 <button
                   onClick={() => {
-                    setModalOpen(false);
-                    setNewClubName('');
+                    setShowCreateModal(false);
+                    setClubName('');
                     setError(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="px-6 py-2 text-[#180D39] hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleCreateClubWebsite}
-                  disabled={creating}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] disabled:opacity-50 disabled:cursor-not-allowed"
+                <button 
+                  onClick={handleCreateWebsite}
+                  disabled={!clubName.trim()}
+                  className={`px-6 py-2 rounded-lg transition-colors ${
+                    clubName.trim() 
+                      ? 'bg-[#38BFA1] text-white hover:bg-[#2A8E9E]' 
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
                 >
-                  {creating ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-2" /> Creating...
-                    </>
-                  ) : (
-                    'Create Website'
-                  )}
+                  Create Website
                 </button>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </div>

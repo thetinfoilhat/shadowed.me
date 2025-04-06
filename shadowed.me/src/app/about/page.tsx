@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 
 export default function About() {
   const [showModal, setShowModal] = useState(true);
+  const [showContactModal, setShowContactModal] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -29,7 +30,7 @@ export default function About() {
   }, []);
 
   return (
-    <div className="pt-[100px] min-h-screen bg-[#FAFAFA]">
+    <div className="pt-[100px] min-h-screen bg-gradient-to-b from-[#FAFAFA] to-white">
       {/* Terms of Service Modal */}
       {showModal && (
         <div 
@@ -151,56 +152,134 @@ export default function About() {
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 py-24">
-        <motion.h1 
-          className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[1.15] mb-8 text-[#180D39]"
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-2xl w-full mx-4 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-[#180D39]">Contact Us</h2>
+              <button 
+                onClick={() => setShowContactModal(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-8">
+              {/* Dean Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-[#38BFA1] mb-2">Dean of Student Activities</h3>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-[#180D39] font-medium">Jennifer Baumgartner</p>
+                  <a 
+                    href="mailto:jbaumgartner@naperville203.org"
+                    className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    jbaumgartner@naperville203.org
+                  </a>
+                </div>
+              </div>
+
+              {/* Website Support Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-[#38BFA1] mb-2">Website Support</h3>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                  <div>
+                    <p className="text-[#180D39] font-medium">Arnav Sharma</p>
+                    <a 
+                      href="mailto:asharma1@stu.naperville203.org"
+                      className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      asharma1@stu.naperville203.org
+                    </a>
+                  </div>
+                  <div>
+                    <p className="text-[#180D39] font-medium">Aiden Xie</p>
+                    <a 
+                      href="mailto:amxie@stu.naperville203.org"
+                      className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      amxie@stu.naperville203.org
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <p className="text-sm text-gray-500 text-center">
+                We typically respond within 24-48 hours during school days.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 py-12 md:py-20">
+        <motion.div 
+          className="text-center mb-16 md:mb-24"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          About <span className="font-bold">Shadowed.me</span>
-        </motion.h1>
-        
-        <motion.p 
-          className="text-lg md:text-xl text-[#180D39]/70 mb-16 max-w-2xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-        >
-          We&apos;re on a mission to help students discover their passions and connect with meaningful opportunities 
-          in their local community.
-        </motion.p>
+          <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[#38BFA1] to-[#2A8E9E] text-transparent bg-clip-text mb-6">
+            About Shadowed.me
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-[#180D39]/70 max-w-3xl mx-auto leading-relaxed">
+            Empowering students to discover their passions and create meaningful connections 
+            within their school community.
+          </p>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
           <motion.div 
-            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-[#180D39]/5"
+            className="bg-white rounded-2xl p-8 md:p-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-              <span className="text-2xl">🎯</span>
+            <div className="bg-gradient-to-br from-[#38BFA1]/10 to-[#2A8E9E]/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+              <span className="text-3xl">🎯</span>
             </div>
-            <h3 className="text-xl font-semibold text-[#180D39] mb-3">Our Mission</h3>
-            <p className="text-[#180D39]/70">
-              To empower students by connecting them with enriching opportunities that foster personal growth 
-              and community engagement.
+            <h3 className="text-2xl font-bold text-[#180D39] mb-4">Our Mission</h3>
+            <p className="text-lg text-[#180D39]/70 leading-relaxed">
+              To revolutionize how students connect with school activities by providing a modern platform 
+              that makes discovering and joining clubs effortless and engaging.
             </p>
           </motion.div>
 
           <motion.div 
-            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-[#180D39]/5"
+            className="bg-white rounded-2xl p-8 md:p-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-              <span className="text-2xl">👁️</span>
+            <div className="bg-gradient-to-br from-[#38BFA1]/10 to-[#2A8E9E]/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+              <span className="text-3xl">👁️</span>
             </div>
-            <h3 className="text-xl font-semibold text-[#180D39] mb-3">Our Vision</h3>
-            <p className="text-[#180D39]/70">
-              Creating a vibrant community where every student can explore their interests and make 
-              meaningful contributions.
+            <h3 className="text-2xl font-bold text-[#180D39] mb-4">Our Vision</h3>
+            <p className="text-lg text-[#180D39]/70 leading-relaxed">
+              Building a vibrant ecosystem where every student can explore their interests, develop leadership skills,
+              and make lasting contributions to their school community.
             </p>
           </motion.div>
         </div>
@@ -211,36 +290,42 @@ export default function About() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold text-[#180D39] mb-8">How We Help</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#180D39]/5">
-              <div className="text-[#2A8E9E] mb-4">Connect</div>
-              <p className="text-[#180D39]/70">Connect students with school clubs that match their interests</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#180D39] mb-12 text-center">How We Help</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
+              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Discover</div>
+              <p className="text-[#180D39]/70 text-lg">Connect with clubs and activities that align perfectly with your interests and goals.</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#180D39]/5">
-              <div className="text-[#2A8E9E] mb-4">Facilitate</div>
-              <p className="text-[#180D39]/70">Facilitate meaningful volunteer opportunities in the community</p>
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
+              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Engage</div>
+              <p className="text-[#180D39]/70 text-lg">Participate in meaningful activities and create lasting connections within your school.</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#180D39]/5">
-              <div className="text-[#2A8E9E] mb-4">Build</div>
-              <p className="text-[#180D39]/70">Build bridges between students and local organizations</p>
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
+              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Grow</div>
+              <p className="text-[#180D39]/70 text-lg">Develop leadership skills and make a positive impact in your community.</p>
             </div>
           </div>
         </motion.div>
 
         <motion.div 
-          className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-12 text-white"
+          className="bg-gradient-to-br from-[#38BFA1] to-[#2A8E9E] rounded-3xl p-10 md:p-16 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
         >
-          <h2 className="text-2xl font-bold mb-4">Get In Touch</h2>
-          <p className="text-white/70 mb-8 max-w-xl">
-            Have questions or want to learn more about how we can help? We&apos;d love to hear from you.
-          </p>
-          <button className="bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
+            <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
+              Join our growing community of students and clubs. Whether you&apos;re looking to join a club
+              or showcase your organization, we&apos;re here to help you succeed.
+            </p>
+            <button 
+              onClick={() => setShowContactModal(true)}
+              className="bg-white text-[#38BFA1] px-8 py-4 rounded-full text-lg font-semibold hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
             Contact Us →
           </button>
+          </div>
         </motion.div>
       </div>
     </div>
