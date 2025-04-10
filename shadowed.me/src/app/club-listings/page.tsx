@@ -268,7 +268,7 @@ export default function ClubListings() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search clubs by name or description..."
-              className="block w-full pl-10 pr-3 py-3 text-[#180D39] placeholder-[#180D39]/60 bg-white rounded-lg border border-[#38BFA1]/20 focus:ring-[#38BFA1] focus:border-[#38BFA1] focus:ring-1 transition-colors shadow-sm"
+              className="block w-full pl-10 pr-3 py-3 text-[#000000] placeholder-[#000000]/60 bg-white rounded-lg border border-[#38BFA1]/20 focus:ring-[#38BFA1] focus:border-[#38BFA1] focus:ring-1 transition-colors shadow-sm"
             />
             {searchQuery && (
               <button

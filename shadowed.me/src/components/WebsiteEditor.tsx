@@ -49,7 +49,13 @@ export interface ClubSite {
   bannerImage?: string;
   slogan?: string;
   description?: string;      // Long form about section
-  meetingInfo?: string;      // Times, room, day
+  meetingInfo?: {
+    frequency: string;
+    days: { day: string; startTime: string; endTime: string; }[];
+    room: string;
+    jamboreeTable: string;
+    customInfo: string;
+  };
   galleryImages?: string[];  // URLs to images
   galleryImagesMetadata?: {
     url: string;
@@ -67,6 +73,8 @@ export interface ClubSite {
     role: string;
     photoUrl?: string;
     bio?: string;
+    email?: string;
+    isContact?: boolean;
   }[];
   resources?: Resource[];
   pdfUploads?: {
@@ -93,6 +101,8 @@ interface Member {
   role: string;
   photoUrl?: string;
   bio?: string;
+  email?: string;
+  isContact?: boolean;
 }
 
 // Contact Link interface
@@ -131,6 +141,11 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
+  // Meeting information state
+  const [meetingDays, setMeetingDays] = useState<{ day: string; startTime: string; endTime: string; }[]>(
+    website.meetingInfo?.days || []
+  );
+  
   // Debounced autosave state
   const [autosaveTimeout, setAutosaveTimeout] = useState<NodeJS.Timeout | null>(null);
   
@@ -143,7 +158,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   */
   
   // Media upload states
-  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingMemberPhoto, setUploadingMemberPhoto] = useState<number | null>(null);
   
   // Theme customization state
@@ -154,6 +168,24 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   
   // Create a ref to store the handleSave function
   const handleSaveRef = useRef<(partialData?: Partial<ClubSite>) => Promise<void>>((async () => {}));
+  
+  // Initialize meeting info if it doesn't exist
+  useEffect(() => {
+    if (!formData.meetingInfo) {
+      const initialMeetingInfo = {
+        frequency: 'weekly',
+        days: [],
+        room: '',
+        jamboreeTable: '',
+        customInfo: ''
+      };
+      setFormData(prev => ({
+        ...prev,
+        meetingInfo: initialMeetingInfo
+      }));
+      handleSave({ meetingInfo: initialMeetingInfo });
+    }
+  }, []);
   
   // Save the form data
   const handleSave = useCallback(async (partialData?: Partial<ClubSite>) => {
@@ -506,7 +538,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     handleSave({ members: updatedMembers });
   };
 
-  const handleMemberChange = (index: number, field: keyof Member, value: string) => {
+  const handleMemberChange = (index: number, field: keyof Member, value: string | boolean) => {
     const updatedMembers = [...(formData.members || [])];
     updatedMembers[index] = {
       ...updatedMembers[index],
@@ -708,13 +740,55 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     }
   };
 
+  // Handle meeting information changes
+  const handleMeetingInfoChange = (field: keyof NonNullable<ClubSite['meetingInfo']>, value: string | { day: string; startTime: string; endTime: string; }[]) => {
+    const updatedMeetingInfo = {
+      frequency: formData.meetingInfo?.frequency || 'weekly',
+      days: formData.meetingInfo?.days || [],
+      room: formData.meetingInfo?.room || '',
+      jamboreeTable: formData.meetingInfo?.jamboreeTable || '',
+      customInfo: formData.meetingInfo?.customInfo || '',
+      ...formData.meetingInfo,
+      [field]: value
+    };
+    handleInputChange('meetingInfo', updatedMeetingInfo);
+  };
+
+  const handleAddMeetingDay = () => {
+    const newDay = {
+      day: 'Monday',
+      startTime: '09:00',
+      endTime: '10:00'
+    };
+    const updatedDays = [...meetingDays, newDay];
+    setMeetingDays(updatedDays);
+    handleMeetingInfoChange('days', updatedDays);
+  };
+
+  const handleRemoveMeetingDay = (index: number) => {
+    const updatedDays = meetingDays.filter((_, i) => i !== index);
+    setMeetingDays(updatedDays);
+    handleMeetingInfoChange('days', updatedDays);
+  };
+
+  const handleMeetingDayChange = (index: number, field: string, value: string) => {
+    const updatedDays = meetingDays.map((day, i) => {
+      if (i === index) {
+        return { ...day, [field]: value };
+      }
+      return day;
+    });
+    setMeetingDays(updatedDays);
+    handleMeetingInfoChange('days', updatedDays);
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Top sticky navigation bar */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-bold text-[#180D39] hidden md:block">
+            <h1 className="text-lg font-bold text-[#000000] hidden md:block">
               {isNew ? "Creating: " : "Editing: "} {formData.clubName}
             </h1>
             <span className="text-sm text-gray-500 hidden md:block">
@@ -785,7 +859,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#180D39]">Theme Color</h2>
+              <h2 className="text-lg font-semibold text-[#000000]">Theme Color</h2>
               <button 
                 onClick={() => setShowThemeEditor(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -851,7 +925,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm sticky top-24">
               <div className="p-4 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-[#180D39]">Editor</h2>
+                <h2 className="text-lg font-bold text-[#000000]">Editor</h2>
               </div>
               
               <nav className="p-2">
@@ -926,51 +1000,24 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   className="bg-white rounded-xl p-6 shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]">Banner & Club Identity</h3>
+                    <h3 className="text-xl font-bold text-[#000000]">Banner & Club Identity</h3>
                   </div>
                   
                   <div 
-                    className="relative h-[300px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 mb-6 border-2 border-dashed border-gray-300 group"
-                    style={{
-                      backgroundImage: formData.bannerImage ? `url(${formData.bannerImage})` : undefined,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      borderStyle: formData.bannerImage ? 'solid' : 'dashed'
-                    }}
+                    className="h-[300px] rounded-lg overflow-hidden mb-6 flex items-center justify-center"
+                    style={{ backgroundColor: getColorById(formData.theme?.primaryColor || 'blue').value }}
                   >
-                    {uploadingBanner ? (
-                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-                        <LoadingSpinner size="lg" />
-                        <p className="text-white mt-4 font-medium">Uploading image...</p>
-                      </div>
-                    ) : (
-                      <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-black/30 group-hover:bg-black/50 transition-all">
-                        <div className="bg-white/90 text-black px-6 py-3 rounded-lg flex items-center hover:bg-white transition-colors shadow-lg">
-                          <PhotoIcon className="h-5 w-5 mr-2" />
-                          {formData.bannerImage ? 'Change Banner Image' : 'Add Banner Image'}
-                        </div>
-                        {!formData.bannerImage && (
-                          <p className="text-white mt-4 text-sm font-medium">
-                            Recommended size: 1200 × 400 pixels
-                          </p>
-                        )}
-                        <input 
-                          type="file" 
-                          accept="image/png, image/jpeg, image/jpg" 
-                          className="hidden"
-                          onChange={(e) => handleImageUpload(e, 'banner')}
-                        />
-                      </label>
-                    )}
+                    <h1 className="text-4xl font-bold text-white text-center px-6">
+                      {formData.clubName || 'Your Club Name'}
+                    </h1>
                   </div>
                   
                   <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg mb-6">
-                    <p className="font-medium mb-2">Banner Image Tips:</p>
+                    <p className="font-medium mb-2">Banner Tips:</p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>Use a high-quality landscape image (recommended size: 1200 × 400 pixels)</li>
-                      <li>Keep file size under 5MB for faster loading</li>
-                      <li>Choose an image that represents your club&apos;s identity</li>
-                      <li>Ensure good contrast with text that will appear on top</li>
+                      <li>Your banner will use your selected theme color</li>
+                      <li>Make sure your club name is clear and readable</li>
+                      <li>You can change the banner color in the Theme settings</li>
                     </ul>
                   </div>
                   
@@ -1010,7 +1057,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   className="bg-white rounded-xl p-6 shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]">About Our Club</h3>
+                    <h3 className="text-xl font-bold text-[#000000]">About Our Club</h3>
                   </div>
                   
                   <div className="mb-2 text-sm text-gray-600">
@@ -1112,7 +1159,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                 {/* Team Members Section */}
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]">Team Members</h3>
+                    <h3 className="text-xl font-bold text-[#000000]">Team Members</h3>
                     <button
                       onClick={handleAddMember}
                       className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
@@ -1205,6 +1252,41 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                     placeholder="e.g., President, Treasurer, etc."
                                   />
                                 </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Email
+                                  </label>
+                                  {member.isContact ? (
+                                    <div className="flex gap-4">
+                                      <input
+                                        type="email"
+                                        value={member.email || ''}
+                                        onChange={(e) => handleMemberChange(index, 'email', e.target.value)}
+                                        className="flex-1 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                        placeholder="member@email.com"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          handleMemberChange(index, 'isContact', false);
+                                          handleMemberChange(index, 'email', '');
+                                        }}
+                                        className="px-3 py-2 rounded-md bg-red-50 text-red-600 hover:bg-red-100 font-medium text-sm flex items-center justify-center whitespace-nowrap"
+                                      >
+                                        <TrashIcon className="h-4 w-4 mr-1" />
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleMemberChange(index, 'isContact', true)}
+                                      className="w-full px-3 py-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium text-sm flex items-center justify-center"
+                                    >
+                                      <PlusIcon className="h-4 w-4 mr-1" />
+                                      Add as Contact
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               
                               <div>
@@ -1243,11 +1325,51 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   </div>
                 </div>
 
+                {/* Contact Information */}
+                {formData.members?.some(member => member.isContact) && (
+                  <div className="mb-6 border-t border-gray-200 pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                    <div className="space-y-4">
+                      {formData.members
+                        .filter(member => member.isContact && member.email)
+                        .map((member, index) => (
+                          <div key={`contact-${index}`} className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
+                            {member.photoUrl ? (
+                              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                                <Image
+                                  src={member.photoUrl}
+                                  alt={member.name}
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <UserIcon className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
+                            <div>
+                              <h4 className="font-medium text-gray-900">{member.name}</h4>
+                              <p className="text-sm text-gray-500">{member.role}</p>
+                              <a 
+                                href={`mailto:${member.email}`}
+                                className="text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                {member.email}
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Documents & Resources Section */}
                 <section className="bg-white rounded-xl p-6 shadow-sm mt-8">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-[#180D39]">Documents & Resources</h3>
+                      <h3 className="text-xl font-bold text-[#000000]">Documents & Resources</h3>
                       <p className="text-sm text-gray-600 mt-1">Share important documents and links with your members</p>
                     </div>
                     <div className="flex space-x-2">
@@ -1369,7 +1491,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                 {/* Contact Links Section */}
                 <section className="bg-white rounded-xl p-6 shadow-sm mt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#180D39]">Contact Links</h3>
+                    <h3 className="text-xl font-bold text-[#000000]">Contact Links</h3>
                     <button
                       onClick={handleAddContactLink}
                       className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
@@ -1466,6 +1588,171 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                     )}
                   </div>
                 </section>
+
+                {/* Meeting Information Section */}
+                <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Meeting Information</h2>
+                  
+                  {/* Meeting Frequency */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meeting Frequency
+                    </label>
+                    <select
+                      value={formData.meetingInfo?.frequency || 'weekly'}
+                      onChange={(e) => handleMeetingInfoChange('frequency', e.target.value)}
+                      className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent text-base"
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Bi-weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="custom">Custom Schedule</option>
+                    </select>
+                  </div>
+
+                  {/* Meeting Days */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Meeting Days
+                      </label>
+                      <button
+                        onClick={handleAddMeetingDay}
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-[#38BFA1] hover:text-[#2DA891]"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-1" />
+                        Add Day
+                      </button>
+                    </div>
+                    
+                    {meetingDays.map((day, index) => (
+                      <div key={index} className="flex gap-4 mb-2 items-center">
+                        <select
+                          value={day.day}
+                          onChange={(e) => handleMeetingDayChange(index, 'day', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                        >
+                          <option value="Monday">Monday</option>
+                          <option value="Tuesday">Tuesday</option>
+                          <option value="Wednesday">Wednesday</option>
+                          <option value="Thursday">Thursday</option>
+                          <option value="Friday">Friday</option>
+                          <option value="Saturday">Saturday</option>
+                          <option value="Sunday">Sunday</option>
+                        </select>
+                        
+                        <input
+                          type="time"
+                          value={day.startTime}
+                          onChange={(e) => handleMeetingDayChange(index, 'startTime', e.target.value)}
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                        />
+                        
+                        <span className="text-gray-500">to</span>
+                        
+                        <input
+                          type="time"
+                          value={day.endTime}
+                          onChange={(e) => handleMeetingDayChange(index, 'endTime', e.target.value)}
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                        />
+                        
+                        <button
+                          onClick={() => handleRemoveMeetingDay(index)}
+                          className="p-2 text-red-500 hover:text-red-700"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Room Number */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Room Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meetingInfo?.room || ''}
+                      onChange={(e) => handleMeetingInfoChange('room', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                      placeholder="Enter room number"
+                    />
+                  </div>
+
+                  {/* Jamboree Table */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Jamboree Table Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meetingInfo?.jamboreeTable || ''}
+                      onChange={(e) => handleMeetingInfoChange('jamboreeTable', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                      placeholder="Enter jamboree table number"
+                    />
+                  </div>
+
+                  {/* Custom Meeting Information */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Custom Meeting Information (Adding Information here will override any meeting information you have inputted above, and display this instead)
+                    </label>
+                    <textarea
+                      value={formData.meetingInfo?.customInfo || ''}
+                      onChange={(e) => handleMeetingInfoChange('customInfo', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-transparent"
+                      placeholder="Enter any additional meeting information here"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Contact Information */}
+                  {formData.members?.some(member => member.isContact) && (
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                      <div className="space-y-4">
+                        {formData.members
+                          .filter(member => member.isContact && member.email)
+                          .map((member, index) => (
+                            <div key={`contact-${index}`} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                              {member.photoUrl ? (
+                                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                                  <Image
+                                    src={member.photoUrl}
+                                    alt={member.name}
+                                    width={48}
+                                    height={48}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <UserIcon className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-medium text-gray-900">{member.name}</h4>
+                                <p className="text-sm text-gray-600">{member.role}</p>
+                                <a 
+                                  href={`mailto:${member.email}`}
+                                  className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                  </svg>
+                                  {member.email}
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 
@@ -1474,7 +1761,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               <section className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-bold text-[#180D39]">Informational PDF</h2>
+                    <h2 className="text-xl font-bold text-[#000000]">Informational PDF</h2>
                     <p className="text-sm text-gray-600 mt-1">Upload and manage your club&apos;s informational PDF</p>
                   </div>
                   <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
@@ -1571,7 +1858,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
             {/* Interest Form Tab */}
             {activeTab === 'form' && (
               <section className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-[#180D39] mb-6">Interest Form Submissions</h2>
+                <h2 className="text-xl font-bold text-[#000000] mb-6">Interest Form Submissions</h2>
                 
                 <div className="space-y-4">
                   {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 ? (
@@ -1608,7 +1895,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               <>
                 {/* Theme Section */}
                 <section className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                  <h2 className="text-xl font-bold text-[#180D39] mb-6">Theme Color</h2>
+                  <h2 className="text-xl font-bold text-[#000000] mb-6">Theme Color</h2>
                   
                   <div>
                     {/* Primary Color */}

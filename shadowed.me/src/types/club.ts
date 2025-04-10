@@ -77,7 +77,28 @@ export interface ClubSite {
   bannerImage?: string;
   slogan?: string;
   description?: string;      // Long form about section
-  meetingInfo?: string;      // Times, room, day
+  meetingInfo?: {
+    frequency: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+    days: {
+      day: string;
+      startTime: string;
+      endTime: string;
+    }[];
+    room: string;
+    jamboreeTable?: string;
+    customInfo?: string;  // Fallback string for custom meeting information
+  };
+  upcomingVisits?: {
+    title: string;
+    date: string;
+    description?: string;
+  }[];
+  pastEvents?: {
+    title: string;
+    date: string;
+    description?: string;
+    photoUrl?: string;
+  }[];
   galleryImages?: string[];  // URLs to images
   galleryImagesMetadata?: {
     url: string;
@@ -95,6 +116,7 @@ export interface ClubSite {
     role: string;
     photoUrl?: string;
     bio?: string;
+    email?: string;
   }[];
   resources?: {
     type: 'pdf' | 'link';

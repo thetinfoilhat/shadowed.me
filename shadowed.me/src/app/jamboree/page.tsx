@@ -24,17 +24,7 @@ export default function Jamboree() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [clubName, setClubName] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  // Filter websites based on search query
-  const filteredWebsites = clubWebsites.filter(website => 
-    website.clubName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    website.slogan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    website.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    website.members?.some(member => 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.role.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const [filteredWebsites, setFilteredWebsites] = useState<ClubSite[]>([]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -78,6 +68,7 @@ export default function Jamboree() {
         });
 
         setClubWebsites(websites);
+        setFilteredWebsites(websites);
       } catch (error) {
         console.error('Error fetching club websites:', error);
         toast.error('Failed to load club websites');
@@ -89,6 +80,15 @@ export default function Jamboree() {
     fetchUserRole();
     fetchClubWebsites();
   }, [user]);
+
+  useEffect(() => {
+    const filtered = clubWebsites.filter(website => 
+      website.clubName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      website.slogan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      website.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredWebsites(filtered);
+  }, [searchQuery, clubWebsites]);
 
   const handleCreateWebsite = () => {
     if (!user) {
@@ -126,6 +126,35 @@ export default function Jamboree() {
     }
   };
 
+  const formatMeetingInfo = (website: ClubSite) => {
+    if (!website.meetingInfo) return null;
+
+    const { days, room, jamboreeTable } = website.meetingInfo;
+    const meetingDays = days?.map(d => d.day).join(', ') || '';
+
+    return (
+      <div className="text-sm text-gray-600 mt-4 pt-4 border-t border-gray-100">
+        <div className="space-y-2">
+          {room && (
+            <div>
+              <span className="font-medium">Room:</span> {room}
+            </div>
+          )}
+          {jamboreeTable && (
+            <div>
+              <span className="font-medium">Table:</span> {jamboreeTable}
+            </div>
+          )}
+          {days && days.length > 0 && (
+            <div>
+              <span className="font-medium">Meetings:</span> {meetingDays}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
@@ -139,7 +168,7 @@ export default function Jamboree() {
           </Link>
           <Link
             href="/club-listings"
-            className="px-6 py-2 rounded-lg font-medium transition-colors bg-white text-[#180D39] hover:bg-gray-50"
+            className="px-6 py-2 rounded-lg font-medium transition-colors bg-white text-[#000000] hover:bg-gray-50"
           >
             All Clubs
           </Link>
@@ -152,7 +181,7 @@ export default function Jamboree() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-6xl font-bold text-[#180D39] text-center mb-6"
+              className="text-6xl font-bold text-[#000000] text-center mb-6"
             >
               Club Showcase
             </motion.h1>
@@ -161,7 +190,7 @@ export default function Jamboree() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-[#180D39] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
+              className="text-[#000000] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
             >
               Explore club websites or create your own to showcase your club&apos;s activities,
               members, and resources.
@@ -169,7 +198,7 @@ export default function Jamboree() {
 
             <div className="relative max-w-2xl mx-auto mt-8">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-[#180D39]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-[#000000]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -178,7 +207,7 @@ export default function Jamboree() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find your next club..."
-                className="w-full pl-12 pr-4 py-3 text-[#180D39] placeholder-[#180D39]/60 bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
+                className="w-full pl-12 pr-4 py-3 text-[#000000] placeholder-[#000000]/60 bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
               />
             </div>
 
@@ -215,7 +244,8 @@ export default function Jamboree() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full cursor-pointer"
+                  onClick={() => router.push(`/${website.slug}`)}
                 >
                   <div 
                     className="h-40 bg-cover bg-center relative" 
@@ -245,13 +275,17 @@ export default function Jamboree() {
                           Captain: {website.members.find(m => m.role.toLowerCase().includes('captain'))?.name}
                         </p>
                       )}
+                      {formatMeetingInfo(website)}
                     </div>
                     <div className="flex justify-between items-center mt-4">
                       <span className="text-sm text-gray-500">
                         Updated {new Date(website.updatedAt).toLocaleDateString()}
                       </span>
                       <button
-                        onClick={() => router.push(`/${website.slug}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/${website.slug}`);
+                        }}
                         className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#38BFA1] hover:bg-gray-50 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1]"
                       >
                         Visit Site
@@ -287,21 +321,21 @@ export default function Jamboree() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl">
               <div className="p-6 border-b border-[#38BFA1]/10">
-                <h2 className="text-2xl font-bold text-[#180D39]">Create New Club Website</h2>
-                <p className="text-[#180D39] mt-2">
+                <h2 className="text-2xl font-bold text-[#000000]">Create New Club Website</h2>
+                <p className="text-[#000000] mt-2">
                   Enter your club name to create a new website. You&apos;ll be able to customize it after creation.
                 </p>
               </div>
               
               <div className="p-6">
-                <label className="block text-[#180D39] font-medium mb-2">
+                <label className="block text-[#000000] font-medium mb-2">
                   Club Name
                 </label>
                 <input
                   type="text"
                   value={clubName}
                   onChange={(e) => setClubName(e.target.value)}
-                  className="w-full px-4 py-3 text-[#180D39] bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
+                  className="w-full px-4 py-3 text-[#000000] bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
                   placeholder="Enter club name"
                 />
                 {error && (
@@ -316,7 +350,7 @@ export default function Jamboree() {
                     setClubName('');
                     setError(null);
                   }}
-                  className="px-6 py-2 text-[#180D39] hover:bg-gray-50 rounded-lg transition-colors"
+                  className="px-6 py-2 text-[#000000] hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

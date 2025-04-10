@@ -35,6 +35,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     email: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('upcoming');
   
   // Check if various sections exist
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
@@ -43,9 +44,10 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const hasPDFs = website.pdfUploads && website.pdfUploads.length > 0;
   
   // Get theme values
-  const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
-  const textColor = getTextColorById(website.theme?.textColor || 'dark').value;
-  const fontClass = getFontById(website.theme?.font || 'inter').className;
+  const primaryColor = getColorById(website.theme?.primaryColor || 'blue').value;
+  const textColor = getColorById(website.theme?.textColor || 'black').value;
+  const font = website.theme?.font || DEFAULT_FONT;
+  const fontClass = getFontById(font).className;
 
   // Function to get appropriate icon for contact links
   const getLinkIcon = (linkType: string) => {
@@ -157,8 +159,60 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     }
   };
 
+  // Format meeting information
+  const formatMeetingInfo = () => {
+    if (!website.meetingInfo) return null;
+
+    const { frequency, days, room, jamboreeTable, customInfo } = website.meetingInfo;
+
+    if (customInfo) {
+      return (
+        <div className="prose max-w-none">
+          <p>{customInfo}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Frequency:</span>
+          <span className="capitalize">{frequency}</span>
+        </div>
+
+        {days && days.length > 0 && (
+          <div>
+            <h3 className="font-medium mb-2">Meeting Times:</h3>
+            <div className="space-y-2">
+              {days.map((day, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="font-medium">{day.day}:</span>
+                  <span>{day.startTime} - {day.endTime}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {room && (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Room:</span>
+            <span>{room}</span>
+          </div>
+        )}
+
+        {jamboreeTable && (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Jamboree Table:</span>
+            <span>{jamboreeTable}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
+    <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`}>
       {/* Add floating action buttons for editors */}
       {isEditor && (
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
@@ -185,72 +239,138 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         </div>
       )}
 
-      {/* Banner Image Section */}
+      {/* Banner */}
       <div 
-        className="w-full h-[300px] md:h-[400px] relative bg-gradient-to-r from-blue-500 to-purple-500"
-        style={{
-          backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: website.bannerImage ? undefined : primaryColor
-        }}
+        className="relative h-[300px] flex items-center justify-center"
+        style={{ backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value }}
       >
-        <div className="absolute inset-0 bg-black/30 flex items-end">
-          <div className="max-w-[1200px] w-full mx-auto px-4 md:px-8 py-8 md:py-12">
-            <motion.h1 
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {website.clubName}
-            </motion.h1>
-            {website.slogan && (
-              <motion.p 
-                className="text-lg md:text-xl text-white/90 max-w-2xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                {website.slogan}
-              </motion.p>
-            )}
-          </div>
+        <div className="text-center text-white px-6">
+          <h1 className="text-4xl font-bold mb-2">{website.clubName}</h1>
+          {website.slogan && <p className="text-xl">{website.slogan}</p>}
         </div>
       </div>
 
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           {/* About Section */}
-          {website.description && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#000000] mb-4"
+              style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
-                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
-              >
-                About Our Club
-              </h2>
-              <div 
-                className="prose prose-lg max-w-none" 
-                style={{ color: textColor }} 
-                dangerouslySetInnerHTML={{ __html: website.description }}
-              />
-            </motion.div>
-          )}
+              About Our Club
+            </h2>
+            <div className="prose max-w-none text-[#000000]" dangerouslySetInnerHTML={{ __html: website.description || '' }} />
+          </div>
 
-          {/* PDF Documents Section */}
-          {hasPDFs && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+          {/* Events Section */}
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#000000] mb-4"
+              style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
             >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
+              Events
+            </h2>
+            
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <button
+                  onClick={() => setActiveTab('upcoming')}
+                  className={`${
+                    activeTab === 'upcoming'
+                      ? 'border-b-2 text-[#000000]'
+                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } py-4 px-1 border-transparent font-medium`}
+                  style={{ borderColor: activeTab === 'upcoming' ? primaryColor : 'transparent' }}
+                >
+                  Upcoming Visits
+                </button>
+                <button
+                  onClick={() => setActiveTab('past')}
+                  className={`${
+                    activeTab === 'past'
+                      ? 'border-b-2 text-[#000000]'
+                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } py-4 px-1 border-transparent font-medium`}
+                  style={{ borderColor: activeTab === 'past' ? primaryColor : 'transparent' }}
+                >
+                  Past Events
+                </button>
+              </nav>
+            </div>
+
+            {/* Upcoming Visits Tab Content */}
+            {activeTab === 'upcoming' && (
+              <div className="space-y-4 mt-6">
+                {website.upcomingVisits && website.upcomingVisits.length > 0 ? (
+                  website.upcomingVisits.map((visit, index) => (
+                    <div 
+                      key={`upcoming-${index}`}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <CalendarIcon className="h-6 w-6" style={{ color: primaryColor }} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-lg text-[#000000]">{visit.title}</h3>
+                          <p className="text-gray-600 text-sm mb-2">{visit.date}</p>
+                          {visit.description && (
+                            <p className="text-gray-700">{visit.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No upcoming visits scheduled</p>
+                )}
+              </div>
+            )}
+
+            {/* Past Events Tab Content */}
+            {activeTab === 'past' && (
+              <div className="space-y-4 mt-6">
+                {website.pastEvents && website.pastEvents.length > 0 ? (
+                  website.pastEvents.map((event, index) => (
+                    <div 
+                      key={`past-${index}`}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <CalendarIcon className="h-6 w-6" style={{ color: primaryColor }} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-lg text-[#000000]">{event.title}</h3>
+                          <p className="text-gray-600 text-sm mb-2">{event.date}</p>
+                          {event.description && (
+                            <p className="text-gray-700">{event.description}</p>
+                          )}
+                          {event.photoUrl && (
+                            <div className="mt-3 relative aspect-video rounded-lg overflow-hidden">
+                              <Image
+                                src={event.photoUrl}
+                                alt={event.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No past events to show</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Information Section */}
+          {hasPDFs && (
+            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#000000] mb-4"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
                 Information
@@ -289,18 +409,13 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Gallery Section */}
           {hasGallery && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-4"
+            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#000000] mb-4"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
                 Photo Gallery
@@ -331,30 +446,23 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Team Members Section */}
           {hasMembers && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 md:p-8 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h2 className="text-2xl font-bold text-[#180D39] mb-6"
+            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#000000] mb-6"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
                 Team Members
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                 {website.members?.map((member, index) => (
-                  <motion.div 
+                  <div 
                     key={`member-${index}`}
-                    className="flex flex-col sm:flex-row gap-4 rounded-lg p-4"
+                    className="flex flex-col sm:flex-row gap-4 rounded-lg p-4 hover:scale-[1.02] transition-transform duration-200"
                     style={{ backgroundColor: `${primaryColor}10` }}
-                    whileHover={{ scale: 1.02, backgroundColor: `${primaryColor}20` }}
-                    transition={{ duration: 0.2 }}
                   >
                     <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 relative">
                       {member.photoUrl ? (
@@ -374,54 +482,37 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                       )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-[#180D39] text-lg">{member.name}</h3>
+                      <h3 className="font-bold text-[#000000] text-lg">{member.name}</h3>
                       <p className="font-medium mb-2" style={{ color: primaryColor }}>{member.role}</p>
                       {member.bio && (
-                        <p className="text-sm text-[#180D39]/70">{member.bio}</p>
+                        <p className="text-sm text-[#000000]/70">{member.bio}</p>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Meeting Info Section */}
+          {/* Meeting Information Section */}
           {website.meetingInfo && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="flex items-center mb-4">
-                <CalendarIcon className="h-5 w-5 mr-2" style={{ color: primaryColor }} />
-                <h2 className="text-xl font-bold text-[#180D39]">
-                  Meeting Information
-                </h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+              <h2 className="text-xl font-semibold mb-4">Meeting Information</h2>
+              <div className="text-[#000000]">
+                {formatMeetingInfo()}
               </div>
-              <div className="prose prose-sm max-w-none text-[#180D39]/80">
-                {website.meetingInfo.split('\n').map((paragraph, i) => (
-                  paragraph ? <p key={i}>{paragraph}</p> : <br key={i} />
-                ))}
-              </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Contact Links Section */}
           {hasContactLinks && (
-            <motion.div 
-              className="bg-white rounded-xl p-6 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <LinkIcon className="h-5 w-5 mr-2" style={{ color: primaryColor }} />
-                <h2 className="text-xl font-bold text-[#180D39]">
+                <h2 className="text-xl font-bold text-[#000000]">
                   Contact & Links
                 </h2>
               </div>
@@ -432,47 +523,38 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                     : link.url.startsWith('http') ? link.url : `https://${link.url}`;
                     
                   return (
-                    <motion.a 
+                    <a 
                       key={`link-${index}`}
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ duration: 0.2 }}
                     >
                       <span className="flex items-center justify-center w-8 h-8 rounded-full mr-3"
                         style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}
                       >
                         {getLinkIcon(link.type)}
                       </span>
-                      <span className="font-medium text-[#180D39]">{link.label}</span>
-                    </motion.a>
+                      <span className="font-medium text-[#000000]">{link.label}</span>
+                    </a>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Documents & Resources Card */}
           {website.resources && website.resources.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-xl p-6 shadow-sm mb-6"
-            >
-              <h3 className="text-xl font-bold text-[#180D39] mb-4">Documents & Resources</h3>
+            <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+              <h3 className="text-xl font-bold text-[#000000] mb-4">Documents & Resources</h3>
               <div className="space-y-3">
                 {website.resources.map((resource, index) => (
-                  <motion.a
+                  <a
                     key={`resource-${index}`}
                     href={resource.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <span className="mr-3 text-gray-700">
                       {resource.type === 'pdf' ? (
@@ -482,7 +564,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                       )}
                     </span>
                     <div className="flex-1">
-                      <span className="font-medium text-[#180D39]">{resource.title}</span>
+                      <span className="font-medium text-[#000000]">{resource.title}</span>
                       {resource.description && (
                         <p className="text-sm text-gray-600">{resource.description}</p>
                       )}
@@ -493,10 +575,10 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                         Added {formatUploadDate(resource.uploadedAt)}
                       </div>
                     </div>
-                  </motion.a>
+                  </a>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Back to Jamboree Link */}
@@ -618,7 +700,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#180D39]">Interested in {website.clubName}?</h2>
+                <h2 className="text-xl font-bold text-[#000000]">Interested in {website.clubName}?</h2>
                 <button
                   onClick={() => setShowInterestForm(false)}
                   className="text-gray-500 hover:text-gray-700"
