@@ -1,0 +1,713 @@
+'use client';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LinkIcon, CalendarIcon, UserIcon, XMarkIcon, DocumentIcon, PencilIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { ClubSite } from '@/types/club';
+import { getColorById, getTextColorById } from '@/utils/colors';
+import { getFontById } from '@/utils/fonts';
+import { toast } from 'react-hot-toast';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+// Define the DEFAULT_FONT constant
+const DEFAULT_FONT = 'inter';
+
+// Format date for display
+const formatUploadDate = (date: Date | string): string => {
+  try {
+    const d = new Date(date);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return 'Invalid date';
+  }
+};
+
+interface WebsiteViewerProps {
+  website: ClubSite;
+  isEditor?: boolean;
+  onDelete?: () => Promise<void>;
+}
+
+export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteViewerProps) {
+  // State for lightbox and gallery viewing
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [showInterestForm, setShowInterestForm] = useState(false);
+  const [interestFormData, setInterestFormData] = useState({
+    name: '',
+    email: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('upcoming');
+  
+  // Check if various sections exist
+  const hasGallery = website.galleryImages && website.galleryImages.length > 0;
+  const hasMembers = website.members && website.members.length > 0;
+  const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
+  const hasPDFs = website.pdfUploads && website.pdfUploads.length > 0;
+  
+  // Get theme values
+  const primaryColor = getColorById(website.theme?.primaryColor || 'blue').value;
+  const textColor = getColorById(website.theme?.textColor || 'black').value;
+  const font = website.theme?.font || DEFAULT_FONT;
+  const fontClass = getFontById(font).className;
+
+  // Function to get appropriate icon for contact links
+  const getLinkIcon = (linkType: string) => {
+    switch (linkType) {
+      case 'email':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+          </svg>
+        );
+      case 'instagram':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+          </svg>
+        );
+      case 'twitter':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+          </svg>
+        );
+      case 'facebook':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+          </svg>
+        );
+      case 'remind':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.5 11h-3v3c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-3h-3c-.83 0-1.5-.67-1.5-1.5S7.67 10 8.5 10h3V7c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v3h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z" />
+          </svg>
+        );
+      case 'discord':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515c-.211.38-.415.77-.596 1.177a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.597-1.177c-1.652.37-3.3.88-4.885 1.515-3.07 4.67-3.906 9.226-3.484 13.727 2.003 1.494 3.913 2.41 5.773 3.014.463-.636.886-1.31 1.246-2.016-.685-.256-1.344-.555-1.971-.895.166-.125.328-.25.49-.379 3.865 1.86 8.104 1.86 11.92 0 .164.13.327.255.49.38-.63.34-1.29.638-1.97.895.36.706.783 1.38 1.246 2.016 1.86-.606 3.77-1.52 5.773-3.014.49-4.977-.72-9.51-3.483-13.728zM8.293 15.311c-1.117 0-2.04-1.043-2.04-2.33s.9-2.33 2.04-2.33c1.142 0 2.068 1.044 2.042 2.33 0 1.287-.9 2.33-2.042 2.33z"/>
+          </svg>
+        );
+      case 'youtube':
+        return (
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+        );
+      default:
+        return <LinkIcon className="h-5 w-5" />;
+    }
+  };
+
+  // Function to navigate through images in the lightbox
+  const navigateImage = (direction: 'next' | 'prev') => {
+    if (!website.galleryImages || website.galleryImages.length === 0) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === website.galleryImages!.length - 1 ? 0 : prevIndex + 1
+      );
+      setSelectedImage(website.galleryImages[(currentImageIndex + 1) % website.galleryImages.length]);
+    } else {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? website.galleryImages!.length - 1 : prevIndex - 1
+      );
+      setSelectedImage(website.galleryImages[currentImageIndex === 0 
+        ? website.galleryImages.length - 1 
+        : currentImageIndex - 1]);
+    }
+  };
+  
+  // Get the title of the current selected image
+  const getImageTitle = (url: string): string | undefined => {
+    if (!website.galleryImagesMetadata) return undefined;
+    
+    const metadata = website.galleryImagesMetadata.find(meta => meta.url === url);
+    return metadata?.title;
+  };
+
+  // Handle interest form submission
+  const handleInterestFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!interestFormData.name || !interestFormData.email) {
+      toast.error('Please fill out all fields');
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+      // Add the submission to the interestForm.submissions array
+      // This uses the Firestore API directly instead of a separate endpoint
+      // to ensure both name and email are recorded
+      const websiteRef = doc(db, 'clubSites', website.id);
+      
+      // Create the submission with name, email and timestamp
+      const submission = {
+        name: interestFormData.name,
+        email: interestFormData.email,
+        timestamp: Date.now()
+      };
+      
+      // Update the website document to add the submission
+      await updateDoc(websiteRef, {
+        'interestForm.submissions': arrayUnion(submission)
+      });
+
+      toast.success('Thank you for your interest!');
+      setShowInterestForm(false);
+      setInterestFormData({ name: '', email: '' });
+    } catch (error) {
+      console.error('Error submitting interest form:', error);
+      toast.error('Failed to submit interest form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Format meeting information
+  const formatMeetingInfo = () => {
+    if (!website.meetingInfo) return null;
+
+    const { frequency, days, room, jamboreeTable, customInfo } = website.meetingInfo;
+
+    if (customInfo) {
+      return (
+        <div className="prose max-w-none text-black">
+          <p>{customInfo}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4 text-black">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Frequency:</span>
+          <span className="capitalize">{frequency}</span>
+        </div>
+
+        {days && days.length > 0 && (
+          <div>
+            <h3 className="font-medium mb-2">Meeting Times:</h3>
+            <div className="space-y-2">
+              {days.map((day, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="font-medium">{day.day}:</span>
+                  <span>{day.startTime} - {day.endTime}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {room && (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Room:</span>
+            <span>{room}</span>
+          </div>
+        )}
+
+        {jamboreeTable && (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Jamboree Table:</span>
+            <span>{jamboreeTable}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`}>
+      {/* Add floating action buttons for editors */}
+      {isEditor && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+          <Link
+            href={`/${website.slug}?edit=true`}
+            className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+            title="Edit Website"
+          >
+            <PencilIcon className="h-6 w-6 text-black" />
+          </Link>
+          <button
+            onClick={async () => {
+              if (window.confirm('Are you sure you want to delete this website? This action cannot be undone.')) {
+                if (onDelete) {
+                  await onDelete();
+                }
+              }
+            }}
+            className="bg-red-500 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+            title="Delete Website"
+          >
+            <TrashIcon className="h-6 w-6 text-white" />
+          </button>
+        </div>
+      )}
+
+      {/* Banner - Replaced with club card style header */}
+      <div className="bg-white shadow-md">
+        <div className="h-2" style={{ backgroundColor: primaryColor }} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-black mb-2">{website.clubName}</h1>
+              
+              <div className="flex flex-wrap gap-2 mb-3">
+                {/* Category badge */}
+                <span 
+                  className="text-sm font-medium px-3 py-1.5 rounded-full text-white"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                  }}
+                >
+                  {website.category || website.theme?.primaryColor || 'Club'}
+                </span>
+                
+                {/* Activity Types - Show them as badges */}
+                {website.activityTypes && website.activityTypes.length > 0 ? (
+                  website.activityTypes.map((type, index) => (
+                    <span
+                      key={`activity-${index}`}
+                      className="text-sm bg-gray-100 text-black px-3 py-1.5 rounded-full font-medium shadow-sm"
+                    >
+                      {type}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm bg-gray-100 text-black px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    {website.slogan ? website.slogan.split(' ')[0] : 'Student Club'}
+                  </span>
+                )}
+              </div>
+              
+              {website.slogan && (
+                <p className="text-black text-lg">{website.slogan}</p>
+              )}
+            </div>
+            
+            {/* Quick action buttons */}
+            <div className="hidden md:flex space-x-2">
+              {/* Interest button - Quick access to interest form */}
+              <button
+                onClick={() => {
+                  setShowInterestForm(true);
+                  // Scroll to the interest form
+                  document.querySelector('#interest-form')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity flex items-center"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                Join Club
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* About Section */}
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#000000] mb-4"
+              style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+            >
+              About Our Club
+            </h2>
+            <div className="prose max-w-none text-[#000000]" dangerouslySetInnerHTML={{ __html: website.description || '' }} />
+          </div>
+
+          {/* Resources Section - New section for slides, documents, PDFs */}
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#000000] mb-4"
+              style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+            >
+              Resources
+            </h2>
+            <div className="space-y-4">
+              {website.resources && website.resources.length > 0 ? (
+                website.resources.map((resource, index) => (
+                  <div key={`resource-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {resource.type === 'pdf' ? (
+                          <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                        ) : (
+                          <GlobeAltIcon className="h-8 w-8 text-blue-500 mr-3" />
+                        )}
+                        <div>
+                          <h3 className="font-medium text-black">
+                            {resource.title}
+                          </h3>
+                          {resource.description && (
+                            <p className="text-sm text-black">{resource.description}</p>
+                          )}
+                          <p className="text-xs text-black">
+                            {resource.type === 'pdf' && resource.fileSize && 
+                              `${Math.round(resource.fileSize / 1024)} KB • `
+                            }
+                            Added {resource.uploadedAt ? formatUploadDate(resource.uploadedAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                        title={resource.type === 'pdf' ? "View PDF" : "Open Link"}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : hasPDFs ? (
+                // Show legacy PDF uploads if resources array is empty but PDFs exist
+                website.pdfUploads?.map((pdf, index) => (
+                  <div key={`pdf-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                        <div>
+                          <h3 className="font-medium text-black">
+                            {pdf.fileName}
+                          </h3>
+                          <p className="text-xs text-black">
+                            {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
+                            Added {pdf.uploadedAt ? formatUploadDate(pdf.uploadedAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href={pdf.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                        title="View PDF"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-black text-center py-8">No resources available yet</p>
+              )}
+            </div>
+          </div>
+
+          {/* Leadership Team Section */}
+          {hasMembers && (
+            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#000000] mb-6"
+                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
+              >
+                Leadership Team
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {website.members?.map((member, index) => (
+                  <div key={`member-${index}`} className="flex items-start gap-4">
+                    <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                      {member.photoUrl ? (
+                        <Image 
+                          src={member.photoUrl} 
+                          alt={member.name} 
+                          width={64} 
+                          height={64} 
+                          className="object-cover h-full w-full" 
+                        />
+                      ) : (
+                        <UserIcon className="h-16 w-16 p-3 text-black" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-lg text-[#000000]">{member.name}</h3>
+                      <p className="text-black text-sm">{member.role}</p>
+                      {member.bio && (
+                        <p className="text-black text-sm mt-2">{member.bio}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar - Club Meeting Info, Contact Links, Interest Form */}
+        <div className="space-y-6">
+          {/* Interest form - Made more prominent */}
+          <div id="interest-form" className="bg-white rounded-xl overflow-hidden shadow-md border-2" style={{ borderColor: primaryColor }}>
+            <div className="p-5 bg-gradient-to-r" style={{ 
+              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+              color: 'white'
+            }}>
+              <h2 className="text-xl font-bold mb-1">Interested in joining?</h2>
+              <p className="text-sm opacity-90">Fill out this form to express your interest!</p>
+            </div>
+            
+            {showInterestForm ? (
+              <form onSubmit={handleInterestFormSubmit} className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-black mb-1">Full Name</label>
+                    <input
+                      id="name"
+                      type="text"
+                      value={interestFormData.name}
+                      onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-offset-0 focus:outline-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-black mb-1">Email Address</label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={interestFormData.email}
+                      onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-offset-0 focus:outline-none"
+                    />
+                  </div>
+                  
+                  <div className="pt-3 flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowInterestForm(false)}
+                      className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="p-6 text-center flex flex-col items-center">
+                <button
+                  onClick={() => setShowInterestForm(true)}
+                  className="w-full p-3 text-white rounded-md hover:opacity-90 transition-opacity font-medium text-lg"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  I'm Interested!
+                </button>
+                <p className="text-black text-sm mt-3">
+                  No commitment - just let us know you're interested and we'll contact you!
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Club Info Panel */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-[#000000] mb-4">Club Information</h2>
+            
+            {website.meetingInfo && (
+              <div className="mb-6">
+                <h3 className="font-medium text-black mb-2">Meeting Details</h3>
+                {formatMeetingInfo()}
+              </div>
+            )}
+            
+            {/* Display Members */}
+            {website.members && website.members.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium text-black mb-2">Club Leadership</h3>
+                <div className="space-y-2">
+                  {/* Show Sponsors */}
+                  {website.members.filter(m => m.role.toLowerCase().includes('sponsor')).length > 0 && (
+                    <div className="pb-2">
+                      <span className="font-medium">Sponsor:</span>{' '}
+                      {website.members
+                        .filter(m => m.role.toLowerCase().includes('sponsor'))
+                        .map(s => s.name)
+                        .join(', ')}
+                    </div>
+                  )}
+                  
+                  {/* Show Captains or Leaders */}
+                  {website.members.filter(m => 
+                    m.role.toLowerCase().includes('captain') || 
+                    m.role.toLowerCase().includes('president') ||
+                    m.role.toLowerCase().includes('leader')
+                  ).length > 0 && (
+                    <div>
+                      <span className="font-medium">Captains:</span>{' '}
+                      {website.members
+                        .filter(m => 
+                          m.role.toLowerCase().includes('captain') || 
+                          m.role.toLowerCase().includes('president') ||
+                          m.role.toLowerCase().includes('leader')
+                        )
+                        .map(c => c.name)
+                        .join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Contact Links */}
+            {website.contactLinks && website.contactLinks.length > 0 && (
+              <div>
+                <h3 className="font-medium text-black mb-3">Contact Emails</h3>
+                <div className="space-y-3">
+                  {website.contactLinks.map((link, index) => (
+                    <div key={`contact-${index}`} className="flex items-center gap-2">
+                      <a 
+                        href={link.url.includes('@') ? `mailto:${link.url}` : link.url}
+                        target={link.url.includes('@') ? undefined : '_blank'} 
+                        rel={link.url.includes('@') ? undefined : 'noopener noreferrer'}
+                        className="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-1.5" style={{ color: primaryColor }} />
+                        <span className="text-black">{link.label || link.url}</span>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Gallery Preview Section */}
+          {hasGallery && (
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-[#000000] mb-4">Gallery</h2>
+              <div className="grid grid-cols-2 gap-2">
+                {website.galleryImages?.slice(0, 4).map((image, index) => (
+                  <div 
+                    key={`gallery-preview-${index}`}
+                    className="aspect-square overflow-hidden rounded-md cursor-pointer relative"
+                    onClick={() => {
+                      setSelectedImage(image);
+                      setCurrentImageIndex(index);
+                    }}
+                  >
+                    <Image 
+                      src={image} 
+                      alt={getImageTitle(image) || `Gallery image ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover transition-transform hover:scale-110"
+                    />
+                  </div>
+                ))}
+              </div>
+              {website.galleryImages && website.galleryImages.length > 4 && (
+                <button
+                  onClick={() => {
+                    setSelectedImage(website.galleryImages![0]);
+                    setCurrentImageIndex(0);
+                  }}
+                  className="w-full mt-3 py-2 px-4 border border-gray-300 rounded-lg text-black hover:bg-gray-50 text-sm"
+                >
+                  View all {website.galleryImages.length} photos
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Lightbox for Gallery Images */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            {/* Navigation buttons */}
+            {website.galleryImages && website.galleryImages.length > 1 && (
+              <>
+                <button 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('prev');
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <button 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('next');
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 text-white hover:text-black"
+              onClick={() => setSelectedImage(null)}
+            >
+              <XMarkIcon className="h-8 w-8" />
+            </button>
+            
+            {/* Image container */}
+            <div className="relative h-[80vh] w-[80vw] max-w-[1200px]" onClick={(e) => e.stopPropagation()}>
+              <Image 
+                src={selectedImage}
+                alt={getImageTitle(selectedImage) || "Gallery image"}
+                className="object-contain"
+                fill
+                sizes="80vw"
+                priority
+              />
+              
+              {getImageTitle(selectedImage) && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-4 text-white">
+                  <h3 className="text-lg font-medium">{getImageTitle(selectedImage)}</h3>
+                  <p className="text-sm opacity-70">
+                    Image {currentImageIndex + 1} of {website.galleryImages?.length}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+} 

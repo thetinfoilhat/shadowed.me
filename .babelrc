@@ -1,0 +1,13 @@
+{
+  "presets": ["next/babel"],
+  "plugins": [
+    ["module-resolver", {
+      "alias": {
+        "firebase/app": "./node_modules/firebase/app",
+        "firebase/auth": "./node_modules/firebase/auth",
+        "firebase/firestore": "./node_modules/firebase/firestore",
+        "firebase/storage": "./node_modules/firebase/storage"
+      }
+    }]
+  ]
+} 

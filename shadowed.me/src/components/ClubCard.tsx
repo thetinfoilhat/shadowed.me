@@ -99,14 +99,14 @@ export default function ClubCard({ club, onClick, compact = false }: ClubCardPro
             </span>
             
             {membershipAttribute && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded-full font-medium shadow-sm">
+              <span className="text-xs bg-blue-50 text-black px-2.5 py-1.5 rounded-full font-medium shadow-sm">
                 <UserGroupIcon className="h-3 w-3 inline mr-1" />
                 {membershipAttribute}
               </span>
             )}
             
             {frequencyAttribute && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded-full font-medium shadow-sm">
+              <span className="text-xs bg-blue-50 text-black px-2.5 py-1.5 rounded-full font-medium shadow-sm">
                 <CalendarIcon className="h-3 w-3 inline mr-1" />
                 {frequencyAttribute}
               </span>
@@ -114,11 +114,11 @@ export default function ClubCard({ club, onClick, compact = false }: ClubCardPro
           </div>
         </div>
         
-        <p className="text-gray-600 line-clamp-3 mb-4 flex-grow">
+        <p className="text-black line-clamp-3 mb-4 flex-grow">
           {description || (isPlaceholder ? "Information about this club will be available soon." : "")}
         </p>
         
-        <div className="text-sm text-gray-600 border-t pt-3 mt-auto space-y-2">
+        <div className="text-sm text-black border-t pt-3 mt-auto space-y-2">
           <div className="flex items-center">
             <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
             <span className="font-medium">{meetingTimes || (isPlaceholder ? "Meeting times TBD" : "")}</span>

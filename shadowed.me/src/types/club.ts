@@ -77,6 +77,8 @@ export interface ClubSite {
   bannerImage?: string;
   slogan?: string;
   description?: string;      // Long form about section
+  category?: string;         // Club category like STEM, Arts, etc.
+  activityTypes?: string[];  // Activity types like Competitive, Leaders, etc.
   meetingInfo?: {
     frequency: 'weekly' | 'biweekly' | 'monthly' | 'custom';
     days: {
@@ -116,7 +118,6 @@ export interface ClubSite {
     role: string;
     photoUrl?: string;
     bio?: string;
-    email?: string;
   }[];
   resources?: {
     type: 'pdf' | 'link';

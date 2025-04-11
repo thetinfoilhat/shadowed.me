@@ -8,6 +8,11 @@ import { ClubSite } from '@/types/club';
 import { getColorById, getTextColorById } from '@/utils/colors';
 import { getFontById } from '@/utils/fonts';
 import { toast } from 'react-hot-toast';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+// Define the DEFAULT_FONT constant
+const DEFAULT_FONT = 'inter';
 
 // Format date for display
 const formatUploadDate = (date: Date | string): string => {
@@ -130,23 +135,31 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   // Handle interest form submission
   const handleInterestFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!interestFormData.name || !interestFormData.email) {
+      toast.error('Please fill out all fields');
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/submit-interest', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          websiteId: website.id,
-          ...interestFormData,
-        }),
+      // Add the submission to the interestForm.submissions array
+      // This uses the Firestore API directly instead of a separate endpoint
+      // to ensure both name and email are recorded
+      const websiteRef = doc(db, 'clubSites', website.id);
+      
+      // Create the submission with name, email and timestamp
+      const submission = {
+        name: interestFormData.name,
+        email: interestFormData.email,
+        timestamp: Date.now()
+      };
+      
+      // Update the website document to add the submission
+      await updateDoc(websiteRef, {
+        'interestForm.submissions': arrayUnion(submission)
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit interest form');
-      }
 
       toast.success('Thank you for your interest!');
       setShowInterestForm(false);
@@ -167,14 +180,14 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
     if (customInfo) {
       return (
-        <div className="prose max-w-none">
+        <div className="prose max-w-none text-black">
           <p>{customInfo}</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 text-black">
         <div className="flex items-center gap-2">
           <span className="font-medium">Frequency:</span>
           <span className="capitalize">{frequency}</span>
@@ -221,7 +234,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
             title="Edit Website"
           >
-            <PencilIcon className="h-6 w-6 text-gray-700" />
+            <PencilIcon className="h-6 w-6 text-black" />
           </Link>
           <button
             onClick={async () => {
@@ -239,14 +252,67 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         </div>
       )}
 
-      {/* Banner */}
-      <div 
-        className="relative h-[300px] flex items-center justify-center"
-        style={{ backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value }}
-      >
-        <div className="text-center text-white px-6">
-          <h1 className="text-4xl font-bold mb-2">{website.clubName}</h1>
-          {website.slogan && <p className="text-xl">{website.slogan}</p>}
+      {/* Banner - Replaced with club card style header */}
+      <div className="bg-white shadow-md">
+        <div className="h-2" style={{ backgroundColor: primaryColor }} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-black mb-2">{website.clubName}</h1>
+              
+              <div className="flex flex-wrap gap-2 mb-3">
+                {/* Category badge */}
+                <span 
+                  className="text-sm font-medium px-3 py-1.5 rounded-full text-white"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                  }}
+                >
+                  {website.category || website.theme?.primaryColor || 'Club'}
+                </span>
+                
+                {/* Activity Types - Show them as badges */}
+                {website.activityTypes && website.activityTypes.length > 0 ? (
+                  website.activityTypes.map((type, index) => (
+                    <span
+                      key={`activity-${index}`}
+                      className="text-sm bg-blue-50 text-black px-3 py-1.5 rounded-full font-medium shadow-sm"
+                    >
+                      {type}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm bg-blue-50 text-black px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    {website.slogan ? website.slogan.split(' ')[0] : 'Student Club'}
+                  </span>
+                )}
+              </div>
+              
+              {website.slogan && (
+                <p className="text-black text-lg">{website.slogan}</p>
+              )}
+            </div>
+            
+            {/* Quick action buttons */}
+            <div className="hidden md:flex space-x-2">
+              {/* Interest button - Quick access to interest form */}
+              <button
+                onClick={() => {
+                  setShowInterestForm(true);
+                  // Scroll to the interest form
+                  document.querySelector('#interest-form')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity flex items-center"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                Join Club
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -262,230 +328,121 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             <div className="prose max-w-none text-[#000000]" dangerouslySetInnerHTML={{ __html: website.description || '' }} />
           </div>
 
-          {/* Events Section */}
+          {/* Resources Section - New section for slides, documents, PDFs */}
           <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
             <h2 className="text-2xl font-bold text-[#000000] mb-4"
               style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
             >
-              Events
+              Resources
             </h2>
-            
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                <button
-                  onClick={() => setActiveTab('upcoming')}
-                  className={`${
-                    activeTab === 'upcoming'
-                      ? 'border-b-2 text-[#000000]'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } py-4 px-1 border-transparent font-medium`}
-                  style={{ borderColor: activeTab === 'upcoming' ? primaryColor : 'transparent' }}
-                >
-                  Upcoming Visits
-                </button>
-                <button
-                  onClick={() => setActiveTab('past')}
-                  className={`${
-                    activeTab === 'past'
-                      ? 'border-b-2 text-[#000000]'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } py-4 px-1 border-transparent font-medium`}
-                  style={{ borderColor: activeTab === 'past' ? primaryColor : 'transparent' }}
-                >
-                  Past Events
-                </button>
-              </nav>
+            <div className="space-y-4">
+              {website.resources && website.resources.length > 0 ? (
+                website.resources.map((resource, index) => (
+                  <div key={`resource-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {resource.type === 'pdf' ? (
+                          <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                        ) : (
+                          <GlobeAltIcon className="h-8 w-8 text-blue-500 mr-3" />
+                        )}
+                        <div>
+                          <h3 className="font-medium text-black">
+                            {resource.title}
+                          </h3>
+                          {resource.description && (
+                            <p className="text-sm text-black">{resource.description}</p>
+                          )}
+                          <p className="text-xs text-black">
+                            {resource.type === 'pdf' && resource.fileSize && 
+                              `${Math.round(resource.fileSize / 1024)} KB • `
+                            }
+                            Added {resource.uploadedAt ? formatUploadDate(resource.uploadedAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                        title={resource.type === 'pdf' ? "View PDF" : "Open Link"}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : hasPDFs ? (
+                // Show legacy PDF uploads if resources array is empty but PDFs exist
+                website.pdfUploads?.map((pdf, index) => (
+                  <div key={`pdf-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <DocumentIcon className="h-8 w-8 text-red-500 mr-3" />
+                        <div>
+                          <h3 className="font-medium text-black">
+                            {pdf.fileName}
+                          </h3>
+                          <p className="text-xs text-black">
+                            {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
+                            Added {pdf.uploadedAt ? formatUploadDate(pdf.uploadedAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href={pdf.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                        title="View PDF"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-black text-center py-8">No resources available yet</p>
+              )}
             </div>
-
-            {/* Upcoming Visits Tab Content */}
-            {activeTab === 'upcoming' && (
-              <div className="space-y-4 mt-6">
-                {website.upcomingVisits && website.upcomingVisits.length > 0 ? (
-                  website.upcomingVisits.map((visit, index) => (
-                    <div 
-                      key={`upcoming-${index}`}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <CalendarIcon className="h-6 w-6" style={{ color: primaryColor }} />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-lg text-[#000000]">{visit.title}</h3>
-                          <p className="text-gray-600 text-sm mb-2">{visit.date}</p>
-                          {visit.description && (
-                            <p className="text-gray-700">{visit.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No upcoming visits scheduled</p>
-                )}
-              </div>
-            )}
-
-            {/* Past Events Tab Content */}
-            {activeTab === 'past' && (
-              <div className="space-y-4 mt-6">
-                {website.pastEvents && website.pastEvents.length > 0 ? (
-                  website.pastEvents.map((event, index) => (
-                    <div 
-                      key={`past-${index}`}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <CalendarIcon className="h-6 w-6" style={{ color: primaryColor }} />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-lg text-[#000000]">{event.title}</h3>
-                          <p className="text-gray-600 text-sm mb-2">{event.date}</p>
-                          {event.description && (
-                            <p className="text-gray-700">{event.description}</p>
-                          )}
-                          {event.photoUrl && (
-                            <div className="mt-3 relative aspect-video rounded-lg overflow-hidden">
-                              <Image
-                                src={event.photoUrl}
-                                alt={event.title}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No past events to show</p>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Information Section */}
-          {hasPDFs && (
-            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4"
-                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
-              >
-                Information
-              </h2>
-              <div className="space-y-8">
-                {website.pdfUploads?.map((pdf, index) => (
-                  <div key={`pdf-viewer-${index}`} className="w-full max-w-3xl mx-auto rounded-lg overflow-hidden shadow-lg">
-                    <div className="flex items-center justify-between bg-gray-50 p-3 border-b">
-                      <div className="flex items-center max-w-[70%] overflow-hidden">
-                        <DocumentIcon className="h-5 w-5 text-gray-700 mr-2 flex-shrink-0" />
-                        <h3 className="font-medium text-gray-800 truncate">{pdf.fileName}</h3>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500 flex-shrink-0">
-                        {pdf.fileSize ? `${Math.round(pdf.fileSize / 1024)} KB • ` : ''}
-                        {pdf.uploadedAt ? formatUploadDate(pdf.uploadedAt) : 'recently'}
-                        <a 
-                          href={pdf.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-3 text-blue-600 hover:text-blue-800 flex-shrink-0"
-                          title="Open in new tab"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-                    <div className="w-full h-[380px] bg-gray-50">
-                      <iframe
-                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdf.url)}&embedded=true`}
-                        className="w-full h-full border-none"
-                        title={pdf.fileName}
-                      ></iframe>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Gallery Section */}
-          {hasGallery && (
-            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4"
-                style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
-              >
-                Photo Gallery
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {website.galleryImages?.map((imageUrl, index) => (
-                  <div 
-                    key={`gallery-${index}`}
-                    className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
-                    onClick={() => {
-                      setSelectedImage(imageUrl);
-                      setCurrentImageIndex(index);
-                    }}
-                  >
-                    <Image
-                      src={imageUrl}
-                      alt={getImageTitle(imageUrl) || `Gallery image ${index + 1}`}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center p-4">
-                        <h3 className="font-medium mb-1">{getImageTitle(imageUrl) || `Image ${index + 1}`}</h3>
-                        <p className="text-sm opacity-80">Click to view</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Team Members Section */}
+          {/* Leadership Team Section */}
           {hasMembers && (
             <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
               <h2 className="text-2xl font-bold text-[#000000] mb-6"
                 style={{ borderBottom: `2px solid ${primaryColor}`, paddingBottom: '0.5rem', display: 'inline-block' }}
               >
-                Team Members
+                Leadership Team
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {website.members?.map((member, index) => (
-                  <div 
-                    key={`member-${index}`}
-                    className="flex flex-col sm:flex-row gap-4 rounded-lg p-4 hover:scale-[1.02] transition-transform duration-200"
-                    style={{ backgroundColor: `${primaryColor}10` }}
-                  >
-                    <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0 relative">
+                  <div key={`member-${index}`} className="flex items-start gap-4">
+                    <div className="h-16 w-16 rounded-full overflow-hidden bg-blue-50 flex-shrink-0">
                       {member.photoUrl ? (
                         <Image 
                           src={member.photoUrl} 
-                          alt={member.name || 'Team member'} 
-                          className="object-cover"
-                          fill
-                          sizes="100px"
+                          alt={member.name} 
+                          width={64} 
+                          height={64} 
+                          className="object-cover h-full w-full" 
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center"
-                          style={{ backgroundColor: `${primaryColor}20` }}
-                        >
-                          <UserIcon className="h-8 w-8" style={{ color: primaryColor }} />
-                        </div>
+                        <UserIcon className="h-16 w-16 p-3 text-black" />
                       )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-[#000000] text-lg">{member.name}</h3>
-                      <p className="font-medium mb-2" style={{ color: primaryColor }}>{member.role}</p>
+                      <h3 className="font-medium text-lg text-[#000000]">{member.name}</h3>
+                      <p className="text-black text-sm">{member.role}</p>
                       {member.bio && (
-                        <p className="text-sm text-[#000000]/70">{member.bio}</p>
+                        <p className="text-black text-sm mt-2">{member.bio}</p>
                       )}
                     </div>
                   </div>
@@ -495,109 +452,189 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - Club Meeting Info, Contact Links, Interest Form */}
         <div className="space-y-6">
-          {/* Meeting Information Section */}
-          {website.meetingInfo && (
-            <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4">Meeting Information</h2>
-              <div className="text-[#000000]">
+          {/* Interest form - Made more prominent */}
+          <div id="interest-form" className="bg-white rounded-xl overflow-hidden shadow-md border-2" style={{ borderColor: primaryColor }}>
+            <div className="p-5 bg-gradient-to-r" style={{ 
+              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+              color: 'white'
+            }}>
+              <h2 className="text-xl font-bold mb-1">Interested in joining?</h2>
+              <p className="text-sm opacity-90">Fill out this form to express your interest!</p>
+            </div>
+            
+            {showInterestForm ? (
+              <form onSubmit={handleInterestFormSubmit} className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-black mb-1">Full Name</label>
+                    <input
+                      id="name"
+                      type="text"
+                      value={interestFormData.name}
+                      onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-offset-0 focus:outline-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-black mb-1">Email Address</label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={interestFormData.email}
+                      onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-offset-0 focus:outline-none"
+                    />
+                  </div>
+                  
+                  <div className="pt-3 flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowInterestForm(false)}
+                      className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-blue-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="p-6 text-center flex flex-col items-center">
+                <button
+                  onClick={() => setShowInterestForm(true)}
+                  className="w-full p-3 text-white rounded-md hover:opacity-90 transition-opacity font-medium text-lg"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  I'm Interested!
+                </button>
+                <p className="text-black text-sm mt-3">
+                  No commitment - just let us know you're interested and we'll contact you!
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Club Info Panel */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-[#000000] mb-4">Club Information</h2>
+            
+            {website.meetingInfo && (
+              <div className="mb-6">
+                <h3 className="font-medium text-black mb-2">Meeting Details</h3>
                 {formatMeetingInfo()}
               </div>
-            </div>
-          )}
-
-          {/* Contact Links Section */}
-          {hasContactLinks && (
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-center mb-4">
-                <LinkIcon className="h-5 w-5 mr-2" style={{ color: primaryColor }} />
-                <h2 className="text-xl font-bold text-[#000000]">
-                  Contact & Links
-                </h2>
-              </div>
-              <div className="space-y-3">
-                {website.contactLinks?.map((link, index) => {
-                  const url = link.type === 'email' 
-                    ? `mailto:${link.url}` 
-                    : link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                    
-                  return (
-                    <a 
-                      key={`link-${index}`}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <span className="flex items-center justify-center w-8 h-8 rounded-full mr-3"
-                        style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}
-                      >
-                        {getLinkIcon(link.type)}
-                      </span>
-                      <span className="font-medium text-[#000000]">{link.label}</span>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Documents & Resources Card */}
-          {website.resources && website.resources.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-              <h3 className="text-xl font-bold text-[#000000] mb-4">Documents & Resources</h3>
-              <div className="space-y-3">
-                {website.resources.map((resource, index) => (
-                  <a
-                    key={`resource-${index}`}
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="mr-3 text-gray-700">
-                      {resource.type === 'pdf' ? (
-                        <DocumentIcon className="h-5 w-5" />
-                      ) : (
-                        <GlobeAltIcon className="h-5 w-5" />
-                      )}
-                    </span>
-                    <div className="flex-1">
-                      <span className="font-medium text-[#000000]">{resource.title}</span>
-                      {resource.description && (
-                        <p className="text-sm text-gray-600">{resource.description}</p>
-                      )}
-                      <div className="text-xs text-gray-500">
-                        {resource.type === 'pdf' && resource.fileSize && 
-                          `${Math.round(resource.fileSize / 1024)} KB • `
-                        }
-                        Added {formatUploadDate(resource.uploadedAt)}
-                      </div>
+            )}
+            
+            {/* Display Members */}
+            {website.members && website.members.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium text-black mb-2">Club Leadership</h3>
+                <div className="space-y-2">
+                  {/* Show Sponsors */}
+                  {website.members.filter(m => m.role.toLowerCase().includes('sponsor')).length > 0 && (
+                    <div className="pb-2">
+                      <span className="font-medium">Sponsor:</span>{' '}
+                      {website.members
+                        .filter(m => m.role.toLowerCase().includes('sponsor'))
+                        .map(s => s.name)
+                        .join(', ')}
                     </div>
-                  </a>
+                  )}
+                  
+                  {/* Show Captains or Leaders */}
+                  {website.members.filter(m => 
+                    m.role.toLowerCase().includes('captain') || 
+                    m.role.toLowerCase().includes('president') ||
+                    m.role.toLowerCase().includes('leader')
+                  ).length > 0 && (
+                    <div>
+                      <span className="font-medium">Captains:</span>{' '}
+                      {website.members
+                        .filter(m => 
+                          m.role.toLowerCase().includes('captain') || 
+                          m.role.toLowerCase().includes('president') ||
+                          m.role.toLowerCase().includes('leader')
+                        )
+                        .map(c => c.name)
+                        .join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Contact Links */}
+            {website.contactLinks && website.contactLinks.length > 0 && (
+              <div>
+                <h3 className="font-medium text-black mb-3">Contact Emails</h3>
+                <div className="space-y-3">
+                  {website.contactLinks.map((link, index) => (
+                    <div key={`contact-${index}`} className="flex items-center gap-2">
+                      <a 
+                        href={link.url.includes('@') ? `mailto:${link.url}` : link.url}
+                        target={link.url.includes('@') ? undefined : '_blank'} 
+                        rel={link.url.includes('@') ? undefined : 'noopener noreferrer'}
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-1.5" style={{ color: primaryColor }} />
+                        <span className="text-black">{link.label || link.url}</span>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Gallery Preview Section */}
+          {hasGallery && (
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-[#000000] mb-4">Gallery</h2>
+              <div className="grid grid-cols-2 gap-2">
+                {website.galleryImages?.slice(0, 4).map((image, index) => (
+                  <div 
+                    key={`gallery-preview-${index}`}
+                    className="aspect-square overflow-hidden rounded-md cursor-pointer relative"
+                    onClick={() => {
+                      setSelectedImage(image);
+                      setCurrentImageIndex(index);
+                    }}
+                  >
+                    <Image 
+                      src={image} 
+                      alt={getImageTitle(image) || `Gallery image ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover transition-transform hover:scale-110"
+                    />
+                  </div>
                 ))}
               </div>
+              {website.galleryImages && website.galleryImages.length > 4 && (
+                <button
+                  onClick={() => {
+                    setSelectedImage(website.galleryImages![0]);
+                    setCurrentImageIndex(0);
+                  }}
+                  className="w-full mt-3 py-2 px-4 border border-gray-300 rounded-lg text-black hover:bg-blue-50 text-sm"
+                >
+                  View all {website.galleryImages.length} photos
+                </button>
+              )}
             </div>
           )}
-
-          {/* Back to Jamboree Link */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <Link 
-              href="/jamboree"
-              className="flex items-center font-medium hover:underline"
-              style={{ color: primaryColor }}
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = '/jamboree';
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Jamboree
-            </Link>
-          </div>
         </div>
       </div>
       
@@ -642,7 +679,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             
             {/* Close button */}
             <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300"
+              className="absolute top-4 right-4 text-white hover:text-black"
               onClick={() => setSelectedImage(null)}
             >
               <XMarkIcon className="h-8 w-8" />
@@ -668,87 +705,6 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Interest Form Button - Always visible */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        <button
-          onClick={() => setShowInterestForm(true)}
-          className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        >
-          Are you interested?
-        </button>
-      </div>
-
-      {/* Interest Form Modal */}
-      <AnimatePresence>
-        {showInterestForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowInterestForm(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#000000]">Interested in {website.clubName}?</h2>
-                <button
-                  onClick={() => setShowInterestForm(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleInterestFormSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Name (Last, First)
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    required
-                    value={interestFormData.name}
-                    onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter your name (Last, First)"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    required
-                    value={interestFormData.email}
-                    onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter your email"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg font-medium hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Interest'}
-                </button>
-              </form>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
