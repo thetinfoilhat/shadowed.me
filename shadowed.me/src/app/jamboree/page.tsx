@@ -407,7 +407,7 @@ export default function Jamboree() {
               />
             </div>
 
-            {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
+            {(userRole === 'admin') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -467,7 +467,7 @@ export default function Jamboree() {
               <p className="text-black mb-8">
                 {searchQuery ? 'Try adjusting your search terms' : 'Be the first to create a website for your club!'}
               </p>
-              {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
+              {(userRole === 'admin') && (
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-[#38BFA1] to-[#2DA891] hover:from-[#2DA891] hover:to-[#38BFA1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transform hover:scale-105 transition-all"

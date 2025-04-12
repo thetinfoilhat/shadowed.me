@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp, deleteDoc, or } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageTransition from '@/components/PageTransition';
@@ -83,10 +83,25 @@ export default function ClubWebsitePage() {
             if (role === 'admin') {
               setIsEditor(true);
             } else if (role === 'captain' || role === 'sponsor') {
-              // Fetch clubs where user is captain or sponsor
+              // Fetch clubs where user is captain (either in captain field or captains array)
               const clubsRef = collection(db, 'clubs');
-              const captainQuery = query(clubsRef, where('captain', '==', user.email));
-              const sponsorQuery = query(clubsRef, where('sponsorEmail', '==', user.email));
+              
+              // Check both captain and captains fields
+              const captainQuery = query(
+                clubsRef, 
+                or(
+                  where('captain', '==', user.email),
+                  where('captains', 'array-contains', user.email)
+                )
+              );
+              
+              const sponsorQuery = query(
+                clubsRef, 
+                or(
+                  where('sponsorEmail', '==', user.email),
+                  where('sponsorEmails', 'array-contains', user.email)
+                )
+              );
               
               const [captainSnapshot, sponsorSnapshot] = await Promise.all([
                 getDocs(captainQuery),
@@ -95,17 +110,24 @@ export default function ClubWebsitePage() {
               
               // Extract club names and convert to slugs
               const clubs: string[] = [];
+              
+              // Process captain clubs
               captainSnapshot.docs.forEach(doc => {
                 const data = doc.data();
                 if (data.name) {
-                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
+                  // Use slug if present, otherwise generate it from name
+                  const slug = data.slug || data.name.toLowerCase().replace(/\s+/g, '-');
+                  clubs.push(slug);
                 }
               });
               
+              // Process sponsor clubs
               sponsorSnapshot.docs.forEach(doc => {
                 const data = doc.data();
                 if (data.name) {
-                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
+                  // Use slug if present, otherwise generate it from name
+                  const slug = data.slug || data.name.toLowerCase().replace(/\s+/g, '-');
+                  clubs.push(slug);
                 }
               });
               

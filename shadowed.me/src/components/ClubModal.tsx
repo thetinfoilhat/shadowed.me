@@ -145,6 +145,12 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         sponsorEmailList.unshift(formData.sponsorEmail);
       }
       
+      // Create a proper slug from the club name for consistent formatting
+      // This handles parentheses and special characters
+      const slug = formData.name.trim().toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      
       const clubData = {
         ...formData,
         contactInfoList,
@@ -152,7 +158,8 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         captain: isAdmin ? formData.captain : user.email, // Use selected captain if admin
         createdAt: new Date(),
         updatedAt: new Date(),
-        created: true
+        created: true,
+        slug: slug // Add the slug property
       };
 
       if (initialData?.id) {
