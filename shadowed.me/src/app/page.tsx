@@ -254,7 +254,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <span className="text-[#000000]">
+              <span className="text-[#180D39]">
                 Helping students<br />
                 <span className="font-bold">
                   find their<br />
@@ -268,7 +268,7 @@ export default function Home() {
             
             <div className="mt-8">
               <motion.p 
-                className="text-base md:text-lg lg:text-xl text-[#000000]/70 mb-8 md:mb-12 max-w-xl"
+                className="text-base md:text-lg lg:text-xl text-[#180D39]/70 mb-8 md:mb-12 max-w-xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
@@ -287,7 +287,7 @@ export default function Home() {
                     Get Started →
                   </button>
                 </Link>
-                <span className="text-[#000000]/40 mt-2 sm:mt-0">Join 500+ students</span>
+                <span className="text-[#180D39]/40 mt-2 sm:mt-0">Join 500+ students</span>
               </motion.div>
             </div>
           </div>
@@ -296,7 +296,7 @@ export default function Home() {
           <div className="relative pt-12 md:pt-24 hidden md:block">
             {/* Main Feature Card */}
             <motion.div 
-              className="bg-gradient-to-br from-[#000000] to-[#1D1145] rounded-2xl p-8 shadow-xl w-full md:w-[95%]"
+              className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-8 shadow-xl w-full md:w-[95%]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -424,7 +424,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12">
               {/* Easy Discovery Card */}
               <motion.div 
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-[#000000]/5"
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-[#180D39]/5"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -5 }}
@@ -434,8 +434,8 @@ export default function Home() {
                 <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
                   <span className="text-2xl">🔍</span>
                 </div>
-                <h3 className="text-xl font-semibold text-[#000000] mb-3">Explore</h3>
-                <p className="text-[#000000]/70">
+                <h3 className="text-xl font-semibold text-[#180D39] mb-3">Explore</h3>
+                <p className="text-[#180D39]/70">
                 Find clubs, events, and opportunities that match your goals and schedule.
                 </p>
               </motion.div>
@@ -453,7 +453,7 @@ export default function Home() {
                   <span className="text-2xl">⚡</span>
                 </div>
                 <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Engage</h3>
-                <p className="text-[#000000]/70">
+                <p className="text-[#180D39]/70">
                 One-click sign-up for school clubs, extracurricular activities, and volunteer work.
                 </p>
               </motion.div>
@@ -545,7 +545,7 @@ export default function Home() {
           >
             <div className="text-5xl font-bold text-[#2A8E9E] mb-4">500+</div>
             <h3 className="text-2xl font-semibold text-[#0A2540] mb-2">Active Students</h3>
-            <p className="text-[#000000]/80">discovering opportunities daily</p>
+            <p className="text-[#180D39]/80">discovering opportunities daily</p>
           </motion.div>
 
           <motion.div 
@@ -553,7 +553,7 @@ export default function Home() {
             whileHover={{ y: -8 }}
           >
             <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Quick Registration</h3>
-            <p className="text-[#000000]/80 mb-8">One-click signup for all opportunities</p>
+            <p className="text-[#180D39]/80 mb-8">One-click signup for all opportunities</p>
             <div className="flex gap-4">
               <span className="text-3xl">📱</span>
               <span className="text-3xl">✨</span>
@@ -565,7 +565,7 @@ export default function Home() {
             whileHover={{ y: -8 }}
           >
             <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Teacher Touchpoints</h3>
-            <p className="text-[#000000]/80 mb-6">All activities are teacher or admin approved</p>
+            <p className="text-[#180D39]/80 mb-6">All activities are teacher or admin approved</p>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 rounded-lg bg-[#2A8E9E]/10 flex items-center justify-center">
@@ -607,7 +607,7 @@ export default function Home() {
                 <span className="text-[#2A8E9E] text-sm">+3 from last week</span>
               </div>
             </div>
-            <p className="text-[#000000]/80">Track your hours and impact</p>
+            <p className="text-[#180D39]/80">Track your hours and impact</p>
           </motion.div>
         </div>
       </div>
