@@ -6,12 +6,13 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit } from '@/types/club';
-import Link from 'next/link';
+import { Club, CompletedVisit, ClubSite, ClubListing } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
+import { getColorById } from '@/utils/colors';
 
 interface Applicant {
   name: string;
@@ -84,7 +85,7 @@ function formatTime(timeStr: string | undefined) {
 }
 
 export default function CaptainDashboard() {
-  const { user } = useAuth();
+  const { user, captainClubs } = useAuth();
   const [loading, setLoading] = useState(true);
   const [captainVisits, setCaptainVisits] = useState<Club[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -103,6 +104,11 @@ export default function CaptainDashboard() {
   const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
   const [upcomingExpanded, setUpcomingExpanded] = useState(true);
   const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [websites, setWebsites] = useState<ClubSite[]>([]);
+  const [clubs, setClubs] = useState<ClubListing[]>([]);
+  const [websitesExpanded, setWebsitesExpanded] = useState(true);
+  const [clubsExpanded, setClubsExpanded] = useState(true);
+  const router = useRouter();
 
   // Fetch user role
   useEffect(() => {
@@ -183,13 +189,66 @@ export default function CaptainDashboard() {
     }
   }, [user, isAdmin, fetchSponsorNames]);
 
+  // Fetch captain websites
+  const fetchCaptainWebsites = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      setLoading(true);
+      
+      // Get websites created by this captain
+      const websitesQuery = query(
+        collection(db, 'clubSites'),
+        where('createdBy', '==', user.email)
+      );
+      
+      const websitesSnapshot = await getDocs(websitesQuery);
+      const websitesData = websitesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ClubSite[];
+      
+      setWebsites(websitesData);
+    } catch (error) {
+      console.error('Error fetching captain websites:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Fetch captain clubs
+  const fetchCaptainClubs = useCallback(async () => {
+    if (!user?.email || !captainClubs.length) return;
+    
+    try {
+      const clubsData = [];
+      
+      // Get clubs where this user is a captain
+      for (const clubId of captainClubs) {
+        const clubDoc = await getDoc(doc(db, 'clubs', clubId));
+        if (clubDoc.exists()) {
+          clubsData.push({
+            id: clubDoc.id,
+            ...clubDoc.data()
+          });
+        }
+      }
+      
+      setClubs(clubsData as ClubListing[]);
+    } catch (error) {
+      console.error('Error fetching captain clubs:', error);
+    }
+  }, [user, captainClubs]);
+
   useEffect(() => {
     if (user) {
       fetchCaptainVisits();
+      fetchCaptainWebsites();
+      fetchCaptainClubs();
     } else {
       setLoading(false);
     }
-  }, [user, fetchCaptainVisits]);
+  }, [user, fetchCaptainVisits, fetchCaptainWebsites, fetchCaptainClubs]);
 
   const saveVisit = async (data: VisitData) => {
     try {
@@ -324,8 +383,8 @@ export default function CaptainDashboard() {
             <h1 className="text-3xl font-semibold text-[#0A2540] mb-4">
               Please Sign In
             </h1>
-            <p className="text-gray-600 mb-8">
-              Sign in to manage your club visits and view applicants
+            <p className="text-black mb-8">
+              Sign in to manage your club websites
             </p>
             <button
               onClick={() => document.querySelector<HTMLButtonElement>('[data-login-button]')?.click()}
@@ -334,13 +393,6 @@ export default function CaptainDashboard() {
               <span>Sign In</span>
               <span>→</span>
             </button>
-          </div>
-          
-          <div className="text-sm text-gray-500">
-            Want to create opportunities?{' '}
-            <Link href="/about" className="text-[#38BFA1] hover:underline">
-              Learn more about becoming a captain
-            </Link>
           </div>
         </div>
       </div>
@@ -362,278 +414,441 @@ export default function CaptainDashboard() {
           </div>
         </div>
 
-        {captainVisits.length === 0 ? (
-          <div className="bg-white rounded-xl p-16 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-center">
-            <div className="max-w-md mx-auto">
-              <h2 className="text-2xl font-semibold text-[#0A2540] mb-4">
-                Create Your First Club Visit
-              </h2>
-              <p className="text-gray-600 mb-8">
-                Start by creating a club visit opportunity for students to sign up
-              </p>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg hover:bg-[#2DA891] transition-colors"
-              >
-                Create Visit
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Upcoming Visits Section */}
-            <div>
-              <button 
-                onClick={() => setUpcomingExpanded(!upcomingExpanded)}
-                className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
-              >
-                <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
-                  Upcoming Club Visits
-                  <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
-                    {captainVisits.filter(visit => !visit.completed).length}
-                  </span>
-                </h2>
-                {upcomingExpanded ? (
-                  <ChevronUpIcon className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronDownIcon className="h-5 w-5 text-gray-500" />
-                )}
-              </button>
+        {/* Club Websites Section */}
+        <div className="mb-8">
+          <button 
+            onClick={() => setWebsitesExpanded(!websitesExpanded)}
+            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+          >
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              Your Club Websites
+              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
+                {websites.length}
+              </span>
+            </h2>
+            {websitesExpanded ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
 
-              {upcomingExpanded && (
-                <div className="space-y-4 animate-fadeIn">
-                  {captainVisits
-                    .filter(visit => !visit.completed)
-                    .map((visit) => (
+          {websitesExpanded && (
+            <div className="space-y-4 animate-fadeIn">
+              {websites.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {websites.map((website) => (
+                    <div
+                      key={website.id}
+                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+                    >
                       <div 
-                        key={visit.id} 
-                        className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
-                        onClick={() => setViewingApplicants(visit)}
+                        className="h-40 bg-cover bg-center relative" 
+                        style={{ 
+                          backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value,
+                          backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined
+                        }}
                       >
-                        <div className="flex items-start gap-6">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h3>
-                            <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
-                            
-                            {/* Approval Status Bar */}
-                            {visit.status && (
-                              <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
-                                visit.status === 'pending' 
-                                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                                  : visit.status === 'approved' 
-                                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                                    : 'bg-red-100 text-red-700 border border-red-200'
-                              }`}>
-                                {visit.status === 'pending' && (
-                                  <span>Waiting for approval from <span className="font-semibold">
-                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                                  </span></span>
-                                )}
-                                {visit.status === 'approved' && (
-                                  <span>Approved by <span className="font-semibold">
-                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                                  </span></span>
-                                )}
-                                {visit.status === 'rejected' && (
-                                  <span>Rejected by <span className="font-semibold">
-                                    {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
-                                  </span></span>
-                                )}
-                              </div>
+                        {!website.bannerImage && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <h2 className="text-3xl font-bold text-white px-4 text-center">
+                              {website.clubName}
+                            </h2>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-black mb-2">
+                            {website.clubName}
+                          </h3>
+                          <p className="text-black mb-2 line-clamp-2">
+                            {website.slogan || website.description?.substring(0, 100) || 'No description available.'}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center mt-4">
+                          <span className="text-sm text-black">
+                            Updated {new Date(website.updatedAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/${website.slug}?edit=true`)}
+                              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-opacity"
+                              style={{ backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value }}
+                            >
+                              Edit Site
+                            </button>
+                            <button
+                              onClick={() => router.push(`/${website.slug}`)}
+                              className="px-3 py-1.5 border text-black rounded-md hover:bg-gray-50"
+                            >
+                              View
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-black">You haven&apos;t created any websites yet.</p>
+                  <button
+                    onClick={() => router.push('/jamboree')}
+                    className="mt-4 px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+                  >
+                    Create a Website
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Club Assignments Section */}
+        <div>
+          <button 
+            onClick={() => setClubsExpanded(!clubsExpanded)}
+            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+          >
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              Your Club Assignments
+              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
+                {clubs.length}
+              </span>
+            </h2>
+            {clubsExpanded ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
+
+          {clubsExpanded && (
+            <div className="space-y-4 animate-fadeIn">
+              {clubs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {clubs.map((club) => (
+                    <div
+                      key={club.id}
+                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col"
+                    >
+                      <div className="h-2" style={{ backgroundColor: club.bgColor || '#38BFA1' }} />
+                      <div className="p-5">
+                        <h3 className="text-lg font-semibold text-black mb-2">
+                          {club.name}
+                        </h3>
+                        
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          <span 
+                            className="text-xs font-medium px-2.5 py-1 rounded-full text-white"
+                            style={{ 
+                              background: club.bgGradient || `linear-gradient(135deg, ${club.bgColor || '#38BFA1'}, ${club.bgColor || '#38BFA1'}dd)`,
+                            }}
+                          >
+                            {club.category || 'Club'}
+                          </span>
+                          
+                          {club.attributes && club.attributes.length > 0 && (
+                            <span className="text-xs bg-gray-100 text-black px-2.5 py-1 rounded-full font-medium">
+                              {club.attributes[0]}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="text-sm text-black border-t pt-3 space-y-2">
+                          {club.meetingTimes && (
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>{club.meetingTimes}</span>
+                            </div>
+                          )}
+                          
+                          {club.roomNumber && (
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              <span>Room: {club.roomNumber}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-4">
+                          <button
+                            onClick={() => router.push('/jamboree')}
+                            className="w-full px-3 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                            style={{ backgroundColor: club.bgColor || '#38BFA1' }}
+                          >
+                            Create Website
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-black">You&apos;re not assigned to any clubs yet.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Upcoming Visits Section */}
+        <div>
+          <button 
+            onClick={() => setUpcomingExpanded(!upcomingExpanded)}
+            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+          >
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              Upcoming Club Visits
+              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
+                {captainVisits.filter(visit => !visit.completed).length}
+              </span>
+            </h2>
+            {upcomingExpanded ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
+
+          {upcomingExpanded && (
+            <div className="space-y-4 animate-fadeIn">
+              {captainVisits
+                .filter(visit => !visit.completed)
+                .map((visit) => (
+                  <div 
+                    key={visit.id} 
+                    className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
+                    onClick={() => setViewingApplicants(visit)}
+                  >
+                    <div className="flex items-start gap-6">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h3>
+                        <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
+                        
+                        {/* Approval Status Bar */}
+                        {visit.status && (
+                          <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
+                            visit.status === 'pending' 
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                              : visit.status === 'approved' 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            {visit.status === 'pending' && (
+                              <span>Waiting for approval from <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
                             )}
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <p className="text-gray-500">School</p>
-                                <p className="font-medium">{visit.school}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Date</p>
-                                <p className="font-medium">{formatDate(visit.date)}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Time</p>
-                                <p className="font-medium">{formatTime(visit.time)}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Available Slots</p>
-                                <p className="font-medium">{visit.slots}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Applicants</p>
-                                <p className="font-medium">{visit.applicants?.length || 0}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Category</p>
-                                <p className="font-medium text-[#38BFA1]">{visit.category}</p>
-                              </div>
-                            </div>
+                            {visit.status === 'approved' && (
+                              <span>Approved by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                            {visit.status === 'rejected' && (
+                              <span>Rejected by <span className="font-semibold">
+                                {visit.sponsorEmail} {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? `(${sponsorNames[visit.sponsorEmail]})` : ''}
+                              </span></span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">School</p>
+                            <p className="font-medium">{visit.school}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Date</p>
+                            <p className="font-medium">{formatDate(visit.date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Time</p>
+                            <p className="font-medium">{formatTime(visit.time)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Available Slots</p>
+                            <p className="font-medium">{visit.slots}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Applicants</p>
+                            <p className="font-medium">{visit.applicants?.length || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Category</p>
+                            <p className="font-medium text-[#38BFA1]">{visit.category}</p>
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
-                          <button 
-                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCompletionClick(visit, !visit.completed);
-                            }}
-                          >
-                            <span className="text-sm">Mark as Completed</span>
-                          </button>
-                          <button 
-                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingVisit(visit);
-                              setIsCreateModalOpen(true);
-                            }}
-                          >
-                            <span className="text-sm">Edit</span>
-                          </button>
-                          <button 
-                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewingApplicants(visit);
-                            }}
-                          >
-                            <span className="text-sm">View Applicants</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDelete({ isOpen: true, visitId: visit.id });
-                            }}
-                            className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
-                          >
-                            <span className="text-sm">Delete</span>
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                </div>
-              )}
+                    </div>
 
-              {upcomingExpanded && captainVisits.filter(visit => !visit.completed).length === 0 && (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">No upcoming club visits</p>
-                </div>
-              )}
-            </div>
-
-            {/* Completed Visits Section */}
-            <div>
-              <button 
-                onClick={() => setCompletedExpanded(!completedExpanded)}
-                className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
-              >
-                <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
-                  Completed Club Visits
-                  <span className="ml-2 bg-gray-500 text-white text-sm px-2 py-0.5 rounded-full">
-                    {captainVisits.filter(visit => visit.completed).length}
-                  </span>
-                </h2>
-                {completedExpanded ? (
-                  <ChevronUpIcon className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronDownIcon className="h-5 w-5 text-gray-500" />
-                )}
-              </button>
-
-              {completedExpanded && (
-                <div className="space-y-4 animate-fadeIn">
-                  {captainVisits
-                    .filter(visit => visit.completed)
-                    .map((visit) => (
-                      <div 
-                        key={visit.id} 
-                        className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
-                        onClick={() => setViewingApplicants(visit)}
+                    {/* Action Buttons */}
+                    <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompletionClick(visit, !visit.completed);
+                        }}
                       >
-                        <div className="flex items-start gap-6">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="text-xl font-semibold text-[#0A2540]">{visit.name}</h3>
-                              <span className="px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
-                                Completed
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <p className="text-gray-500">School</p>
-                                <p className="font-medium">{visit.school}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Date</p>
-                                <p className="font-medium">{formatDate(visit.date)}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Time</p>
-                                <p className="font-medium">{formatTime(visit.time)}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Total Slots</p>
-                                <p className="font-medium">{visit.slots}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Participants</p>
-                                <p className="font-medium">{visit.applicants?.length || 0}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Category</p>
-                                <p className="font-medium text-[#38BFA1]">{visit.category}</p>
-                              </div>
-                            </div>
+                        <span className="text-sm">Mark as Completed</span>
+                      </button>
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingVisit(visit);
+                          setIsCreateModalOpen(true);
+                        }}
+                      >
+                        <span className="text-sm">Edit</span>
+                      </button>
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewingApplicants(visit);
+                        }}
+                      >
+                        <span className="text-sm">View Applicants</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDelete({ isOpen: true, visitId: visit.id });
+                        }}
+                        className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        <span className="text-sm">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {upcomingExpanded && captainVisits.filter(visit => !visit.completed).length === 0 && (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">No upcoming club visits</p>
+            </div>
+          )}
+        </div>
+
+        {/* Completed Visits Section */}
+        <div>
+          <button 
+            onClick={() => setCompletedExpanded(!completedExpanded)}
+            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+          >
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              Completed Club Visits
+              <span className="ml-2 bg-gray-500 text-white text-sm px-2 py-0.5 rounded-full">
+                {captainVisits.filter(visit => visit.completed).length}
+              </span>
+            </h2>
+            {completedExpanded ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
+
+          {completedExpanded && (
+            <div className="space-y-4 animate-fadeIn">
+              {captainVisits
+                .filter(visit => visit.completed)
+                .map((visit) => (
+                  <div 
+                    key={visit.id} 
+                    className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all group relative"
+                    onClick={() => setViewingApplicants(visit)}
+                  >
+                    <div className="flex items-start gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl font-semibold text-[#0A2540]">{visit.name}</h3>
+                          <span className="px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+                            Completed
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">School</p>
+                            <p className="font-medium">{visit.school}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Date</p>
+                            <p className="font-medium">{formatDate(visit.date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Time</p>
+                            <p className="font-medium">{formatTime(visit.time)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Total Slots</p>
+                            <p className="font-medium">{visit.slots}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Participants</p>
+                            <p className="font-medium">{visit.applicants?.length || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Category</p>
+                            <p className="font-medium text-[#38BFA1]">{visit.category}</p>
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
-                          <button 
-                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCompletionClick(visit, !visit.completed);
-                            }}
-                          >
-                            <span className="text-sm">Unmark as Completed</span>
-                          </button>
-                          <button 
-                            className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewingApplicants(visit);
-                            }}
-                          >
-                            <span className="text-sm">View Participants</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDelete({ isOpen: true, visitId: visit.id });
-                            }}
-                            className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
-                          >
-                            <span className="text-sm">Delete</span>
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                </div>
-              )}
+                    </div>
 
-              {completedExpanded && captainVisits.filter(visit => visit.completed).length === 0 && (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">No completed club visits</p>
-                </div>
-              )}
+                    {/* Action Buttons */}
+                    <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompletionClick(visit, !visit.completed);
+                        }}
+                      >
+                        <span className="text-sm">Unmark as Completed</span>
+                      </button>
+                      <button 
+                        className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewingApplicants(visit);
+                        }}
+                      >
+                        <span className="text-sm">View Participants</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDelete({ isOpen: true, visitId: visit.id });
+                        }}
+                        className="bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        <span className="text-sm">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
-          </div>
-        )}
+          )}
+
+          {completedExpanded && captainVisits.filter(visit => visit.completed).length === 0 && (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">No completed club visits</p>
+            </div>
+          )}
+        </div>
 
         {/* Create/Edit Visit Modal */}
         <VisitModal

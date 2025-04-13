@@ -12,7 +12,6 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
 import { getColorById } from '@/utils/colors';
-import Link from 'next/link';
 
 export default function Jamboree() {
   const router = useRouter();
@@ -129,22 +128,6 @@ export default function Jamboree() {
   return (
     <PageTransition>
       <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
-        {/* Navigation Tabs */}
-        <div className="flex justify-center gap-4 mb-12">
-          <Link
-            href="/jamboree"
-            className="px-6 py-2 rounded-lg font-medium transition-colors bg-[#38BFA1] text-white"
-          >
-            Websites
-          </Link>
-          <Link
-            href="/club-listings"
-            className="px-6 py-2 rounded-lg font-medium transition-colors bg-white text-[#180D39] hover:bg-gray-50"
-          >
-            All Clubs
-          </Link>
-        </div>
-
         {/* Hero Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="text-center">

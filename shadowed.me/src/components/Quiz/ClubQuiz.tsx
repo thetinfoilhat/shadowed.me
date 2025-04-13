@@ -2360,7 +2360,7 @@ const ClubQuiz: React.FC = () => {
               <div className="w-full space-y-6">
                 {clubMatches.map((match, index) => (
                   <motion.div 
-                    key={index} 
+                    key={`club-${match.club.name}-${index}`} 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 + index * 0.1 }}
@@ -2424,7 +2424,7 @@ const ClubQuiz: React.FC = () => {
                         <div className="flex flex-wrap gap-2">
                           {match.matchedAttributes.map((attr, i) => (
                             <motion.span 
-                              key={i}
+                              key={`attr-${attr}-${i}`}
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: 0.8 + index * 0.1 + i * 0.03 }}

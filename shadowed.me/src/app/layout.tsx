@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import ToasterProvider from "@/components/ToasterProvider";
 import "./globals.css";
 import { AuthProvider } from '@/context/AuthContext';
+import AuthCheckWrapper from "@/components/AuthCheckWrapper";
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -52,6 +53,7 @@ export default function RootLayout({
           </Suspense>
           <Footer />
           <ToasterProvider />
+          <AuthCheckWrapper />
         </AuthProvider>
       </body>
     </html>
