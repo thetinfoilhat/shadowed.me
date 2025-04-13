@@ -100,14 +100,6 @@ export default function ClubAssignmentModal({
         updatedAt: new Date()
       };
       
-      // Add slug property to ensure consistent format
-      if (club.name) {
-        // Create a proper slug that handles parentheses and special characters
-        updateData.slug = club.name.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
-      }
-      
       // Keep backward compatibility by setting the primary captain/sponsor
       if (selectedCaptains.length > 0) {
         updateData.captain = selectedCaptains[0];

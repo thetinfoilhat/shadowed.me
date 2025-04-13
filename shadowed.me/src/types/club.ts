@@ -60,7 +60,6 @@ export interface ClubListing {
   sponsorEmailList?: string[];
   captains?: string[];
   sponsorEmails?: string[];
-  slug?: string;
 }
 
 export interface ClubSite {
