@@ -311,10 +311,10 @@ export default function Header() {
             <ul className="flex gap-8">
               <li>
                 <Link 
-                  href="/jamboree"
+                  href="/clubs"
                   className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                 >
-                  Jamboree
+                  Clubs
                 </Link>
               </li>
               {/* <li>

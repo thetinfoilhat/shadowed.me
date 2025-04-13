@@ -50,6 +50,17 @@ export interface ClubSite {
   slogan?: string;
   description?: string;      // Long form about section
   meetingInfo?: string;      // Times, room, day
+  roomNumber?: string;       // Room number for meetings
+  category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
+  activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
+  jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
+    table?: string;          // Jamboree table number or identifier
+    time?: string;           // Meeting time (e.g. "Weekly on TBD")
+    room?: string;           // Room where meetings are held
+    captains?: string;       // Captains information
+    sponsor?: string;        // Sponsor information
+    email?: string;          // Contact email
+  };
   galleryImages?: string[];  // URLs to images
   galleryImagesMetadata?: {
     url: string;
@@ -85,6 +96,12 @@ export interface ClubSite {
       timestamp: number;
     }[];
   };
+  meetingFrequency?: string;
+  meetingSchedule?: {
+    day: string;
+    startTime: string;
+    endTime: string;
+  }[];
 }
 
 // Member interface (formerly Officer)
@@ -154,6 +171,61 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   
   // Create a ref to store the handleSave function
   const handleSaveRef = useRef<(partialData?: Partial<ClubSite>) => Promise<void>>((async () => {}));
+  
+  // Format meeting information based on frequency and schedule
+  const formatMeetingInfo = (frequency: string, schedule: { day: string; startTime: string; endTime: string }[]): string => {
+    if (!schedule || schedule.length === 0) return '';
+    
+    const formatTime = (timeString: string): string => {
+      try {
+        // Convert 24-hour format to 12-hour format
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours, 10);
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+        return `${hour12}:${minutes} ${period}`;
+      } catch (error) {
+        console.error('Error formatting time:', error);
+        return timeString;
+      }
+    };
+    
+    // Day abbreviations mapping
+    const dayAbbreviations: Record<string, string> = {
+      'Monday': 'Mon',
+      'Tuesday': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday': 'Thu',
+      'Friday': 'Fri',
+      'Saturday': 'Sat',
+      'Sunday': 'Sun'
+    };
+    
+    // Group meetings by day
+    const meetingsByDay: Record<string, { startTime: string; endTime: string }[]> = {};
+    
+    schedule.forEach(meeting => {
+      if (!meetingsByDay[meeting.day]) {
+        meetingsByDay[meeting.day] = [];
+      }
+      meetingsByDay[meeting.day].push({
+        startTime: formatTime(meeting.startTime),
+        endTime: formatTime(meeting.endTime)
+      });
+    });
+    
+    // Format each day's meetings
+    const formattedDays = Object.entries(meetingsByDay).map(([day, times]) => {
+      // Use abbreviation for the day
+      const dayAbbr = dayAbbreviations[day] || day;
+      // Use hyphen instead of "to"
+      const timeRanges = times.map(time => `${time.startTime}-${time.endTime}`).join(', ');
+      return `${dayAbbr}: ${timeRanges}`;
+    });
+    
+    // Combine with frequency
+    return `${formattedDays.join(' | ')} (${frequency})`;
+  };
   
   // Save the form data
   const handleSave = useCallback(async (partialData?: Partial<ClubSite>) => {
@@ -983,7 +1055,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         type="text"
                         value={formData.clubName}
                         onChange={(e) => handleInputChange('clubName', e.target.value)}
-                        className="w-full px-4 py-3 text-xl font-bold rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                        className="w-full px-4 py-3 text-xl font-bold rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                         placeholder="Your Club Name"
                       />
                     </div>
@@ -996,10 +1068,346 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         type="text"
                         value={formData.slogan || ''}
                         onChange={(e) => handleInputChange('slogan', e.target.value)}
-                        className="w-full px-4 py-3 text-lg rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                        className="w-full px-4 py-3 text-lg rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                         placeholder="Add a short, catchy phrase to describe your club"
                       />
                       <p className="text-xs text-gray-500 mt-1">A brief statement that captures the essence of your club</p>
+                    </div>
+                  </div>
+                </section>
+                
+                {/* Club Classification & Meeting Info Section */}
+                <section 
+                  ref={(el) => { sectionsRef.current['classification'] = el; }} 
+                  className="bg-white rounded-xl p-6 shadow-sm"
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-[#180D39]">Club Classification & Meeting Info</h3>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 mb-6">
+                    Add important information about your club category, activity type, and meeting details.
+                    This information will be displayed on the Jamboree page and help students find your club.
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Club Category
+                      </label>
+                      <select
+                        value={formData.category || ''}
+                        onChange={(e) => handleInputChange('category', e.target.value)}
+                        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                      >
+                        <option value="">Select a category</option>
+                        <option value="STEM">STEM</option>
+                        <option value="Business">Business</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Language & Culture">Language & Culture</option>
+                        <option value="Community Service">Community Service</option>
+                        <option value="Humanities">Humanities</option>
+                        <option value="Medical">Medical</option>
+                        <option value="Academic">Academic Competition</option>
+                        <option value="Miscellaneous">Miscellaneous</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">Categorizing your club helps students find activities they&apos;re interested in</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Activity Type
+                      </label>
+                      <select
+                        value={formData.activityType || ''}
+                        onChange={(e) => handleInputChange('activityType', e.target.value)}
+                        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                      >
+                        <option value="">Select an activity type</option>
+                        <option value="Competitive">Competitive</option>
+                        <option value="Leaders">Leaders</option>
+                        <option value="Tryout">Tryout</option>
+                        <option value="Public Speaking">Public Speaking</option>
+                        <option value="Performance">Performance</option>
+                        <option value="Casual">Casual</option>
+                        <option value="Academic">Academic</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">What kind of activities does your club involve?</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Room Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.roomNumber || ''}
+                      onChange={(e) => handleInputChange('roomNumber', e.target.value)}
+                      className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                      placeholder="e.g., Room 123"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Where does your club meet?</p>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meeting Information
+                    </label>
+                    
+                    {/* Structured Meeting Info */}
+                    <div className="bg-white rounded-lg border border-gray-300 p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {/* Frequency Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Meeting Frequency
+                          </label>
+                          <select
+                            className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                            value={formData.meetingFrequency || 'weekly'}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              handleInputChange('meetingFrequency', value);
+                              
+                              // Update the displayed meeting info when frequency changes
+                              const meetings = formData.meetingSchedule || [];
+                              if (meetings.length > 0) {
+                                const formattedInfo = formatMeetingInfo(value, meetings);
+                                handleInputChange('meetingInfo', formattedInfo);
+                              }
+                            }}
+                          >
+                            <option value="weekly">Weekly</option>
+                            <option value="biweekly">Biweekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="daily">Daily</option>
+                            <option value="custom">Custom Schedule</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">How often does your club meet?</p>
+                        </div>
+                      </div>
+                      
+                      {/* Meeting Schedule Builder */}
+                      <div className="mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Meeting Schedule
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const meetings = [...(formData.meetingSchedule || [])];
+                              meetings.push({ day: 'Monday', startTime: '15:00', endTime: '16:00' });
+                              
+                              // Update both the schedule array and the formatted meeting info
+                              handleInputChange('meetingSchedule', meetings);
+                              const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                              handleInputChange('meetingInfo', formattedInfo);
+                            }}
+                            className="text-sm text-[#38BFA1] hover:text-[#2DA891] font-medium"
+                          >
+                            + Add Meeting Time
+                          </button>
+                        </div>
+                        
+                        {/* Display each meeting day/time row */}
+                        <div className="space-y-3">
+                          {(formData.meetingSchedule || []).map((meeting, index) => (
+                            <div key={index} className="flex flex-wrap items-center gap-3 bg-gray-50 p-3 rounded-md">
+                              {/* Day selection */}
+                              <div className="w-full sm:w-auto">
+                                <select
+                                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                                  value={meeting.day}
+                                  onChange={(e) => {
+                                    const meetings = [...(formData.meetingSchedule || [])];
+                                    meetings[index].day = e.target.value;
+                                    
+                                    // Update both the schedule array and the formatted meeting info
+                                    handleInputChange('meetingSchedule', meetings);
+                                    const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                                    handleInputChange('meetingInfo', formattedInfo);
+                                  }}
+                                >
+                                  <option value="Monday">Monday</option>
+                                  <option value="Tuesday">Tuesday</option>
+                                  <option value="Wednesday">Wednesday</option>
+                                  <option value="Thursday">Thursday</option>
+                                  <option value="Friday">Friday</option>
+                                  <option value="Saturday">Saturday</option>
+                                  <option value="Sunday">Sunday</option>
+                                </select>
+                              </div>
+                              
+                              {/* Time inputs */}
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  className="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                                  value={meeting.startTime}
+                                  onChange={(e) => {
+                                    const meetings = [...(formData.meetingSchedule || [])];
+                                    meetings[index].startTime = e.target.value;
+                                    
+                                    // Update both the schedule array and the formatted meeting info
+                                    handleInputChange('meetingSchedule', meetings);
+                                    const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                                    handleInputChange('meetingInfo', formattedInfo);
+                                  }}
+                                />
+                                <span className="text-gray-500">to</span>
+                                <input
+                                  type="time"
+                                  className="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                                  value={meeting.endTime}
+                                  onChange={(e) => {
+                                    const meetings = [...(formData.meetingSchedule || [])];
+                                    meetings[index].endTime = e.target.value;
+                                    
+                                    // Update both the schedule array and the formatted meeting info
+                                    handleInputChange('meetingSchedule', meetings);
+                                    const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                                    handleInputChange('meetingInfo', formattedInfo);
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Remove button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const meetings = [...(formData.meetingSchedule || [])];
+                                  meetings.splice(index, 1);
+                                  
+                                  // Update both the schedule array and the formatted meeting info
+                                  handleInputChange('meetingSchedule', meetings);
+                                  const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                                  handleInputChange('meetingInfo', formattedInfo);
+                                }}
+                                className="ml-auto text-red-500 hover:text-red-700"
+                                aria-label="Remove meeting time"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {(!formData.meetingSchedule || formData.meetingSchedule.length === 0) && (
+                            <div className="text-center py-6 border border-dashed border-gray-300 rounded-lg">
+                              <p className="text-gray-500 mb-2">No meeting times added yet</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const meetings = [...(formData.meetingSchedule || [])];
+                                  meetings.push({ day: 'Monday', startTime: '15:00', endTime: '16:00' });
+                                  
+                                  // Update both the schedule array and the formatted meeting info
+                                  handleInputChange('meetingSchedule', meetings);
+                                  const formattedInfo = formatMeetingInfo(formData.meetingFrequency || 'weekly', meetings);
+                                  handleInputChange('meetingInfo', formattedInfo);
+                                }}
+                                className="text-[#38BFA1] hover:text-[#2DA891] font-medium"
+                              >
+                                + Add Your First Meeting Time
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Preview of the formatted meeting info */}
+                      <div className="mt-4 bg-gray-50 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Formatted Meeting Information:</h4>
+                        <p className="text-sm text-gray-800">{formData.meetingInfo || 'Add meeting times to see the formatted information'}</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 mt-1">This information will be displayed on your club&apos;s page</p>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-6">
+                    <h4 className="font-medium text-gray-900 mb-4">Jamboree Table Information</h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                      This information will be displayed on the Jamboree page to help students find your table.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Jamboree Table
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.jamboreeMeetingInfo?.table || ''}
+                          onChange={(e) => {
+                            const updatedInfo = {
+                              ...(formData.jamboreeMeetingInfo || {}),
+                              table: e.target.value
+                            };
+                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
+                          }}
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                          placeholder="e.g., TBD"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Captains
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.jamboreeMeetingInfo?.captains || ''}
+                          onChange={(e) => {
+                            const updatedInfo = {
+                              ...(formData.jamboreeMeetingInfo || {}),
+                              captains: e.target.value
+                            };
+                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
+                          }}
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                          placeholder="e.g., TBD"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sponsor
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.jamboreeMeetingInfo?.sponsor || ''}
+                          onChange={(e) => {
+                            const updatedInfo = {
+                              ...(formData.jamboreeMeetingInfo || {}),
+                              sponsor: e.target.value
+                            };
+                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
+                          }}
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                          placeholder="e.g., Sponsor"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Contact Email
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.jamboreeMeetingInfo?.email || ''}
+                          onChange={(e) => {
+                            const updatedInfo = {
+                              ...(formData.jamboreeMeetingInfo || {}),
+                              email: e.target.value
+                            };
+                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
+                          }}
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                          placeholder="e.g., sponsor@school.edu"
+                        />
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -1087,7 +1495,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       id="description-editor"
                       value={editorContent}
                       onChange={(e) => setEditorContent(e.target.value)}
-                      className="w-full p-4 min-h-[200px] resize-y"
+                      className="w-full p-4 min-h-[200px] resize-y text-black"
                       placeholder="Describe your club, its mission, and what members do..."
                     />
                   </div>
@@ -1188,7 +1596,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                     type="text"
                                     value={member.name}
                                     onChange={(e) => handleMemberChange(index, 'name', e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                                     placeholder="Member name"
                                   />
                                 </div>
@@ -1201,7 +1609,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                     type="text"
                                     value={member.role}
                                     onChange={(e) => handleMemberChange(index, 'role', e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                                     placeholder="e.g., President, Treasurer, etc."
                                   />
                                 </div>
@@ -1214,7 +1622,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                 <textarea
                                   value={member.bio || ''}
                                   onChange={(e) => handleMemberChange(index, 'bio', e.target.value)}
-                                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                                   placeholder="Brief bio or statement (interests, goals, etc.)"
                                   rows={3}
                                 />
@@ -1403,7 +1811,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                             <select
                               value={link.type}
                               onChange={(e) => handleContactLinkChange(index, 'type', e.target.value)}
-                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                             >
                               <option value="website">Website</option>
                               <option value="email">Email</option>
@@ -1425,7 +1833,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                               type="text"
                               value={link.label}
                               onChange={(e) => handleContactLinkChange(index, 'label', e.target.value)}
-                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                               placeholder="e.g., Official Website, Email Us, etc."
                             />
                             <p className="text-xs text-gray-500 mt-1">The text visitors will see on your website</p>
@@ -1439,7 +1847,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                               type="text"
                               value={link.url}
                               onChange={(e) => handleContactLinkChange(index, 'url', e.target.value)}
-                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
                               placeholder={link.type === 'email' ? 'email@example.com' : 'https://...'}
                             />
                             <p className="text-xs text-gray-500 mt-1">

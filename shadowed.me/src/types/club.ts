@@ -78,6 +78,17 @@ export interface ClubSite {
   slogan?: string;
   description?: string;      // Long form about section
   meetingInfo?: string;      // Times, room, day
+  roomNumber?: string;       // Room number for meetings
+  category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
+  activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
+  jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
+    table?: string;          // Jamboree table number or identifier
+    time?: string;           // Meeting time (e.g. "Weekly on TBD")
+    room?: string;           // Room where meetings are held
+    captains?: string;       // Captains information
+    sponsor?: string;        // Sponsor information
+    email?: string;          // Contact email
+  };
   galleryImages?: string[];  // URLs to images
   galleryImagesMetadata?: {
     url: string;

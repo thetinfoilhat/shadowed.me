@@ -282,7 +282,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <Link href="/school-clubs">
+                <Link href="/clubs">
                   <button className="w-full sm:w-auto bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
                     Get Started →
                   </button>
