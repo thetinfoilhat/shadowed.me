@@ -494,7 +494,7 @@ export default function CaptainDashboard() {
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
                   <p className="text-black">You haven&apos;t created any websites yet.</p>
                   <button
-                    onClick={() => router.push('/jamboree')}
+                    onClick={() => router.push('/clubs')}
                     className="mt-4 px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
                   >
                     Create a Website
@@ -578,7 +578,7 @@ export default function CaptainDashboard() {
                         
                         <div className="mt-4">
                           <button
-                            onClick={() => router.push('/jamboree')}
+                            onClick={() => router.push('/clubs')}
                             className="w-full px-3 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
                             style={{ backgroundColor: club.bgColor || '#38BFA1' }}
                           >

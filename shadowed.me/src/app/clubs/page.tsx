@@ -13,10 +13,57 @@ import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
 import { getColorById } from '@/utils/colors';
 
+// Category color mapping
+const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
+  'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
+  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
+  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
+  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
+  'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
+  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
+  'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
+  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
+  'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
+  'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }
+};
+
+// Function to get color for category
+const getCategoryColor = (category: string | undefined): { bg: string, text: string, lighter: string } => {
+  if (!category || !(category in CATEGORY_COLORS)) {
+    return { bg: '#38BFA1', text: '#ffffff', lighter: '#d9f5f0' }; // Default
+  }
+  return CATEGORY_COLORS[category];
+};
+
+// Activity Type color mapping
+const ACTIVITY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
+  'Competitive': { bg: '#FF5722', text: '#ffffff', lighter: '#ffdfd5' },
+  'Leaders': { bg: '#795548', text: '#ffffff', lighter: '#e4d5d0' },
+  'Tryout': { bg: '#607D8B', text: '#ffffff', lighter: '#dfe5e8' },
+  'Public Speaking': { bg: '#009688', text: '#ffffff', lighter: '#ccece8' },
+  'Performance': { bg: '#673AB7', text: '#ffffff', lighter: '#e1d8f2' },
+  'Casual': { bg: '#00BCD4', text: '#000000', lighter: '#ccf2f6' },
+  'Academic': { bg: '#FFC107', text: '#000000', lighter: '#fff2cc' }
+};
+
+// Function to get color for activity type
+const getActivityColor = (activityType: string | undefined): { bg: string, text: string, lighter: string } => {
+  if (!activityType || !(activityType in ACTIVITY_COLORS)) {
+    return { bg: '#4361EE', text: '#ffffff', lighter: '#d7ddfb' }; // Default
+  }
+  return ACTIVITY_COLORS[activityType];
+};
+
 // Website Card Component
 const WebsiteCard = ({ website }: { website: ClubSite }) => {
   const primaryColor = getColorById(website.theme?.primaryColor || 'blue').value;
   const [showAllMeetings, setShowAllMeetings] = useState(false);
+  
+  // Get category and activity colors
+  const categoryColor = getCategoryColor(website.category);
+  const activityColor = getActivityColor(website.activityType);
   
   // Helper function to determine if there are multiple meeting days
   const hasMultipleMeetingDays = (): boolean => {
@@ -63,15 +110,21 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
               <span 
                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
                 style={{ 
-                  backgroundColor: `${primaryColor}15`, 
-                  color: primaryColor 
+                  backgroundColor: categoryColor.lighter, 
+                  color: categoryColor.bg 
                 }}
               >
                 {website.category}
               </span>
             )}
             {website.activityType && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span 
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
+                style={{ 
+                  backgroundColor: activityColor.lighter, 
+                  color: activityColor.bg
+                }}
+              >
                 {website.activityType}
               </span>
             )}
@@ -80,17 +133,19 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
           {/* Club info list */}
           <div className="space-y-3.5 py-2">
             {/* Jamboree Table */}
-            <div className="flex items-center">
-              <div className="w-6 h-6 flex-shrink-0 mr-2 text-gray-800">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+            {website.jamboreeMeetingInfo?.table && (
+              <div className="flex items-center">
+                <div className="w-6 h-6 flex-shrink-0 mr-2 text-gray-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-gray-900 mr-2">Jamboree Table:</span>
+                  <span className="font-medium text-gray-900">{website.jamboreeMeetingInfo?.table || 'TBD'}</span>
+                </div>
               </div>
-              <div className="flex items-baseline">
-                <span className="text-gray-900 mr-2">Jamboree Table:</span>
-                <span className="font-medium text-gray-900">{website.jamboreeMeetingInfo?.table || 'TBD'}</span>
-              </div>
-            </div>
+            )}
             
             {/* Meetings */}
             <div className="flex flex-col">
@@ -102,39 +157,59 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-gray-900 mr-2">Meetings:</span>
-                  <span className="font-medium text-gray-900">{getMeetingPreview()}</span>
                   
-                  {/* Show expand/collapse button if there are multiple meeting days */}
-                  {hasMultipleMeetingDays() && (
-                    <button 
-                      onClick={() => setShowAllMeetings(!showAllMeetings)}
-                      className="ml-2 text-blue-500 hover:text-blue-700 focus:outline-none"
-                      aria-label={showAllMeetings ? "Show less" : "Show all meeting times"}
-                    >
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className={`h-4 w-4 transition-transform ${showAllMeetings ? "rotate-180" : ""}`} 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
+                  {/* Meeting times display */}
+                  {hasMultipleMeetingDays() ? (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowAllMeetings(!showAllMeetings)}
+                        className="font-medium text-gray-900 flex items-center"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                        View All Times
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`h-4 w-4 ml-1 transition-transform ${showAllMeetings ? "rotate-180" : ""}`} 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Dropdown */}
+                      {showAllMeetings && (
+                        <div className="absolute left-0 mt-2 w-64 p-3 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                          {/* Extract frequency if it exists in the meetingInfo */}
+                          {website.meetingInfo && (website.meetingInfo.includes('weekly') || 
+                                               website.meetingInfo.includes('monthly') || 
+                                               website.meetingInfo.includes('biweekly')) && (
+                            <div className="mb-2 pb-2 border-b border-gray-100">
+                              <span className="text-sm font-medium text-gray-700">
+                                Frequency: <span className="font-bold text-[#38BFA1]">
+                                  {website.meetingInfo.includes('weekly') ? 'Weekly' : 
+                                   website.meetingInfo.includes('monthly') ? 'Monthly' : 
+                                   website.meetingInfo.includes('biweekly') ? 'Biweekly' : ''}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                          <div className="py-1 space-y-2">
+                            {website.meetingInfo?.split('|').map((meetingDay, index) => (
+                              <div key={index} className="text-sm text-gray-800 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                                {/* Remove any frequency information from individual meeting times */}
+                                {meetingDay.trim().replace(/\s*\([^)]*\)\s*$/, '')} 
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="font-medium text-gray-900">{getMeetingPreview()}</span>
                   )}
                 </div>
               </div>
-              
-              {/* Expanded meeting times */}
-              {hasMultipleMeetingDays() && showAllMeetings && (
-                <div className="ml-8 mt-2 pl-4 border-l-2 border-gray-200">
-                  {website.meetingInfo?.split('|').map((meetingDay, index) => (
-                    <div key={index} className="mb-1 text-sm text-gray-800">
-                      {meetingDay.trim()} 
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
             
             {/* Contact Email */}
@@ -387,88 +462,146 @@ export default function Jamboree() {
               </motion.div>
             )}
             
-            {/* Category Filter Buttons */}
-            {categories.length > 0 && (
+            {/* Filters Section */}
+            {(categories.length > 0 || activityTypes.length > 0) && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="mt-8"
               >
-                <h3 className="text-center text-gray-700 mb-2 font-medium">Filter by Category</h3>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                      selectedCategory === null
-                        ? 'bg-[#38BFA1] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    All Categories
-                  </button>
-                  
-                  {categories.map((category) => {
-                    // Count clubs in this category
-                    const count = clubWebsites.filter(w => w.category === category).length;
+                <div className="max-w-4xl mx-auto px-6 py-4 bg-white rounded-xl shadow-sm">
+                  <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+                    {/* Category Filter - With custom styling */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-medium text-gray-600">Category:</span>
+                      <div className="relative">
+                        <select
+                          value={selectedCategory || ''}
+                          onChange={(e) => setSelectedCategory(e.target.value || null)}
+                          className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
+                          style={{
+                            borderColor: selectedCategory ? getCategoryColor(selectedCategory).bg : '#d1d5db',
+                            boxShadow: selectedCategory ? `0 0 0 1px ${getCategoryColor(selectedCategory).bg}` : 'none'
+                          }}
+                        >
+                          <option value="">All</option>
+                          {categories.map((category) => (
+                            <option 
+                              key={category} 
+                              value={category}
+                              style={{
+                                backgroundColor: CATEGORY_COLORS[category]?.lighter || '#f9fafb',
+                                color: CATEGORY_COLORS[category]?.bg || '#000000'
+                              }}
+                            >
+                              {category} ({clubWebsites.filter(w => w.category === category).length})
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
                     
-                    return (
-                      <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                          selectedCategory === category
-                            ? 'bg-[#38BFA1] text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {category} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-            
-            {/* Activity Type Filter Buttons */}
-            {activityTypes.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-4"
-              >
-                <h3 className="text-center text-gray-700 mb-2 font-medium">Filter by Activity Type</h3>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <button
-                    onClick={() => setSelectedActivityType(null)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                      selectedActivityType === null
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    All Activity Types
-                  </button>
+                    {/* Activity Type Filter - With custom styling */}
+                    {activityTypes.length > 0 && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-base font-medium text-gray-600">Activity:</span>
+                        <div className="relative">
+                          <select
+                            value={selectedActivityType || ''}
+                            onChange={(e) => setSelectedActivityType(e.target.value || null)}
+                            className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
+                            style={{
+                              borderColor: selectedActivityType ? getActivityColor(selectedActivityType).bg : '#d1d5db',
+                              boxShadow: selectedActivityType ? `0 0 0 1px ${getActivityColor(selectedActivityType).bg}` : 'none'
+                            }}
+                          >
+                            <option value="">All</option>
+                            {activityTypes.map((type) => (
+                              <option 
+                                key={type} 
+                                value={type}
+                                style={{
+                                  backgroundColor: ACTIVITY_COLORS[type]?.lighter || '#f9fafb',
+                                  color: ACTIVITY_COLORS[type]?.bg || '#000000'
+                                }}
+                              >
+                                {type} ({clubWebsites.filter(w => w.activityType === type).length})
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
-                  {activityTypes.map((type) => {
-                    // Count clubs with this activity type
-                    const count = clubWebsites.filter(w => w.activityType === type).length;
-                    
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedActivityType(type)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                          selectedActivityType === type
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {type} ({count})
-                      </button>
-                    );
-                  })}
+                  {/* Active filters display with category and activity colors */}
+                  {(selectedCategory || selectedActivityType) && (
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-center">
+                      <div className="text-base text-gray-600 mr-3">Active filters:</div>
+                      <div className="flex gap-3">
+                        {selectedCategory && (
+                          <span 
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm" 
+                            style={{ 
+                              backgroundColor: getCategoryColor(selectedCategory).lighter,
+                              color: getCategoryColor(selectedCategory).bg 
+                            }}
+                          >
+                            {selectedCategory}
+                            <button 
+                              onClick={() => setSelectedCategory(null)}
+                              className="ml-2 hover:opacity-80"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </span>
+                        )}
+                        {selectedActivityType && (
+                          <span 
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm" 
+                            style={{ 
+                              backgroundColor: getActivityColor(selectedActivityType).lighter,
+                              color: getActivityColor(selectedActivityType).bg 
+                            }}
+                          >
+                            {selectedActivityType}
+                            <button 
+                              onClick={() => setSelectedActivityType(null)}
+                              className="ml-2 hover:opacity-80"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </span>
+                        )}
+                        {(selectedCategory || selectedActivityType) && (
+                          <button 
+                            onClick={() => {
+                              setSelectedCategory(null);
+                              setSelectedActivityType(null);
+                            }}
+                            className="text-sm text-gray-500 hover:text-gray-700 underline"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

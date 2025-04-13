@@ -141,6 +141,30 @@ interface WebsiteEditorProps {
   isNew?: boolean;
 }
 
+// Category color mapping
+const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
+  'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
+  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
+  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
+  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
+  'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
+  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
+  'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
+  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
+  'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
+  'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }
+};
+
+// Function to get color for category
+const getCategoryColor = (category: string | undefined): { bg: string, text: string, lighter: string } => {
+  if (!category || !(category in CATEGORY_COLORS)) {
+    return { bg: '#38BFA1', text: '#ffffff', lighter: '#d9f5f0' }; // Default
+  }
+  return CATEGORY_COLORS[category];
+};
+
 export default function WebsiteEditor({ website, onSave, isNew = false }: WebsiteEditorProps) {
   // State variables
   const [activeTab, setActiveTab] = useState<'content' | 'media' | 'members' | 'design' | 'form'>('content');
@@ -1095,22 +1119,33 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Club Category
                       </label>
-                      <select
-                        value={formData.category || ''}
-                        onChange={(e) => handleInputChange('category', e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                      >
-                        <option value="">Select a category</option>
-                        <option value="STEM">STEM</option>
-                        <option value="Business">Business</option>
-                        <option value="Arts">Arts</option>
-                        <option value="Language & Culture">Language & Culture</option>
-                        <option value="Community Service">Community Service</option>
-                        <option value="Humanities">Humanities</option>
-                        <option value="Medical">Medical</option>
-                        <option value="Academic">Academic Competition</option>
-                        <option value="Miscellaneous">Miscellaneous</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={formData.category || ''}
+                          onChange={(e) => handleInputChange('category', e.target.value)}
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:border-[#38BFA1] text-black appearance-none"
+                          style={{
+                            borderColor: formData.category ? getCategoryColor(formData.category).bg : '#d1d5db',
+                            boxShadow: formData.category ? `0 0 0 1px ${getCategoryColor(formData.category).bg}` : 'none'
+                          }}
+                        >
+                          <option value="">Select a category</option>
+                          <option value="STEM" style={{ backgroundColor: CATEGORY_COLORS['STEM'].lighter, color: CATEGORY_COLORS['STEM'].bg }}>STEM</option>
+                          <option value="Business" style={{ backgroundColor: CATEGORY_COLORS['Business'].lighter, color: CATEGORY_COLORS['Business'].bg }}>Business</option>
+                          <option value="Arts" style={{ backgroundColor: CATEGORY_COLORS['Arts'].lighter, color: CATEGORY_COLORS['Arts'].bg }}>Arts</option>
+                          <option value="Language & Culture" style={{ backgroundColor: CATEGORY_COLORS['Language & Culture'].lighter, color: CATEGORY_COLORS['Language & Culture'].bg }}>Language & Culture</option>
+                          <option value="Community Service" style={{ backgroundColor: CATEGORY_COLORS['Community Service'].lighter, color: CATEGORY_COLORS['Community Service'].bg }}>Community Service</option>
+                          <option value="Humanities" style={{ backgroundColor: CATEGORY_COLORS['Humanities'].lighter, color: CATEGORY_COLORS['Humanities'].bg }}>Humanities</option>
+                          <option value="Medical" style={{ backgroundColor: CATEGORY_COLORS['Medical'].lighter, color: CATEGORY_COLORS['Medical'].bg }}>Medical</option>
+                          <option value="Academic" style={{ backgroundColor: CATEGORY_COLORS['Academic'].lighter, color: CATEGORY_COLORS['Academic'].bg }}>Academic Competition</option>
+                          <option value="Miscellaneous" style={{ backgroundColor: CATEGORY_COLORS['Miscellaneous'].lighter, color: CATEGORY_COLORS['Miscellaneous'].bg }}>Miscellaneous</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">Categorizing your club helps students find activities they&apos;re interested in</p>
                     </div>
                     

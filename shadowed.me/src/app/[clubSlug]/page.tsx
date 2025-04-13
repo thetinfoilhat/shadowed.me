@@ -249,7 +249,7 @@ export default function ClubWebsitePage() {
       await deleteDoc(websiteRef);
       
       // Redirect to jamboree page after successful deletion
-      router.push('/jamboree');
+      router.push('/clubs');
       toast.success('Website deleted successfully');
     } catch (err) {
       console.error('Error deleting club website:', err);
@@ -275,10 +275,10 @@ export default function ClubWebsitePage() {
               The club website you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
             </p>
             <Link 
-              href="/jamboree" 
+              href="/clubs" 
               className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2DA891] transition-colors"
             >
-              Return to Jamboree
+              Return to Clubs Page
             </Link>
           </div>
         </div>
@@ -296,10 +296,10 @@ export default function ClubWebsitePage() {
               This club doesn&apos;t have a website yet.
             </p>
             <Link 
-              href="/jamboree" 
+              href="/clubs" 
               className="bg-[#38BFA1] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2DA891] transition-colors"
             >
-              Return to Jamboree
+              Return to Clubs Page
             </Link>
           </div>
         </div>

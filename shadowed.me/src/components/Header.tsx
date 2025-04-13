@@ -346,14 +346,14 @@ export default function Header() {
               <li className="relative group">
                 {!user ? (
                   <Link 
-                    href="/my-visits"
+                    href="/student-dashboard"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
                     Dashboard
                   </Link>
                 ) : userRole === 'student' ? (
                   <Link 
-                    href="/my-visits"
+                    href="/student-dashboard"
                     className="text-black hover:text-[#38BFA1] font-medium transition-colors"
                   >
                     Dashboard
@@ -368,7 +368,7 @@ export default function Header() {
                     </div>
                     <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       <Link 
-                        href="/my-visits"
+                        href="/student-dashboard"
                         className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
                       >
                         Student View
@@ -401,7 +401,7 @@ export default function Header() {
                     </div>
                     <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       <Link 
-                        href="/my-visits"
+                        href="/student-dashboard"
                         className="block px-4 py-2 text-sm text-black hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
                       >
                         Student View
@@ -547,7 +547,7 @@ export default function Header() {
               {!user ? (
                 <li>
                   <Link 
-                    href="/my-visits"
+                      href="/student-dashboard"
                     className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
@@ -557,7 +557,7 @@ export default function Header() {
               ) : userRole === 'student' ? (
                 <li>
                   <Link 
-                    href="/my-visits"
+                    href="/student-dashboard"
                     className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                     onClick={() => setIsOpen(false)}
                   >
@@ -568,7 +568,7 @@ export default function Header() {
                 <>
                   <li>
                     <Link 
-                      href="/my-visits"
+                      href="/student-dashboard"
                       className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                       onClick={() => setIsOpen(false)}
                     >
@@ -613,7 +613,7 @@ export default function Header() {
                 <>
                   <li>
                     <Link 
-                      href="/my-visits"
+                      href="/student-dashboard"
                       className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                       onClick={() => setIsOpen(false)}
                     >
