@@ -10,7 +10,6 @@ import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ClubAssignmentModal from '@/components/ClubAssignmentModal';
 import ClubModal from '@/components/ClubModal';
-import { generateEmptyClubSites } from '@/scripts/generateEmptyClubSites';
 
 interface User {
   email: string;
@@ -97,7 +96,6 @@ export default function AdminDashboard() {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [showClubModal, setShowClubModal] = useState(false);
   const [loadingClubs, setLoadingClubs] = useState(true);
-  const [generatingSites, setGeneratingSites] = useState(false);
 
   const fetchSponsorNames = useCallback(async (visits: (VisitData & { uniqueKey: string })[]) => {
     const emails = visits
@@ -404,35 +402,6 @@ export default function AdminDashboard() {
 
   const handleAssignmentComplete = () => {
     fetchAllClubs();
-  };
-
-  // Handle generating empty club sites
-  const handleGenerateEmptySites = async () => {
-    if (!confirm('Are you sure you want to generate empty websites for all clubs? This will only create websites for clubs that don\'t already have one.')) {
-      return;
-    }
-    
-    setGeneratingSites(true);
-    
-    try {
-      const result = await generateEmptyClubSites();
-      
-      if (result.success) {
-        toast.success(result.message);
-        
-        // Show detailed results if available
-        if (result.details && result.details.length > 0) {
-          console.log('Generation details:', result.details);
-        }
-      } else {
-        toast.error(result.message || 'Failed to generate club sites');
-      }
-    } catch (error) {
-      console.error('Error generating club sites:', error);
-      toast.error('An error occurred while generating club sites');
-    } finally {
-      setGeneratingSites(false);
-    }
   };
 
   if (loading) {
@@ -839,13 +808,6 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-black">Clubs</h2>
             <div className="flex gap-2">
-              <button
-                onClick={handleGenerateEmptySites}
-                disabled={generatingSites}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
-              >
-                {generatingSites ? 'Generating...' : 'Generate Club Sites'}
-              </button>
               <button
                 onClick={() => {
                   setSelectedClub(null);

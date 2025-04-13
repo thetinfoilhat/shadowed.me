@@ -178,11 +178,11 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
               <Tab.Panels>
                 {/* About Panel */}
                 <Tab.Panel>
-                  <p className="text-black mb-6">{club.description}</p>
+                  <p className="text-gray-600 mb-6">{club.description}</p>
                   
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 className="font-medium text-[#0A2540] mb-2">Mission</h3>
-                    <p className="text-black">{club.mission}</p>
+                    <p className="text-gray-600">{club.mission}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,7 +191,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                         <ClockIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
                         Meeting Times
                       </h3>
-                      <p className="text-black">{club.meetingTimes || "Schedule not specified"}</p>
+                      <p className="text-gray-600">{club.meetingTimes || "Schedule not specified"}</p>
                     </div>
                     
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -202,7 +202,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {/* Display primary contact info */}
                       {club.contactInfo && (
                         <div className="mb-2">
-                          <p className="text-black">{club.contactInfo}</p>
+                          <p className="text-gray-600">{club.contactInfo}</p>
                         </div>
                       )}
                       
@@ -210,7 +210,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {club.contactInfoList && club.contactInfoList.length > 0 && (
                         <div className="space-y-1">
                           {club.contactInfoList.filter(contact => contact !== club.contactInfo).map((contact, i) => (
-                            <div key={i} className="flex items-center text-black">
+                            <div key={i} className="flex items-center text-gray-600">
                               <LinkIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               <span>{contact}</span>
                             </div>
@@ -221,8 +221,8 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {/* Display primary sponsor email */}
                       {club.sponsorEmail && (
                         <div className="mt-3">
-                          <h4 className="text-sm font-medium text-black mb-1">Sponsor Contact:</h4>
-                          <p className="text-black">{club.sponsorEmail}</p>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Sponsor Contact:</h4>
+                          <p className="text-gray-600">{club.sponsorEmail}</p>
                         </div>
                       )}
                       
@@ -230,7 +230,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {club.sponsorEmailList && club.sponsorEmailList.length > 0 && (
                         <div className="mt-1 space-y-1">
                           {club.sponsorEmailList.filter(email => email !== club.sponsorEmail).map((email, i) => (
-                            <div key={i} className="flex items-center text-black">
+                            <div key={i} className="flex items-center text-gray-600">
                               <EnvelopeIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               <span>{email}</span>
                             </div>
@@ -241,7 +241,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {!club.contactInfo && !club.sponsorEmail && 
                         club.contactInfoList?.length === 0 && 
                         club.sponsorEmailList?.length === 0 && (
-                          <p className="text-black">Contact information not available</p>
+                          <p className="text-gray-600">Contact information not available</p>
                       )}
                     </div>
                   </div>
@@ -252,7 +252,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                         <BuildingLibraryIcon className="h-5 w-5 mr-2" style={{ color: categoryColor }} />
                         Location
                       </h3>
-                      <p className="text-black">{club.roomNumber}</p>
+                      <p className="text-gray-600">{club.roomNumber}</p>
                     </div>
                   )}
                   
@@ -274,7 +274,7 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                                 ? 'bg-purple-100 text-purple-800'
                                 : attribute === 'Performance'
                                 ? 'bg-pink-100 text-pink-800'
-                                : 'bg-gray-100 text-black'
+                                : 'bg-gray-100 text-gray-700'
                             }`}
                           >
                             {attribute}
@@ -296,17 +296,17 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {upcomingVisits.map((visit) => (
                         <div key={visit.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow">
                           <h3 className="text-lg font-semibold text-[#0A2540]">{visit.name}</h3>
-                          <p className="text-black mt-2">{visit.description}</p>
+                          <p className="text-gray-600 mt-2">{visit.description}</p>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <CalendarIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {format(new Date(visit.date), 'MMMM d, yyyy')}
                             </div>
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.time}
                             </div>
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <UserGroupIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.slots} slots available
                             </div>
@@ -316,8 +316,8 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                     </div>
                   ) : (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <CalendarIcon className="h-12 w-12 mx-auto text-black mb-4" />
-                      <p className="text-black">No upcoming visits scheduled</p>
+                      <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-500">No upcoming visits scheduled</p>
                     </div>
                   )}
                 </Tab.Panel>
@@ -333,17 +333,17 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                       {pastVisits.map((visit) => (
                         <div key={visit.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow">
                           <h3 className="text-lg font-semibold text-[#0A2540]">{visit.name}</h3>
-                          <p className="text-black mt-2">{visit.description}</p>
+                          <p className="text-gray-600 mt-2">{visit.description}</p>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <CalendarIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {format(new Date(visit.date), 'MMMM d, yyyy')}
                             </div>
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <ClockIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.time}
                             </div>
-                            <div className="flex items-center text-black">
+                            <div className="flex items-center text-gray-600">
                               <UserGroupIcon className="h-4 w-4 mr-2" style={{ color: categoryColor }} />
                               {visit.applicants?.length || 0} participants
                             </div>
@@ -353,8 +353,8 @@ export default function ClubDetailsDialog({ club, isOpen, onCloseAction }: ClubD
                     </div>
                   ) : (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <BuildingLibraryIcon className="h-12 w-12 mx-auto text-black mb-4" />
-                      <p className="text-black">No past events</p>
+                      <BuildingLibraryIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-500">No past events</p>
                     </div>
                   )}
                 </Tab.Panel>

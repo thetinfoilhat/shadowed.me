@@ -23,7 +23,6 @@
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: black;
 }
 
 /* Smooth scrolling */
@@ -77,83 +76,4 @@ body {
 /* Optimize images */
 img {
   content-visibility: auto;
-}
-
-/* Add these rules to force black text throughout the application */
-/* Apply to all elements including body */
-* {
-  color: black;
-}
-
-/* Create a custom class for inputs with black text */
-.black-text-input {
-  color: black !important; 
-  text-color: black !important;
-  -webkit-text-fill-color: black !important;
-}
-
-/* Specific rules for form elements which often have browser defaults */
-input, 
-textarea, 
-select, 
-button,
-::placeholder {
-  color: black !important;
-  -webkit-text-fill-color: black !important;
-}
-
-/* Placeholder text color */
-::placeholder {
-  color: rgba(0, 0, 0, 0.7) !important;
-}
-
-/* Input focus state */
-input:focus,
-textarea:focus,
-select:focus {
-  color: black !important;
-  border-color: #4361EE !important;
-  -webkit-text-fill-color: black !important;
-}
-
-/* Override Tailwind text utilities to ensure black text */
-.text-gray-400,
-.text-gray-500,
-.text-gray-600,
-.text-gray-700,
-.text-gray-800,
-.text-gray-900 {
-  color: black !important;
-}
-
-/* Add more specific selectors for the club editor */
-/* Target all form elements inside the club editor */
-[class*="Editor"] input,
-[class*="Editor"] textarea,
-[class*="Editor"] select,
-#description-editor,
-input[value*="DECA"],
-input[placeholder*="Your Club Name"],
-input[placeholder*="brief statement"],
-input[placeholder*="club"],
-textarea[placeholder*="club"] {
-  color: black !important;
-  -webkit-text-fill-color: black !important;
-  caret-color: black !important;  /* Cursor color */
-}
-
-/* Make sure text doesn't fade on autofill */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-  -webkit-text-fill-color: black !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Override browser styles for inputs */
-input,
-textarea,
-select {
-  color-scheme: light !important;
 }

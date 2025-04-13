@@ -15,7 +15,6 @@ import {
   TrophyIcon,
 } from "@heroicons/react/20/solid";
 import { generatePlaceholderClubListings } from '@/data/clubData';
-import { useRouter } from 'next/navigation';
 
 // Enhanced categories for filtering
 const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
@@ -66,8 +65,6 @@ export default function ClubListings() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  const router = useRouter();
 
   const fetchClubs = useCallback(async () => {
     try {
@@ -187,10 +184,6 @@ export default function ClubListings() {
     fetchClubs();
   }, [fetchClubs]);
 
-  useEffect(() => {
-    router.replace('/jamboree');
-  }, [router]);
-
   // Handle attribute selection
   const toggleAttribute = (attribute: string) => {
     setSelectedAttributes(prev => 
@@ -241,7 +234,7 @@ export default function ClubListings() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-[#0A2540] bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] inline-block text-transparent bg-clip-text">Club Listings</h1>
-            <p className="text-black mt-1">Discover and join clubs that match your interests</p>
+            <p className="text-gray-600 mt-1">Discover and join clubs that match your interests</p>
           </div>
           
           <div className="flex gap-2">
@@ -268,7 +261,7 @@ export default function ClubListings() {
         <div className="mb-8">
           <div className="relative mb-4">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-black" />
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
@@ -282,7 +275,7 @@ export default function ClubListings() {
                 onClick={() => setSearchQuery('')}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
-                <XMarkIcon className="h-5 w-5 text-black hover:text-black" />
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
               </button>
             )}
           </div>
@@ -301,14 +294,14 @@ export default function ClubListings() {
               </div>
               
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-black mb-3">Categories</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Categories</h4>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory('All')}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                       selectedCategory === 'All'
                         ? 'bg-gradient-to-r from-[#4361EE] to-[#4CC9F0] text-white shadow-sm transform -translate-y-0.5'
-                        : 'bg-gray-100 text-black hover:bg-gray-200 hover:shadow-sm'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                     }`}
                   >
                     All
@@ -344,7 +337,7 @@ export default function ClubListings() {
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-black mb-3">Activity Type</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Activity Type</h4>
                 <div className="flex flex-wrap gap-2">
                   {ATTRIBUTES.map((attribute) => (
                     <button
@@ -355,7 +348,7 @@ export default function ClubListings() {
                           ? attribute === 'Competitive' 
                             ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md transform -translate-y-0.5' 
                             : 'bg-gradient-to-r from-[#38BFA1] to-[#4CC9F0] text-white shadow-md transform -translate-y-0.5'
-                          : 'bg-gray-100 text-black hover:bg-gray-200 hover:shadow-sm'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                       }`}
                     >
                       {attribute === 'Competitive' && (
@@ -371,11 +364,11 @@ export default function ClubListings() {
 
           {/* View mode toggle and results count */}
           <div className="flex justify-between items-center">
-            <p className="text-sm text-black">
+            <p className="text-sm text-gray-600">
               Showing <span className="font-semibold text-[#4361EE]">{filteredClubs.length}</span> {filteredClubs.length === 1 ? 'club' : 'clubs'}
               {/* Display count of clubs needing details */}
               {clubs.filter(club => !club.created).length > 0 && (
-                <span className="ml-2 text-black">
+                <span className="ml-2 text-gray-500">
                   ({clubs.filter(club => !club.created).length} need details)
                 </span>
               )}
@@ -383,7 +376,7 @@ export default function ClubListings() {
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-black'}`}
+                className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-gray-500'}`}
                 aria-label="Grid view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -392,7 +385,7 @@ export default function ClubListings() {
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-black'}`}
+                className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-gray-100 shadow-inner text-[#4361EE]' : 'hover:bg-gray-50 text-gray-500'}`}
                 aria-label="List view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
