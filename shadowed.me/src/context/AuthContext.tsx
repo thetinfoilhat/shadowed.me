@@ -50,8 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setUserRole(userData.role || null);
+            // Ensure we're not overriding existing roles
+            if (userData.role) {
+              setUserRole(userData.role);
+            }
             setCaptainClubs(userData.captainClubs || []);
+          } else {
+            // New user - don't set role yet, let AuthCheck handle it
+            // This prevents automatic demotion when signing back in
+            console.log("New user detected, awaiting profile setup");
           }
         } catch (error) {
           console.error('Error fetching user data:', error);

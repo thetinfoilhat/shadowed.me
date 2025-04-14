@@ -78,8 +78,14 @@ export default function AuthCheck() {
     try {
       setIsSubmitting(true);
       
-      // All new users are now captains by default
-      const role = 'captain';
+      // Check if user already exists and has a role
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      // Preserve existing role if user already has one
+      const role = userDoc.exists() && userDoc.data().role 
+        ? userDoc.data().role 
+        : 'captain'; // Default to captain only for new users
       
       // Update user data
       await setDoc(doc(db, 'users', user.uid), {
