@@ -18,8 +18,8 @@ const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 
 interface ClubModalProps {
   isOpen: boolean;
   onCloseAction: () => void;
-  onSubmitAction: () => Promise<void>;
-  initialData?: ClubListing | null;
+  onSubmitAction: () => void;
+  initialData?: Partial<ClubListing> | null;
 }
 
 interface CaptainUser {
@@ -104,14 +104,14 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     if (initialData && !initialData.contactInfoList && initialData.contactInfo) {
       setFormData(prev => ({
         ...prev,
-        contactInfoList: [initialData.contactInfo]
+        contactInfoList: initialData.contactInfo ? [initialData.contactInfo] : []
       }));
     }
     
     if (initialData && !initialData.sponsorEmailList && initialData.sponsorEmail) {
       setFormData(prev => ({
         ...prev,
-        sponsorEmailList: [initialData.sponsorEmail]
+        sponsorEmailList: initialData.sponsorEmail ? [initialData.sponsorEmail] : []
       }));
     }
   }, [initialData]);

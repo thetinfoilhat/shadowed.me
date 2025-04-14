@@ -47,21 +47,43 @@ interface VisitData {
 
 interface ClubListing {
   id: string;
-  name: string;
-  description: string;
-  mission: string;
-  meetingTimes: string;
-  contactInfo: string;
-  category: string;
-  captain: string;
-  sponsorEmail: string;
+  slug: string;
+  clubName: string;
+  createdBy: string;
   createdAt: Date;
+  updatedAt: Date;
+  theme?: {
+    primaryColor: string;
+    textColor: string;
+    font: string;
+  };
+  bannerImage?: string;
+  slogan?: string;
+  description?: string;      // Long form about section
+  meetingInfo?: string;      // Times, room, day
+  roomNumber?: string;       // Room number for meetings
+  category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
+  activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
+  jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
+    table?: string;          // Jamboree table number or identifier
+    time?: string;           // Meeting time (e.g. "Weekly on TBD")
+    room?: string;           // Room where meetings are held
+    captains?: string;       // Captains information
+    sponsor?: string;        // Sponsor information
+    email?: string;          // Contact email
+  };
+  captain?: string;          // Legacy field for compatibility
+  sponsorEmail?: string;     // Legacy field for compatibility
+  captains?: string[];       // Multiple captains support
+  sponsorEmails?: string[];  // Multiple sponsors support
   status?: 'pending' | 'approved' | 'rejected';
-  attributes?: string[];
-  image?: string;
-  bgColor?: string;
-  bgGradient?: string;
-  created?: boolean;
+  uniqueKey?: string;
+  
+  // Legacy fields needed for compatibility
+  name: string;             // Maps to clubName
+  mission: string;          // Maps to slogan
+  meetingTimes: string;     // Maps to meetingInfo
+  contactInfo: string;      // Maps to email in jamboreeMeetingInfo
 }
 
 function formatDate(dateString: string) {
@@ -176,61 +198,76 @@ export default function AdminDashboard() {
   const fetchAllClubs = useCallback(async () => {
     try {
       setLoadingClubs(true);
-      const clubsRef = collection(db, 'clubs');
+      const clubsRef = collection(db, 'clubSites');
       const querySnapshot = await getDocs(clubsRef);
       
-      // Create a map to track unique clubs by name (to prevent duplicates)
-      const uniqueClubsByName: Record<string, ClubListing & { uniqueKey: string }> = {};
-      
       // Process clubs and ensure only one entry per club name
-      querySnapshot.docs.forEach((doc, index) => {
+      const clubsData = querySnapshot.docs.map((doc, index) => {
         const data = doc.data();
-        if (!data.name) return; // Skip clubs without names
-        
-        const name = data.name.trim();
-        const nameLower = name.toLowerCase();
         
         // Create a guaranteed unique key for React
         const uniqueKey = `club-${doc.id}-${index}-${Date.now()}`;
         
-        // Create the club object
-        const club = {
+        // Convert Firestore timestamps to JS Date objects
+        let createdAt: Date;
+        let updatedAt: Date;
+        
+        if (data.createdAt && typeof data.createdAt === 'object' && 'seconds' in data.createdAt) {
+          // It's a Firestore Timestamp-like object
+          const seconds = (data.createdAt as { seconds: number }).seconds;
+          createdAt = new Date(seconds * 1000);
+        } else {
+          // It's already a Date or a string/number
+          createdAt = new Date(data.createdAt as string | number | Date);
+        }
+        
+        if (data.updatedAt && typeof data.updatedAt === 'object' && 'seconds' in data.updatedAt) {
+          // It's a Firestore Timestamp-like object
+          const seconds = (data.updatedAt as { seconds: number }).seconds;
+          updatedAt = new Date(seconds * 1000);
+        } else {
+          // It's already a Date or a string/number
+          updatedAt = new Date(data.updatedAt as string | number | Date);
+        }
+        
+        // Map ClubSite fields to ClubListing structure for compatibility
+        return {
           id: doc.id,
           uniqueKey,
-          ...data,
-          // Ensure required fields are present
-          name: name,
+          slug: data.slug || doc.id,
+          clubName: data.clubName || 'Unnamed Club',
+          createdBy: data.createdBy || '',
+          createdAt,
+          updatedAt,
+          theme: data.theme || {
+            primaryColor: 'teal',
+            textColor: 'dark',
+            font: 'inter'
+          },
           description: data.description || '',
-          mission: data.mission || '',
-          meetingTimes: data.meetingTimes || '',
-          contactInfo: data.contactInfo || '',
+          meetingInfo: data.meetingInfo || '',
+          roomNumber: data.roomNumber || '',
           category: data.category || '',
-          captain: data.captain || '',
-          sponsorEmail: data.sponsorEmail || '',
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          attributes: data.attributes || [],
-          created: data.created,
+          activityType: data.activityType || '',
+          captain: data.jamboreeMeetingInfo?.captains?.split(',')[0] || '',
+          sponsorEmail: data.jamboreeMeetingInfo?.sponsor?.split(',')[0] || '',
+          // Additional fields for compatibility with existing code
+          name: data.clubName || 'Unnamed Club',
+          mission: data.slogan || '',
+          meetingTimes: data.meetingInfo || '',
+          contactInfo: data.jamboreeMeetingInfo?.email || '',
+          jamboreeMeetingInfo: data.jamboreeMeetingInfo || {},
+          bannerImage: data.bannerImage || '',
+          captains: data.jamboreeMeetingInfo?.captains?.split(',') || [],
+          sponsorEmails: data.jamboreeMeetingInfo?.sponsor?.split(',') || [],
         } as (ClubListing & { uniqueKey: string });
-        
-        // If this club name already exists, only keep the one with a valid ID
-        // or replace a placeholder with a real club
-        if (
-          !uniqueClubsByName[nameLower] || 
-          (data.created && !uniqueClubsByName[nameLower].created) ||
-          uniqueClubsByName[nameLower].id.includes('placeholder')
-        ) {
-          uniqueClubsByName[nameLower] = club;
-        }
       });
       
-      // Convert the map to an array of unique clubs
-      const clubsData = Object.values(uniqueClubsByName);
-      
       // Sort clubs alphabetically by name
-      clubsData.sort((a, b) => a.name.localeCompare(b.name));
+      clubsData.sort((a, b) => a.clubName.localeCompare(b.clubName));
       
       console.log(`Found ${querySnapshot.docs.length} total clubs`);
-      console.log(`Displaying ${clubsData.length} unique clubs after deduplication`);
+      console.log(`Displaying ${clubsData.length} clubs`);
       
       setAllClubs(clubsData);
     } catch (error) {
@@ -385,7 +422,7 @@ export default function AdminDashboard() {
     }
     
     try {
-      await deleteDoc(doc(db, 'clubs', clubId));
+      await deleteDoc(doc(db, 'clubSites', clubId));
       toast.success('Club deleted successfully');
       fetchAllClubs();
     } catch (error) {
@@ -825,57 +862,85 @@ export default function AdminDashboard() {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Captain</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sponsor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {allClubs.map((club, index) => (
-                    <tr key={club.uniqueKey || `club-${club.id}-${index}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{club.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{club.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {club.captain || 'Not assigned'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {club.sponsorEmail || 'Not assigned'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleAssignClub(club)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Assign
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedClub(club as ClubListing);
-                              setShowClubModal(true);
-                            }}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleClubDelete(club.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {allClubs.map((club) => (
+                <div 
+                  key={club.uniqueKey || club.id} 
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{club.clubName}</h2>
+                        {club.category && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-2">
+                            {club.category}
+                          </span>
+                        )}
+                        {club.activityType && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 ml-2 mb-2">
+                            {club.activityType}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 space-y-2 text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Captain:</span>
+                        <span className="text-gray-700">{club.jamboreeMeetingInfo?.captains || 'None'}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Sponsor:</span>
+                        <span className="text-gray-700">{club.jamboreeMeetingInfo?.sponsor || 'None'}</span>
+                      </div>
+                      {club.jamboreeMeetingInfo?.email && (
+                        <div className="flex flex-col">
+                          <span className="font-medium">Contact:</span>
+                          <span className="text-gray-700">{club.jamboreeMeetingInfo.email}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      )}
+                      {club.meetingInfo && (
+                        <div className="flex flex-col">
+                          <span className="font-medium">Meeting Info:</span>
+                          <span className="text-gray-700">{club.meetingInfo}</span>
+                        </div>
+                      )}
+                      {club.description && (
+                        <div className="flex flex-col mt-2">
+                          <span className="font-medium">Description:</span>
+                          <p className="text-gray-700 line-clamp-2">{club.description}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-6 flex space-x-3">
+                      <button
+                        onClick={() => handleClubDelete(club.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Delete
+                      </button>
+                      
+                      <button
+                        onClick={() => handleAssignClub(club)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Assign
+                      </button>
+                      
+                      <a 
+                        href={`/${club.slug}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        View Site
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -949,7 +1014,7 @@ export default function AdminDashboard() {
         <ClubAssignmentModal
           isOpen={showAssignmentModal}
           onClose={() => setShowAssignmentModal(false)}
-          club={selectedClub}
+          club={selectedClub as Partial<ClubListing>}
           onAssignmentComplete={handleAssignmentComplete}
         />
       )}
@@ -959,7 +1024,7 @@ export default function AdminDashboard() {
           isOpen={showClubModal}
           onCloseAction={() => setShowClubModal(false)}
           onSubmitAction={fetchAllClubs}
-          initialData={selectedClub}
+          initialData={selectedClub as Partial<ClubListing> | null}
         />
       )}
     </div>

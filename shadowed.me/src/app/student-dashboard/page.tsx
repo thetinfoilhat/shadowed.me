@@ -299,7 +299,7 @@ export default function StudentDashboard() {
       // Update the local state
       setInterestedClubs(prev => prev.filter(club => club.id !== clubId));
       
-    } catch (error) {
+      } catch (error) {
       console.error('Error removing interest:', error);
     } finally {
       setIsRemoving(false);
@@ -356,7 +356,7 @@ export default function StudentDashboard() {
           });
         }
       }
-      
+
       setInterestedClubs(interestedClubsList);
     } catch (error) {
       console.error('Error fetching interested clubs:', error);

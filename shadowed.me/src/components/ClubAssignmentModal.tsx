@@ -18,7 +18,7 @@ interface User {
 interface ClubAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  club: ClubListing;
+  club: Partial<ClubListing>;
   onAssignmentComplete: () => void;
 }
 
@@ -111,11 +111,16 @@ export default function ClubAssignmentModal({
         updateData.sponsorEmails = selectedSponsors;
       }
       
-      await updateDoc(doc(db, 'clubs', club.id), updateData as DocumentData);
-      
-      toast.success('Club assignments updated successfully');
-      onAssignmentComplete();
-      onClose();
+      // Add a check to ensure club.id is defined
+      if (club.id) {
+        await updateDoc(doc(db, 'clubs', club.id), updateData as DocumentData);
+        
+        toast.success('Club assignments updated successfully');
+        onAssignmentComplete();
+        onClose();
+      } else {
+        toast.error('Club ID is missing');
+      }
     } catch (error) {
       console.error('Error updating club assignments:', error);
       toast.error('Failed to update club assignments');
