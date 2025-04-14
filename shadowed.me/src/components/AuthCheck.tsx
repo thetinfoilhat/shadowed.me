@@ -192,6 +192,9 @@ export default function AuthCheck() {
       setUserRole(role);
       setCaptainClubs(selectedClubs);
       setShowProfileSetup(false);
+      
+      // Refresh the page to update UI and fetch latest data
+      window.location.reload();
     } catch (error) {
       console.error('Error saving profile:', error);
     } finally {

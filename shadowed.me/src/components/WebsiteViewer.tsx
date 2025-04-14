@@ -285,14 +285,19 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 {website.slogan}
               </p>
             )}
-            {(website.category || website.activityType) && (
-              <div className="mt-3 flex items-center gap-2">
+            {(website.category || website.activityTypes?.length || website.activityType) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {website.category && (
                   <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm">
                     {website.category}
                   </span>
                 )}
-                {website.activityType && (
+                {website.activityTypes?.map((type: string, idx: number) => (
+                  <span key={`activity-${idx}`} className="bg-white/20 text-white px-3 py-1 rounded-full text-sm capitalize">
+                    {type}
+                  </span>
+                ))}
+                {!website.activityTypes?.length && website.activityType && (
                   <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm">
                     {website.activityType}
                   </span>

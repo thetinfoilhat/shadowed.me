@@ -81,6 +81,7 @@ export interface ClubSite {
   roomNumber?: string;       // Room number for meetings
   category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
   activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
+  activityTypes?: string[];  // Multiple activity types: competitive, performance, public speaking, volunteering, team-based, sport
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
     table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")

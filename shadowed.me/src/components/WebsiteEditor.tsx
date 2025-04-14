@@ -55,7 +55,8 @@ export interface ClubSite {
   meetingInfo?: string;      // Times, room, day
   roomNumber?: string;       // Room number for meetings
   category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
-  activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
+  activityType?: string;     // Legacy single activity type
+  activityTypes?: string[];  // New multi-select activity types
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
     table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")
@@ -1103,6 +1104,28 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     handleSave(updatedData);
   };
 
+  // Initialize from legacy activityType if activityTypes is not set
+  useEffect(() => {
+    if (!formData.activityTypes && formData.activityType && formData.activityType.trim() !== '') {
+      // Map legacy activity type to the new format
+      const legacyTypeMappings: Record<string, string> = {
+        'Competitive': 'competitive',
+        'Performance': 'performance',
+        'Public Speaking': 'public speaking',
+        'Leaders': 'team-based',
+        'Tryout': 'competitive',
+        'Casual': 'volunteering',
+        'Academic': 'competitive'
+      };
+      
+      const legacyType = formData.activityType;
+      const mappedType = legacyTypeMappings[legacyType] || legacyType.toLowerCase();
+      
+      // Set the new activityTypes array with the mapped legacy type
+      handleInputChange('activityTypes' as keyof ClubSite, [mappedType]);
+    }
+  }, [formData.activityType, formData.activityTypes]);
+
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Top sticky navigation bar */}
@@ -1452,21 +1475,32 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Activity Type
                       </label>
-                      <select
-                        value={formData.activityType || ''}
-                        onChange={(e) => handleInputChange('activityType', e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                      >
-                        <option value="">Select an activity type</option>
-                        <option value="Competitive">Competitive</option>
-                        <option value="Leaders">Leaders</option>
-                        <option value="Tryout">Tryout</option>
-                        <option value="Public Speaking">Public Speaking</option>
-                        <option value="Performance">Performance</option>
-                        <option value="Casual">Casual</option>
-                        <option value="Academic">Academic</option>
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">What kind of activities does your club involve?</p>
+                      <div className="border border-gray-300 rounded-md p-2 max-h-40 overflow-y-auto">
+                        {['competitive', 'performance', 'public speaking', 'volunteering', 'team-based', 'sport'].map((type) => (
+                          <div key={type} className="flex items-center mb-2 last:mb-0">
+                            <input
+                              id={`activity-${type}`}
+                              type="checkbox"
+                              checked={formData.activityTypes?.includes(type) || false}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                const currentTypes = formData.activityTypes || [];
+                                
+                                const updatedTypes = isChecked
+                                  ? [...currentTypes, type]
+                                  : currentTypes.filter((t: string) => t !== type);
+                                
+                                handleInputChange('activityTypes' as keyof ClubSite, updatedTypes);
+                              }}
+                              className="h-4 w-4 text-[#38BFA1] border-gray-300 rounded focus:ring-[#38BFA1]"
+                            />
+                            <label htmlFor={`activity-${type}`} className="ml-2 block text-sm text-black capitalize">
+                              {type}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Select all activity types that apply to your club</p>
                     </div>
                   </div>
                   
