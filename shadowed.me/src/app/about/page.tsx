@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 
 export default function About() {
+  // Set initial state based on sessionStorage (default to true if can't access sessionStorage)
   const [showModal, setShowModal] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -18,9 +19,28 @@ export default function About() {
     }
   };
 
-  // Ensure modal appears on every visit (resets on refresh)
+  // Handle accepting the privacy policy
+  const handleAcceptPolicy = () => {
+    setShowModal(false);
+    try {
+      // Save to sessionStorage that the user has seen the policy
+      sessionStorage.setItem('policyAccepted', 'true');
+    } catch (error) {
+      console.error('Failed to save to sessionStorage:', error);
+    }
+  };
+
+  // Check if user has already seen the policy in this session
   useEffect(() => {
-    setShowModal(true);
+    try {
+      const hasAcceptedPolicy = sessionStorage.getItem('policyAccepted') === 'true';
+      setShowModal(!hasAcceptedPolicy);
+    } catch (error) {
+      // If sessionStorage is not available, default to showing the modal
+      console.error('Failed to access sessionStorage:', error);
+      setShowModal(true);
+    }
+    
     setHasScrolledToBottom(false);
     
     // Reset scroll position
@@ -136,7 +156,7 @@ export default function About() {
             
             <div className="p-6 border-t border-gray-200 flex justify-end">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={handleAcceptPolicy}
                 disabled={!hasScrolledToBottom}
                 aria-disabled={!hasScrolledToBottom}
                 className={`px-6 py-3 rounded-lg font-medium transition-colors ${
