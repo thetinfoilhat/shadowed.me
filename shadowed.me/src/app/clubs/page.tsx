@@ -11,11 +11,6 @@ import { toast } from 'react-hot-toast';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
-import { getCategoryColor, getActivityColor } from '@/utils/categoryColors';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import FilterBar from '@/components/FilterBar';
 
 // Category color mapping
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
