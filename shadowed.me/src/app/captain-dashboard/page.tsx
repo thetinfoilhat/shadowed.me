@@ -3,10 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit, ClubSite, ClubListing } from '@/types/club';
+import { Club, CompletedVisit, ClubSite /* , ClubListing */ } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
@@ -49,45 +49,9 @@ interface VisitData {
   createdAt?: Date;
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  date.setDate(date.getDate() + 1);
-  return format(date, "MMMM do yyyy");
-}
-
-function formatTime(timeStr: string | undefined) {
-  if (!timeStr) return '';
-  
-  try {
-    const [start, end] = timeStr.split(' - ').map(time => {
-      if (!time) return 'Invalid time';
-      
-      const [hours, minutes] = time.split(':');
-      if (!hours || !minutes) return 'Invalid time';
-      
-      const hour = parseInt(hours, 10);
-      if (isNaN(hour)) return 'Invalid time';
-      
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${minutes} ${ampm}`;
-    });
-
-    if (start === 'Invalid time' || end === 'Invalid time') {
-      return 'Invalid time format';
-    }
-
-    return `${start} - ${end}`;
-  } catch (error) {
-    console.error('Error formatting time:', error);
-    return 'Invalid time format';
-  }
-}
-
 export default function CaptainDashboard() {
   const { user, captainClubs } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [captainVisits, setCaptainVisits] = useState<Club[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
   const [viewingApplicants, setViewingApplicants] = useState<Club | null>(null);
@@ -101,13 +65,8 @@ export default function CaptainDashboard() {
     completing: boolean;
   }>({ isOpen: false, visit: null, completing: false });
   const [isAdmin, setIsAdmin] = useState(false);
-  const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
-  const [upcomingExpanded, setUpcomingExpanded] = useState(true);
-  const [completedExpanded, setCompletedExpanded] = useState(false);
   const [websites, setWebsites] = useState<ClubSite[]>([]);
-  const [clubs, setClubs] = useState<ClubListing[]>([]);
   const [websitesExpanded, setWebsitesExpanded] = useState(true);
-  const [clubsExpanded, setClubsExpanded] = useState(true);
   const router = useRouter();
 
   // Fetch user role
@@ -148,7 +107,7 @@ export default function CaptainDashboard() {
         }
       }
       
-      setSponsorNames(namesMap);
+      // setSponsorNames(namesMap);
     } catch (err) {
       console.error('Error fetching sponsor names:', err);
     }
@@ -178,7 +137,7 @@ export default function CaptainDashboard() {
         .filter(visit => isAdmin || visit.captain === user?.email)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      setCaptainVisits(visits);
+      // setCaptainVisits(visits);
       
       // Fetch sponsor names after getting visits
       fetchSponsorNames(visits);
@@ -250,7 +209,7 @@ export default function CaptainDashboard() {
         }
       }
       
-      setClubs(clubsData as ClubListing[]);
+      // setClubs(clubsData as ClubListing[]);
     } catch (error) {
       console.error('Error fetching captain clubs:', error);
     }
@@ -312,6 +271,7 @@ export default function CaptainDashboard() {
     }
   };
 
+  /* 
   const handleCompletionClick = (visit: Club, completing: boolean) => {
     setConfirmCompletion({ 
       isOpen: true, 
@@ -319,6 +279,7 @@ export default function CaptainDashboard() {
       completing 
     });
   };
+  */
 
   const handleMarkCompleted = async (visit: Club, completed: boolean) => {
     try {
@@ -420,6 +381,7 @@ export default function CaptainDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-[#0A2540]">Captain Dashboard</h1>
+          {/* Create Visit button commented out 
           <div className="flex gap-4">
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -428,6 +390,7 @@ export default function CaptainDashboard() {
               Create Visit
             </button>
           </div>
+          */}
         </div>
 
         {/* Club Websites Section */}
@@ -521,7 +484,7 @@ export default function CaptainDashboard() {
           )}
         </div>
 
-        {/* Club Assignments Section */}
+        {/* Club Assignments Section - commented out
         <div>
           <button 
             onClick={() => setClubsExpanded(!clubsExpanded)}
@@ -613,8 +576,9 @@ export default function CaptainDashboard() {
             </div>
           )}
         </div>
+        */}
 
-        {/* Upcoming Visits Section */}
+        {/* Upcoming Visits Section - commented out
         <div>
           <button 
             onClick={() => setUpcomingExpanded(!upcomingExpanded)}
@@ -648,7 +612,7 @@ export default function CaptainDashboard() {
                         <h3 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h3>
                         <p className="text-gray-600 mb-4 line-clamp-2">{visit.description}</p>
                         
-                        {/* Approval Status Bar */}
+                        {/* Approval Status Bar */}{/*
                         {visit.status && (
                           <div className={`mb-3 px-3 py-1.5 rounded-md text-sm font-medium ${
                             visit.status === 'pending' 
@@ -704,7 +668,7 @@ export default function CaptainDashboard() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons */}{/*
                     <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
                       <button 
                         className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
@@ -755,8 +719,9 @@ export default function CaptainDashboard() {
             </div>
           )}
         </div>
+        */}
 
-        {/* Completed Visits Section */}
+        {/* Completed Visits Section - commented out
         <div>
           <button 
             onClick={() => setCompletedExpanded(!completedExpanded)}
@@ -824,7 +789,7 @@ export default function CaptainDashboard() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons */}{/*
                     <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
                       <button 
                         className="bg-[#38BFA1]/10 text-[#38BFA1] p-2 rounded-md hover:bg-[#38BFA1]/20 transition-colors"
@@ -865,6 +830,7 @@ export default function CaptainDashboard() {
             </div>
           )}
         </div>
+        */}
 
         {/* Create/Edit Visit Modal */}
         <VisitModal

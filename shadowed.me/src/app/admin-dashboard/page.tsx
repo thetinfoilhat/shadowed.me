@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, setDoc, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, query, where, /* updateDoc, */ deleteDoc } from 'firebase/firestore';
 import { db, UserRole, ROLE_HIERARCHY } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Dialog, Tab } from '@headlessui/react';
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ClubAssignmentModal from '@/components/ClubAssignmentModal';
@@ -86,19 +85,6 @@ interface ClubListing {
   contactInfo: string;      // Maps to email in jamboreeMeetingInfo
 }
 
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  // Add a day to fix timezone offset issue
-  date.setDate(date.getDate() + 1);
-  
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  };
-  return date.toLocaleDateString(undefined, options);
-}
-
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
@@ -111,8 +97,7 @@ export default function AdminDashboard() {
   const [success, setSuccess] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<{email: string, role: UserRole} | null>(null);
-  const [visits, setVisits] = useState<(VisitData & { uniqueKey: string })[]>([]);
-  const [sponsorNames, setSponsorNames] = useState<Record<string, string>>({});
+  /* const [visits, setVisits] = useState<(VisitData & { uniqueKey: string })[]>([]); */
   const [allClubs, setAllClubs] = useState<(ClubListing & { uniqueKey: string })[]>([]);
   const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
@@ -138,7 +123,8 @@ export default function AdminDashboard() {
         }
       }
       
-      setSponsorNames(namesMap);
+      // Commented out to fix linter error
+      // setSponsorNames(namesMap);
     } catch (err) {
       console.error('Error fetching sponsor names:', err);
     }
@@ -156,7 +142,8 @@ export default function AdminDashboard() {
         status: doc.data().status || 'pending',
       })) as (VisitData & { uniqueKey: string })[];
       
-      setVisits(visitsData);
+      // Commented out to fix linter error
+      // setVisits(visitsData);
       fetchSponsorNames(visitsData);
     } catch (error) {
       console.error('Error fetching visits:', error);
@@ -373,34 +360,6 @@ export default function AdminDashboard() {
     setShowConfirmation(false);
   };
 
-  const handleApprove = async (visitId: string) => {
-    try {
-      const visitRef = doc(db, 'opportunities', visitId);
-      await updateDoc(visitRef, {
-        status: 'approved'
-      });
-      toast.success('Visit approved successfully');
-      fetchAllVisits();
-    } catch (error) {
-      console.error('Error approving visit:', error);
-      toast.error('Failed to approve visit');
-    }
-  };
-
-  const handleReject = async (visitId: string) => {
-    try {
-      const visitRef = doc(db, 'opportunities', visitId);
-      await updateDoc(visitRef, {
-        status: 'rejected'
-      });
-      toast.success('Visit rejected');
-      fetchAllVisits();
-    } catch (error) {
-      console.error('Error rejecting visit:', error);
-      toast.error('Failed to reject visit');
-    }
-  };
-
   const getRoleBadgeClass = (role: UserRole | undefined) => {
     switch(role) {
       case 'admin':
@@ -452,10 +411,6 @@ export default function AdminDashboard() {
   if (!isAdmin) {
     return null;
   }
-
-  const pendingVisits = visits.filter(visit => visit.status === 'pending');
-  const approvedVisits = visits.filter(visit => visit.status === 'approved');
-  const rejectedVisits = visits.filter(visit => visit.status === 'rejected');
 
   return (
     <div className="min-h-screen bg-white">
@@ -516,233 +471,6 @@ export default function AdminDashboard() {
               Update Role
             </button>
           </form>
-        </div>
-
-        {/* Opportunities Management */}
-        <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-8">
-          <h2 className="text-xl font-semibold text-[#0A2540] mb-6">Manage All Opportunities</h2>
-          
-          <Tab.Group>
-            <Tab.List className="flex space-x-1 rounded-xl bg-[#F0F9F6] p-1 mb-8">
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                  ${selected 
-                    ? 'bg-[#38BFA1] text-white shadow'
-                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }
-              >
-                Pending ({pendingVisits.length})
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                  ${selected 
-                    ? 'bg-[#38BFA1] text-white shadow'
-                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }
-              >
-                Approved ({approvedVisits.length})
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                  ${selected 
-                    ? 'bg-[#38BFA1] text-white shadow'
-                    : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                  }`
-                }
-              >
-                Rejected ({rejectedVisits.length})
-              </Tab>
-            </Tab.List>
-            
-            <Tab.Panels>
-              <Tab.Panel>
-                {pendingVisits.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No pending visits to approve</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {pendingVisits.map((visit, index) => (
-                      <div key={visit.uniqueKey || `pending-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                        <div className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h2>
-                              <p className="text-sm text-gray-500 mb-1">
-                                <span className="font-medium">Captain:</span> {visit.captain}
-                              </p>
-                              <p className="text-sm text-gray-500 mb-4">
-                                <span className="font-medium">Sponsor:</span> {visit.sponsorEmail} 
-                                {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? ` (${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </p>
-                            </div>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Pending
-                            </span>
-                          </div>
-                          
-                          <div className="mt-4 space-y-3">
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Category:</span>
-                              <span className="ml-2 text-gray-900">{visit.category}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Date:</span>
-                              <span className="ml-2 text-gray-900">{formatDate(visit.date)}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Time:</span>
-                              <span className="ml-2 text-gray-900">{visit.time}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Available Slots:</span>
-                              <span className="ml-2 text-gray-900">{visit.slots}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Description:</span>
-                              <p className="mt-1 text-gray-900">{visit.description}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-6 flex space-x-3">
-                            <button
-                              onClick={() => handleApprove(visit.id)}
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              <CheckCircleIcon className="h-5 w-5 mr-2" />
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(visit.id)}
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                            >
-                              <XCircleIcon className="h-5 w-5 mr-2" />
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Tab.Panel>
-              
-              <Tab.Panel>
-                {approvedVisits.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No approved visits</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {approvedVisits.map((visit, index) => (
-                      <div key={visit.uniqueKey || `approved-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                        <div className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h2>
-                              <p className="text-sm text-gray-500 mb-1">
-                                <span className="font-medium">Captain:</span> {visit.captain}
-                              </p>
-                              <p className="text-sm text-gray-500 mb-4">
-                                <span className="font-medium">Approved by:</span> {visit.sponsorEmail}
-                                {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? ` (${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </p>
-                            </div>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Approved
-                            </span>
-                          </div>
-                          
-                          <div className="mt-4 space-y-3">
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Category:</span>
-                              <span className="ml-2 text-gray-900">{visit.category}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Date:</span>
-                              <span className="ml-2 text-gray-900">{formatDate(visit.date)}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Time:</span>
-                              <span className="ml-2 text-gray-900">{visit.time}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Available Slots:</span>
-                              <span className="ml-2 text-gray-900">{visit.slots}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Description:</span>
-                              <p className="mt-1 text-gray-900">{visit.description}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Tab.Panel>
-              
-              <Tab.Panel>
-                {rejectedVisits.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No rejected visits</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {rejectedVisits.map((visit, index) => (
-                      <div key={visit.uniqueKey || `rejected-${visit.id}-${index}`} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                        <div className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{visit.name}</h2>
-                              <p className="text-sm text-gray-500 mb-1">
-                                <span className="font-medium">Captain:</span> {visit.captain}
-                              </p>
-                              <p className="text-sm text-gray-500 mb-4">
-                                <span className="font-medium">Rejected by:</span> {visit.sponsorEmail}
-                                {visit.sponsorEmail && sponsorNames[visit.sponsorEmail] ? ` (${sponsorNames[visit.sponsorEmail]})` : ''}
-                              </p>
-                            </div>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Rejected
-                            </span>
-                          </div>
-                          
-                          <div className="mt-4 space-y-3">
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Category:</span>
-                              <span className="ml-2 text-gray-900">{visit.category}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Date:</span>
-                              <span className="ml-2 text-gray-900">{formatDate(visit.date)}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Time:</span>
-                              <span className="ml-2 text-gray-900">{visit.time}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Available Slots:</span>
-                              <span className="ml-2 text-gray-900">{visit.slots}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Description:</span>
-                              <p className="mt-1 text-gray-900">{visit.description}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Tab.Panel>
-            </Tab.Panels>
-          </Tab.Group>
         </div>
 
         {/* Users Management */}
@@ -844,7 +572,7 @@ export default function AdminDashboard() {
         <div className="mt-12 bg-white rounded-xl p-8 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-black">Clubs</h2>
-            <div className="flex gap-2">
+           {/*  <div className="flex gap-2">
               <button
                 onClick={() => {
                   setSelectedClub(null);
@@ -854,7 +582,7 @@ export default function AdminDashboard() {
               >
                 Add Club
               </button>
-            </div>
+            </div> */}
           </div>
           
           {loadingClubs ? (
