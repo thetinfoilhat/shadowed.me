@@ -1,654 +1,406 @@
 'use client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
-import CountUp from 'react-countup';
-import { useState, useEffect } from 'react';
-
-// Animated text component that cycles between phrases
-const AnimatedHeadline = () => {
-  const phrases = [
-    "find free opportunities",
-    "discover their interests",
-    "chase their passions"
-  ];
-  
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % phrases.length);
-    }, 2500);
-    
-    return () => clearInterval(interval);
-  }, [phrases.length]);
-  
-  return (
-    <motion.div 
-      className="text-2xl md:text-4xl font-bold text-center mb-16 md:mb-32"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      <div className="flex flex-col md:flex-row justify-center items-center gap-2">
-        <h2 className="text-[#0A2540]">We help students</h2>
-        <div className="relative h-[40px] md:h-[60px] w-full md:w-[300px]"> {/* Fixed height container */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              className="absolute inset-0 flex items-center justify-center md:justify-start"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ 
-                duration: 0.5,
-                ease: "easeInOut"
-              }}
-            >
-              <span className="text-[#2A8E9E] whitespace-nowrap">
-                {phrases[currentIndex]}
-              </span>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-      
-      {/* Animated underline */}
-      <motion.div 
-        className="h-1 bg-gradient-to-r from-[#2A8E9E] to-[#38BFA1] rounded-full mx-auto mt-6"
-        initial={{ width: 0 }}
-        whileInView={{ width: "240px" }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        viewport={{ once: true }}
-      />
-    </motion.div>
-  );
-};
-
-// Custom synchronized counter component
-const SyncedCounters = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setIsVisible(true);
-          setHasAnimated(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    const element = document.getElementById('stats-section');
-    if (element) observer.observe(element);
-    
-    return () => {
-      if (element) observer.unobserve(element);
-    };
-  }, [hasAnimated]);
-  
-  return (
-    <div className="flex flex-wrap justify-center gap-20 md:gap-40 relative z-10">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ delay: 0.1 }}
-        className="text-center relative group"
-      >
-        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="absolute -top-8 -right-8 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
-          👨‍🎓
-        </div>
-        <motion.div 
-          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 60, 
-            duration: 0.8 
-          }}
-        >
-          {isVisible && (
-            <CountUp
-              start={0}
-              end={500}
-              duration={2.5}
-              suffix="+"
-              useEasing={true}
-              decimals={0}
-              decimal=""
-              className="relative"
-            />
-          )}
-          <motion.div 
-            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
-            initial={{ width: 0 }}
-            animate={isVisible ? { width: "100%" } : { width: 0 }}
-            transition={{ duration: 2.5, ease: "easeOut" }}
-          />
-        </motion.div>
-        <motion.div 
-          className="text-xl text-[#0A2540]"
-          initial={{ opacity: 0 }}
-          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          Active Students
-        </motion.div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ delay: 0.2 }}
-        className="text-center relative group"
-      >
-        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="absolute -top-8 -right-8 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
-          🏫
-        </div>
-        <motion.div 
-          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 60, 
-            duration: 0.8 
-          }}
-        >
-          {isVisible && (
-            <CountUp
-              start={0}
-              end={100}
-              duration={2.5}
-              suffix="+"
-              useEasing={true}
-              decimals={0}
-              decimal=""
-              className="relative"
-            />
-          )}
-          <motion.div 
-            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
-            initial={{ width: 0 }}
-            animate={isVisible ? { width: "100%" } : { width: 0 }}
-            transition={{ duration: 2.5, ease: "easeOut" }}
-          />
-        </motion.div>
-        <motion.div 
-          className="text-xl text-[#0A2540]"
-          initial={{ opacity: 0 }}
-          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          School Clubs
-        </motion.div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ delay: 0.3 }}
-        className="text-center relative group"
-      >
-        <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-[#2A8E9E]/5 to-[#38BFA1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="absolute -top-8 -right-8 w-12 h-12 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center text-xl">
-          ⏱️
-        </div>
-        <motion.div 
-          className="text-7xl font-bold text-[#2A8E9E] mb-4 relative"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={isVisible ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 60, 
-            duration: 0.8 
-          }}
-        >
-          {isVisible && (
-            <CountUp
-              start={0}
-              end={1000}
-              duration={2.5}
-              suffix="+"
-              useEasing={true}
-              decimals={0}
-              decimal=""
-              className="relative"
-            />
-          )}
-          <motion.div 
-            className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30"
-            initial={{ width: 0 }}
-            animate={isVisible ? { width: "100%" } : { width: 0 }}
-            transition={{ duration: 2.5, ease: "easeOut" }}
-          />
-        </motion.div>
-        <motion.div 
-          className="text-xl text-[#0A2540]"
-          initial={{ opacity: 0 }}
-          animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          Hours Logged
-        </motion.div>
-      </motion.div>
-    </div>
-  );
-};
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   return (
-    <div className="pt-[70px] md:pt-[100px] min-h-screen bg-[#FAFAFA] overflow-x-hidden" suppressHydrationWarning>
+    <div className="min-h-screen overflow-x-hidden bg-white">
       {/* Hero Section */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 pt-12 md:pt-24 pb-24 md:pb-48 lg:pb-64">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24">
-          {/* Left Column */}
-          <div>
-            <motion.h1 
-              className="text-[2rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] leading-[1.15] mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <span className="text-[#180D39]">
-                Helping students<br />
-                <span className="font-bold">
-                  find their<br />
-                  <span className="relative inline-block">
-                    light.
-                    <span className="absolute bottom-2 left-0 w-full h-1 bg-gradient-to-r from-[#2A8E9E] to-[#2A8E9E]/30" />
+      <section className="relative min-h-[90vh] overflow-hidden">
+        {/* Background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#040037] to-[#003396]"></div>
+        
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10 pt-12 md:pt-24 lg:pt-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center">
+            {/* Text content */}
+            <div className="text-white">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold leading-tight">
+                Helping students
+                <div className="mt-3">
+                  find their <span className="relative">
+                    <span className="text-[#86CEFA]">light.</span>
+                    <span className="absolute bottom-2 left-0 w-full h-1 bg-[#5494DA]"></span>
                   </span>
-                </span>
-              </span>
-            </motion.h1>
-            
-            <div className="mt-8">
-              <motion.p 
-                className="text-base md:text-lg lg:text-xl text-[#180D39]/70 mb-8 md:mb-12 max-w-xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1 }}
-              >
-                The one-stop shop for discovering clubs, events, and experiences at Naperville North, helping rising underclassmen get involved and interested.
-              </motion.p>
-
-              <motion.div
-                className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
+                </div>
+              </h1>
+              
+              <p className="text-xl text-white/90 mt-8 mb-10 max-w-xl">
+                The one-stop shop for discovering clubs, events, experiences, and opportunities at Naperville North High School, helping eighth-graders and underclassmen get involved and interested.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/clubs">
-                  <button className="w-full sm:w-auto bg-[#2A8E9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#247A87] transition-colors">
-                    Get Started →
+                  <button className="px-8 py-4 bg-[#FF9913] text-white font-medium rounded-full flex items-center justify-center hover:bg-[#e68a10] transition-colors">
+                    Find Clubs 
+                    <ArrowRightIcon className="w-5 h-5 ml-2" />
                   </button>
                 </Link>
-                <span className="text-[#180D39]/40 mt-2 sm:mt-0">Join 500+ students</span>
-              </motion.div>
+                
+                <Link href="/about">
+                  <button className="px-8 py-4 bg-transparent border-2 border-white/30 text-white font-medium rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
+                    Learn More
+                  </button>
+                </Link>
+              </div>
             </div>
-          </div>
-
-          {/* Right Column - only show on larger screens */}
-          <div className="relative pt-12 md:pt-24 hidden md:block">
-            {/* Main Feature Card */}
-            <motion.div 
-              className="bg-gradient-to-br from-[#180D39] to-[#1D1145] rounded-2xl p-8 shadow-xl w-full md:w-[95%]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-start gap-6">
-                <div className="bg-white/10 rounded-xl p-4">
-                  <div className="relative w-16 h-16">
-                    {/* Animated calendar illustration */}
-                    <motion.div 
-                      className="absolute inset-0 bg-[#2A8E9E]/20 rounded-lg"
-                      animate={{ 
-                        scale: [1, 1.1, 1],
-                        opacity: [0.5, 0.8, 0.5]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    />
-                    <div className="relative h-full flex items-center justify-center">
-                      <span className="text-3xl">📅</span>
+            
+            {/* Right side content */}
+            <div className="hidden lg:block">
+              <div className="relative w-full">
+                {/* Main Feature Card */}
+                <div className="bg-[#1750AC]/90 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="px-8 py-6 border-b border-white/10">
+                    <h3 className="text-white text-xl font-semibold">
+                      Upcoming Opportunities
+                    </h3>
+                  </div>
+                  
+                  <div className="px-8 py-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-[#5494DA] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14">
+                            <span className="text-xs">MAR</span>
+                            <span className="text-xl font-bold">17</span>
+                          </div>
+                          <div>
+                            <div className="text-[#86CEFA] font-medium">Physics Club</div>
+                            <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
+                          </div>
+                        </div>
+                        <div className="text-white/70 text-sm">Mar 15</div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pb-3">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-[#5494DA] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14">
+                            <span className="text-xs">MAR</span>
+                            <span className="text-xl font-bold">23</span>
+                          </div>
+                          <div>
+                            <div className="text-[#86CEFA] font-medium">HOSA Competition</div>
+                            <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
+                          </div>
+                        </div>
+                        <div className="text-white/70 text-sm">Mar 18</div>
+                      </div>
                     </div>
+                    
+                    <Link href="/events" className="text-[#86CEFA] text-sm font-medium flex items-center mt-4 hover:underline">
+                      View all opportunities
+                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    </Link>
                   </div>
                 </div>
                 
-                <div className="flex-1">
-                  <h3 className="text-white text-xl font-semibold mb-3">
-                    Upcoming Opportunities
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                      <div>
-                        <div className="text-[#2A8E9E] font-medium">Physics Club</div>
-                        <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
-                      </div>
-                      <div className="text-white/50 text-sm">Mar 15</div>
+                {/* Stats Card */}
+                <div className="absolute -top-6 -right-6 bg-[#3373C4] rounded-2xl p-4 shadow-lg transform rotate-6">
+                  <div className="text-white/90 text-sm font-medium">Active Students</div>
+                  <div className="text-white text-2xl font-bold mt-1">500+</div>
+                  <div className="text-white/70 text-xs mt-1">across 110 clubs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full">
+            <path fill="#ffffff" fillOpacity="1" d="M0,96L48,106.7C96,117,192,139,288,154.7C384,171,480,181,576,165.3C672,149,768,107,864,101.3C960,96,1056,128,1152,138.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+        </div>
+      </section>
+      
+      {/* Mission Section */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-wrap justify-center items-center"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#040037] inline-flex items-center justify-center w-full">
+                <span>We help students</span>&nbsp;
+                
+                {/* Inline Text Carousel */}
+                <span className="relative inline-block h-[60px] sm:h-[72px] overflow-hidden align-bottom" style={{ minWidth: '650px', maxWidth: '800px', transform: 'translateY(13px)' }}>
+                  {[
+                    { text: "Connect curiosity to action", color: "#3373C4" },
+                    { text: "Explore interests & passions", color: "#5494DA" },
+                    { text: "Serve their communities", color: "#73B9EE" },
+                    { text: "Lead with confidence", color: "#86CEFA" }
+                  ].map((item, index) => {
+                    const words = item.text.split(' ');
+                    const firstWord = words[0];
+                    const restWords = words.slice(1).join(' ');
+                    
+                    return (
+                      <motion.span
+                        key={index}
+                        className="absolute left-0 whitespace-nowrap w-full"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ 
+                          opacity: [0, 1, 1, 0],
+                          y: [20, 0, 0, -20]
+                        }}
+                        transition={{
+                          times: [0, 0.1, 0.9, 1],
+                          duration: 4,
+                          delay: index * 4,
+                          repeat: Infinity,
+                          repeatDelay: 12
+                        }}
+                      >
+                        <span className="font-bold" style={{ color: item.color }}>{firstWord}</span>
+                        <span className="text-[#040037]"> {restWords}</span>
+                      </motion.span>
+                    );
+                  })}
+                </span>
+              </h2>
+              <div className="w-full mt-3">
+                <span className="inline-block h-1 bg-[#5494DA] w-[650px] sm:w-[750px] md:w-[900px]"></span>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Feature Boxes */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="order-2 lg:order-1"
+            >
+              <div className="p-2 bg-white shadow-xl rounded-3xl">
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#5494DA] to-[#3373C4] p-1">
+                  <div className="bg-white rounded-xl p-8">
+                    <div className="w-16 h-16 bg-[#5494DA]/10 text-[#5494DA] flex items-center justify-center rounded-xl text-2xl mb-6">
+                      🔍
                     </div>
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                      <div>
-                        <div className="text-[#2A8E9E] font-medium">HOSA Competition</div>
-                        <div className="text-white/70 text-sm mt-1">Naperville North High School</div>
-                      </div>
-                      <div className="text-white/50 text-sm">Mar 18</div>
-                    </div>
+                    <h3 className="text-2xl font-bold text-[#040037] mb-4">Connect</h3>
+                    <p className="text-[#1a1a1a]">
+                      Connect with 110+ clubs at Naperville North and the events & opportunities they offer. Visit the &quot;Clubs&quot; page to read detailed descriptions and join communication lists linked to club sponsors, and check the &quot;Club Visits&quot; page during the school year to find meetings you can &quot;shadow&quot;.
+                    </p>
                   </div>
-
-                  <Link 
-                    href="/school-clubs"
-                    className="mt-6 text-[#2A8E9E] text-sm font-medium flex items-center gap-2 group w-fit"
-                  >
-                    <motion.span
-                      className="flex items-center gap-2"
-                      whileHover={{ x: 5 }}
-                    >
-                      View all opportunities
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </motion.span>
-                  </Link>
                 </div>
               </div>
             </motion.div>
-
-            {/* Stats Card */}
-            <motion.div 
-              className="absolute top-4 right-4 bg-[#2A8E9E] rounded-2xl p-4 shadow-lg w-56"
-              initial={{ opacity: 0, y: 20, x: 20 }}
-              animate={{ opacity: 1, y: 0, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="order-1 lg:order-2"
             >
-              <div className="text-white/90 text-sm font-medium">Active Students</div>
-              <div className="text-white text-2xl font-bold mt-1">500+</div>
-              <div className="text-white/70 text-xs mt-1">across 110 clubs</div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#040037] mb-6">
+                Discover Your Perfect Clubs
+              </h2>
+              <p className="text-xl text-[#1a1a1a] mb-6">
+                We make it easy to find clubs that match your interests and schedule.
+              </p>
+              <Link href="/clubs">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  className="px-6 py-3 bg-[#3373C4] text-white font-medium rounded-full flex items-center"
+                >
+                  Browse All Clubs
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </motion.button>
+              </Link>
+            </motion.div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#040037] mb-6">
+                Find What Fits You
+              </h2>
+              <p className="text-xl text-[#1a1a1a] mb-6">
+                Take our personalized quiz to get matched with clubs that align with your interests.
+              </p>
+              <Link href="/what-fits-you">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  className="px-6 py-3 bg-[#5494DA] text-white font-medium rounded-full flex items-center"
+                >
+                  Take the Quiz
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </motion.button>
+              </Link>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="p-2 bg-white shadow-xl rounded-3xl">
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#5494DA] to-[#73B9EE] p-1">
+                  <div className="bg-white rounded-xl p-8">
+                    <div className="w-16 h-16 bg-[#5494DA]/10 text-[#5494DA] flex items-center justify-center rounded-xl text-2xl mb-6">
+                      🧭
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#040037] mb-4">Explore</h3>
+                    <p className="text-[#1a1a1a]">
+                      Try out the 25-question quiz to discover the clubs that fit your interests, goals, and schedule. Whether you&apos;re looking to compete, create, lead, perform, or just try something new, it only takes a few minutes and might introduce you to a club you never expected to love!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="order-2 lg:order-1"
+            >
+              <div className="p-2 bg-white shadow-xl rounded-3xl">
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#73B9EE] to-[#86CEFA] p-1">
+                  <div className="bg-white rounded-xl p-8">
+                    <div className="w-16 h-16 bg-[#73B9EE]/10 text-[#73B9EE] flex items-center justify-center rounded-xl text-2xl mb-6">
+                      🤝
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#040037] mb-4">Serve</h3>
+                    <p className="text-[#1a1a1a]">
+                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed. Great for resumes, service goals, or just looking back on the impact you&apos;ve made in the community.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="order-1 lg:order-2"
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#040037] mb-6">
+                Track Your Impact
+              </h2>
+              <p className="text-xl text-[#1a1a1a] mb-6">
+                Record your participation and volunteer hours all in one place.
+              </p>
+              <Link href="/my-visits">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  className="px-6 py-3 bg-[#73B9EE] text-white font-medium rounded-full flex items-center"
+                >
+                  View My Records
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </motion.button>
+              </Link>
+            </motion.div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#040037] mb-6">
+                Manage Your Club
+              </h2>
+              <p className="text-xl text-[#1a1a1a] mb-6">
+                Captains and sponsors can easily organize their club activities.
+              </p>
+              <Link href="/captain-dashboard">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  className="px-6 py-3 bg-[#86CEFA] text-white font-medium rounded-full flex items-center"
+                >
+                  Captain Dashboard
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </motion.button>
+              </Link>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="p-2 bg-white shadow-xl rounded-3xl">
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#86CEFA] to-[#5494DA] p-1">
+                  <div className="bg-white rounded-xl p-8">
+                    <div className="w-16 h-16 bg-[#86CEFA]/10 text-[#86CEFA] flex items-center justify-center rounded-xl text-2xl mb-6">
+                      ⭐
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#040037] mb-4">Lead</h3>
+                    <p className="text-[#1a1a1a]">
+                      Captains and club sponsors will use shadowed.me as their all-in-one platform to post everything students need to know—meeting times, room numbers, upcoming competitions, volunteer opportunities, and anything in between. It&apos;s easier than ever to keep your club organized and driven!
+                    </p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
-      </div>
-
-      {/* Wave and Features Section */}
-      <div className="relative w-full -mt-24 md:-mt-100">
-        <svg 
-          className="absolute top-0 left-0 w-full h-[600px]"
-          viewBox="0 0 1440 600"
-          preserveAspectRatio="none"
-          style={{ transform: 'translateY(-15%)' }}
-        >
-          <defs>
-            <linearGradient id="backgroundGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#2A8E9E" stopOpacity="0.08" />
-              <stop offset="50%" stopColor="#2A8E9E" stopOpacity="0.05" />
-              <stop offset="100%" stopColor="#2A8E9E" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          
-          {/* Wave Path */}
-          <path 
-            fill="url(#backgroundGradient)"
-            d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,106.7C960,117,1056,139,1152,133.3C1248,128,1344,96,1392,80L1440,64L1440,600L1392,600C1344,600,1248,600,1152,600C1056,600,960,600,864,600C768,600,672,600,576,600C480,600,384,600,288,600C192,600,96,600,48,600L0,600Z"
-          />
-        </svg>
-
-        {/* Content */}
-        <div className="relative pt-48 md:pt-64">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16">
-            <div className="flex flex-col lg:flex-row justify-between items-start gap-8 mb-20">
-              <motion.h2 
-                className="text-2xl sm:text-3xl font-bold text-[#0A2540] max-w-md"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
-                Explore, Engage, and Excel at Naperville North.
-              </motion.h2>
-              <motion.p 
-                className="text-base sm:text-lg text-gray-500 max-w-md"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-              >
-               Designed to help younger students explore their interests, prioritize their passions, and get involved early.
-
-              </motion.p>
-            </div>
-            {/* Feature cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12">
-              {/* Easy Discovery Card */}
-              <motion.div 
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-[#180D39]/5"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                transition={{ duration: 0.3 }}
-                viewport={{ once: true }}
-              >
-                <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-                  <span className="text-2xl">🔍</span>
-                </div>
-                <h3 className="text-xl font-semibold text-[#180D39] mb-3">Explore</h3>
-                <p className="text-[#180D39]/70">
-                Find clubs, events, and opportunities that match your goals and schedule.
-                </p>
-              </motion.div>
-
-              {/* Quick Registration Card */}
-              <motion.div 
-                className="bg-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-shadow"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="bg-[#2A8E9E]/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-                  <span className="text-2xl">⚡</span>
-                </div>
-                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Engage</h3>
-                <p className="text-[#180D39]/70">
-                One-click sign-up for school clubs, extracurricular activities, and volunteer work.
-                </p>
-              </motion.div>
-
-              {/* Progress Tracking Card */}
-              <motion.div 
-                className="bg-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-shadow"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                viewport={{ once: true }}
-              >
-                <div className="bg-[#E6F7F4] w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-                  <span className="text-2xl">📊</span>
-                </div>
-                <h3 className="text-xl font-semibold text-[#0A2540] mb-3">Excel</h3>
-                <p className="text-gray-600">
-                Automatically log your participation, volunteer hours, and experiences to build a strong foundation for high school and beyond.
-                </p>
-              </motion.div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Why They Prefer Section */}
-      <div className="max-w-[1400px] mx-auto px-8 pt-48">
-        {/* Stats Section - Moved here */}
-        <div id="stats-section" className="relative">
-          {/* Decorative elements */}
-          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br from-[#2A8E9E]/10 to-transparent blur-3xl"></div>
-          <div className="absolute top-1/3 right-0 translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-gradient-to-br from-[#38BFA1]/10 to-transparent blur-3xl"></div>
-          
-          <AnimatedHeadline />
-          
-          <SyncedCounters />
-        </div>
-      </div>
-
-      {/* How It Works Section */}
-      <div className="bg-[#0A2540] mt-24 md:mt-48 py-16 md:py-24 text-white">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
-          <motion.h2 
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-12 md:mb-16"
+      </section>
+      
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-to-b from-[#003396] to-[#040037]">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 text-center">
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6"
           >
-            Find your path at Naperville North
+            Driven to be interested and involved?
           </motion.h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16">
-            <div>
-              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">1</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Chart Your Course</h3>
-              <p className="text-sm md:text-base text-gray-400">Create your profile with your name, email, and grade to get started.</p>
-            </div>
-            <div>
-              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">2</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Join the Pack</h3>
-              <p className="text-sm md:text-base text-gray-400">Explore 110+ clubs and activities to discover what excites you most.</p>
-            </div>
-            <div>
-              <div className="text-5xl md:text-8xl font-light text-[#38BFA1] mb-4 md:mb-8">3</div>
-              <h3 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4">Track Your Trail</h3>
-              <p className="text-sm md:text-base text-gray-400">Discover a career path that you really care about!</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Why students choose section */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-24 md:pt-48">
-        <motion.h2 
-          className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0A2540] mb-12 md:mb-24 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          Why students choose shadowed.me
-        </motion.h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-          <motion.div 
-            className="bg-white rounded-[2rem] p-12 shadow-sm"
-            whileHover={{ y: -8 }}
+          
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-xl text-white/80 mb-10 max-w-2xl mx-auto"
           >
-            <div className="text-5xl font-bold text-[#2A8E9E] mb-4">500+</div>
-            <h3 className="text-2xl font-semibold text-[#0A2540] mb-2">Active Students</h3>
-            <p className="text-[#180D39]/80">discovering opportunities daily</p>
-          </motion.div>
-
-          <motion.div 
-            className="bg-white rounded-[2rem] p-12 shadow-sm"
-            whileHover={{ y: -8 }}
+            Join thousands of students discovering events and opportunities.
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Quick Registration</h3>
-            <p className="text-[#180D39]/80 mb-8">One-click signup for all opportunities</p>
-            <div className="flex gap-4">
-              <span className="text-3xl">📱</span>
-              <span className="text-3xl">✨</span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            className="bg-white rounded-[2rem] p-12 shadow-sm"
-            whileHover={{ y: -8 }}
-          >
-            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Teacher Touchpoints</h3>
-            <p className="text-[#180D39]/80 mb-6">All activities are teacher or admin approved</p>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-lg bg-[#2A8E9E]/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[#2A8E9E]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={1.5} 
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                    />
-                  </svg>
-                </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#2A8E9E] text-white flex items-center justify-center text-xs">
-                  ✓
-                </div>
-              </div>
-              <div className="text-[#2A8E9E] font-medium">
-              Approval-based scheduling
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            className="bg-white rounded-[2rem] p-12 shadow-sm"
-            whileHover={{ y: -8 }}
-          >
-            <h3 className="text-2xl font-semibold text-[#0A2540] mb-4">Growth Tracking</h3>
-            <div className="flex items-center gap-6 mb-6">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-[#2A8E9E]/10 flex items-center justify-center">
-                  <div className="text-[#2A8E9E] font-bold text-xl">12</div>
-                </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#2A8E9E] text-white flex items-center justify-center text-sm">
-                  +
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[#0A2540] font-semibold">Hours This Week</span>
-                <span className="text-[#2A8E9E] text-sm">+3 from last week</span>
-              </div>
-            </div>
-            <p className="text-[#180D39]/80">Track your hours and impact</p>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="bg-[#102C4C] mt-24 md:mt-48">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-16 md:py-24">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div>
-              <motion.h2 
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 md:mb-4 text-center md:text-left"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                Ready to start exploring?
-              </motion.h2>
-              <motion.p 
-                className="text-lg md:text-xl text-white/70 text-center md:text-left"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-              >
-                Join hundreds of students discovering opportunities.
-              </motion.p>
-            </div>
-            <Link href="/school-clubs">
-              <motion.button 
-                className="w-full md:w-auto bg-[#2A8E9E] text-white px-6 md:px-10 py-3 md:py-5 text-lg md:text-xl rounded-xl md:rounded-2xl hover:bg-[#247A87] transition-all"
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.02 }}
-              >
-                Get Started →
-              </motion.button>
+            <Link href="/clubs">
+              <button className="px-10 py-5 bg-[#5494DA] text-white text-lg font-medium rounded-full hover:bg-[#3373C4] transition-colors">
+                Get Started
+              </button>
             </Link>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
