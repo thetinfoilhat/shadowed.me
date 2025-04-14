@@ -162,7 +162,7 @@ export default function ClubWebsitePage() {
     };
 
     checkAuth();
-  }, [clubSlug, user, isNew, initialClubName, isPreview, userRole, captainClubs]);
+  }, [isEditor,clubSlug, user, isNew, initialClubName, isPreview, userRole, captainClubs]);
 
   useEffect(() => {
     // Set edit mode based on URL parameter and user permission
