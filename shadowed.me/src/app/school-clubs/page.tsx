@@ -26,17 +26,20 @@ const ATTRIBUTES = ['Competitive', 'Leadership', 'Teamwork', 'Public Speaking', 
 const getCategoryColor = (category: string): string => {
   const colorMap: Record<string, string> = {
     'STEM': '#4361EE', // Brighter blue
-    'Business': '#3A0CA3', // Rich purple
-    'Arts': '#F72585', // Vibrant pink
-    'Performing Arts': '#FF0054', // Bright red
-    'Language & Culture': '#E5446D', // Vibrant rose/pink
-    'Community Service': '#4CC9F0', // Bright cyan
     'Humanities': '#F77F00', // Bright orange
-    'Medical': '#06D6A0', // Bright teal
-    'Sports': '#D90429', // Bright red
-    'Technology': '#7B2CBF', // Deep purple
+    'Business': '#3A0CA3', // Rich purple
+    'Music, Arts, & Performing Arts': '#F72585', // Vibrant pink
     'Academic': '#FFD60A', // Bright yellow
-    'Miscellaneous': '#4895EF' // Bright blue
+    'Language & Culture': '#E5446D', // Vibrant rose/pink
+    'Medical': '#06D6A0', // Bright teal
+    'Community Service & Leadership': '#4CC9F0', // Bright cyan
+    'Miscellaneous': '#4895EF', // Bright blue
+    // Legacy categories for backward compatibility
+    'Arts': '#F72585',
+    'Performing Arts': '#FF0054',
+    'Community Service': '#4CC9F0',
+    'Sports': '#D90429',
+    'Technology': '#7B2CBF'
   };
   
   return colorMap[category] || '#4361EE'; // Default to bright blue

@@ -161,16 +161,19 @@ interface WebsiteEditorProps {
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
   'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
-  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Music, Arts, & Performing Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
   'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
-  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
+  'Community Service & Leadership': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
   'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
   'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
   'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
-  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
+  // Keeping these for backward compatibility
+  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
+  'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' },
   'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
-  'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }
+  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' }
 };
 
 // Function to get color for category
@@ -1453,13 +1456,13 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         >
                           <option value="">Select a category</option>
                           <option value="STEM" style={{ backgroundColor: CATEGORY_COLORS['STEM'].lighter, color: CATEGORY_COLORS['STEM'].bg }}>STEM</option>
-                          <option value="Business" style={{ backgroundColor: CATEGORY_COLORS['Business'].lighter, color: CATEGORY_COLORS['Business'].bg }}>Business</option>
-                          <option value="Arts" style={{ backgroundColor: CATEGORY_COLORS['Arts'].lighter, color: CATEGORY_COLORS['Arts'].bg }}>Arts</option>
-                          <option value="Language & Culture" style={{ backgroundColor: CATEGORY_COLORS['Language & Culture'].lighter, color: CATEGORY_COLORS['Language & Culture'].bg }}>Language & Culture</option>
-                          <option value="Community Service" style={{ backgroundColor: CATEGORY_COLORS['Community Service'].lighter, color: CATEGORY_COLORS['Community Service'].bg }}>Community Service</option>
                           <option value="Humanities" style={{ backgroundColor: CATEGORY_COLORS['Humanities'].lighter, color: CATEGORY_COLORS['Humanities'].bg }}>Humanities</option>
+                          <option value="Business" style={{ backgroundColor: CATEGORY_COLORS['Business'].lighter, color: CATEGORY_COLORS['Business'].bg }}>Business</option>
+                          <option value="Music, Arts, & Performing Arts" style={{ backgroundColor: CATEGORY_COLORS['Music, Arts, & Performing Arts'].lighter, color: CATEGORY_COLORS['Music, Arts, & Performing Arts'].bg }}>Music, Arts, & Performing Arts</option>
+                          <option value="Academic" style={{ backgroundColor: CATEGORY_COLORS['Academic'].lighter, color: CATEGORY_COLORS['Academic'].bg }}>Academic</option>
+                          <option value="Language & Culture" style={{ backgroundColor: CATEGORY_COLORS['Language & Culture'].lighter, color: CATEGORY_COLORS['Language & Culture'].bg }}>Language & Culture</option>
                           <option value="Medical" style={{ backgroundColor: CATEGORY_COLORS['Medical'].lighter, color: CATEGORY_COLORS['Medical'].bg }}>Medical</option>
-                          <option value="Academic" style={{ backgroundColor: CATEGORY_COLORS['Academic'].lighter, color: CATEGORY_COLORS['Academic'].bg }}>Academic Competition</option>
+                          <option value="Community Service & Leadership" style={{ backgroundColor: CATEGORY_COLORS['Community Service & Leadership'].lighter, color: CATEGORY_COLORS['Community Service & Leadership'].bg }}>Community Service & Leadership</option>
                           <option value="Miscellaneous" style={{ backgroundColor: CATEGORY_COLORS['Miscellaneous'].lighter, color: CATEGORY_COLORS['Miscellaneous'].bg }}>Miscellaneous</option>
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">

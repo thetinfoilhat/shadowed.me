@@ -17,7 +17,7 @@ import {
 import { generatePlaceholderClubListings } from '@/data/clubData';
 
 // Enhanced categories for filtering
-const CATEGORIES = ['STEM', 'Business', 'Arts', 'Performing Arts', 'Language & Culture', 'Community Service', 'Humanities', 'Medical', 'Sports', 'Technology', 'Academic', 'Miscellaneous', 'All'] as const;
+const CATEGORIES = ['STEM', 'Humanities', 'Business', 'Music, Arts, & Performing Arts', 'Academic', 'Language & Culture', 'Medical', 'Community Service & Leadership', 'Miscellaneous', 'All'] as const;
 
 // Common sense attributes for filtering
 const ATTRIBUTES = ['Competitive', 'Leadership', 'Tryout', 'Public Speaking', 'Performance'] as const;

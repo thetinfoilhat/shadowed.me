@@ -12,14 +12,17 @@ import { getColorById } from '@/utils/colors';
 // Category color mapping from clubs page
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
-  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
-  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
-  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
-  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
-  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
+  'Music, Arts, & Performing Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
   'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
+  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
+  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Community Service & Leadership': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
+  // Keeping these for backward compatibility
+  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
   'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
   'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }

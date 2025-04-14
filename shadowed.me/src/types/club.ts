@@ -79,7 +79,7 @@ export interface ClubSite {
   description?: string;      // Long form about section
   meetingInfo?: string;      // Times, room, day
   roomNumber?: string;       // Room number for meetings
-  category?: string;         // STEM, Business, Arts, Language & Culture, Community Service, Humanities, Medical, Academic, Miscellaneous
+  category?: string;         // STEM, Humanities, Business, Music, Arts, & Performing Arts, Academic, Language & Culture, Medical, Community Service & Leadership, Miscellaneous
   activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
   activityTypes?: string[];  // Multiple activity types: competitive, performance, public speaking, volunteering, team-based, sport
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page

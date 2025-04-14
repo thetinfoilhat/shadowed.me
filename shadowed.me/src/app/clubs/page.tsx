@@ -11,19 +11,26 @@ import { toast } from 'react-hot-toast';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
-import { getColorById } from '@/utils/colors';
+import { getCategoryColor, getActivityColor } from '@/utils/categoryColors';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import FilterBar from '@/components/FilterBar';
 
 // Category color mapping
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
-  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
-  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
-  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
-  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
-  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
+  'Music, Arts, & Performing Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
   'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
+  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
+  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
+  'Community Service & Leadership': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
+  // Keeping these for backward compatibility
+  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
+  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
   'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
   'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }
@@ -58,7 +65,7 @@ const getActivityColor = (activityType: string | undefined): { bg: string, text:
 
 // Website Card Component
 const WebsiteCard = ({ website }: { website: ClubSite }) => {
-  const primaryColor = getColorById(website.theme?.primaryColor || 'blue').value;
+  // Use category color instead of theme color
   const [showAllMeetings, setShowAllMeetings] = useState(false);
   
   // Get category and activity colors
@@ -92,10 +99,10 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
       transition={{ duration: 0.3 }}
       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
     >
-      {/* Colored Header Bar with Club Name */}
+      {/* Colored Header Bar with Club Name - now using category color */}
       <div 
         className="py-6 px-5 flex items-center justify-center"
-        style={{ backgroundColor: primaryColor }}
+        style={{ backgroundColor: categoryColor.bg }}
       >
         <h2 className="text-2xl font-bold text-white text-center">
           {website.clubName}
@@ -240,7 +247,7 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
           <a
             href={`/${website.slug}`}
             className="inline-flex items-center px-5 py-2 text-sm font-medium text-white rounded-lg"
-            style={{ backgroundColor: primaryColor }}
+            style={{ backgroundColor: categoryColor.bg }}
           >
             Visit Site
           </a>
@@ -501,7 +508,7 @@ export default function Jamboree() {
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                           <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 101.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                           </svg>
                         </div>
                       </div>
@@ -537,7 +544,7 @@ export default function Jamboree() {
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 101.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                             </svg>
                           </div>
                         </div>
