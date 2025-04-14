@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageTransition from '@/components/PageTransition';
@@ -18,15 +18,13 @@ export default function ClubWebsitePage() {
   const { clubSlug } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userRole, captainClubs } = useAuth();
   const [loading, setLoading] = useState(true);
   const [website, setWebsite] = useState<ClubSite | null>(null);
-  const [, setUserRole] = useState<string | null>(null);
   const [isEditor, setIsEditor] = useState<boolean>(false);
   const [isNewWebsite, setIsNewWebsite] = useState<boolean>(false);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [, setUserClubs] = useState<string[]>([]);
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
 
   // Parse query parameters
@@ -72,50 +70,13 @@ export default function ClubWebsitePage() {
       }
 
       try {
-        // Get user role
-        if (user) {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const role = userDoc.data().role;
-            setUserRole(role);
-
-            // If user is admin, they can edit any club
-            if (role === 'admin') {
-              setIsEditor(true);
-            } else if (role === 'captain' || role === 'sponsor') {
-              // Fetch clubs where user is captain or sponsor
-              const clubsRef = collection(db, 'clubs');
-              const captainQuery = query(clubsRef, where('captain', '==', user.email));
-              const sponsorQuery = query(clubsRef, where('sponsorEmail', '==', user.email));
-              
-              const [captainSnapshot, sponsorSnapshot] = await Promise.all([
-                getDocs(captainQuery),
-                getDocs(sponsorQuery)
-              ]);
-              
-              // Extract club names and convert to slugs
-              const clubs: string[] = [];
-              captainSnapshot.docs.forEach(doc => {
-                const data = doc.data();
-                if (data.name) {
-                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
-                }
-              });
-              
-              sponsorSnapshot.docs.forEach(doc => {
-                const data = doc.data();
-                if (data.name) {
-                  clubs.push(data.name.toLowerCase().replace(/\s+/g, '-'));
-                }
-              });
-              
-              setUserClubs(clubs);
-              
-              // Check if user can edit this specific club
-              if (clubs.includes(clubSlug as string)) {
-                setIsEditor(true);
-              }
-            }
+        // If user is admin, they can edit any club
+        if (userRole === 'admin') {
+          setIsEditor(true);
+        } else if (userRole === 'captain') {
+          // Check if user is a captain of this specific club
+          if (captainClubs.includes(clubSlug as string)) {
+            setIsEditor(true);
           }
         }
         
@@ -125,12 +86,47 @@ export default function ClubWebsitePage() {
         
         if (websiteDoc.exists()) {
           const data = websiteDoc.data() as Omit<ClubSite, 'id'>;
-          setWebsite({
+          const websiteData = {
             id: websiteDoc.id,
             ...data,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
             updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt)
-          });
+          };
+          
+          setWebsite(websiteData);
+          
+          // Additional check for captains and sponsors in the website data
+          if (user && userRole === 'captain' && !isEditor) {
+            // Check if user's email is in the captains array
+            const captainsArray = websiteData.captains || [];
+            if (captainsArray.includes(user.email as string)) {
+              setIsEditor(true);
+            }
+            
+            // Check jamboreeMeetingInfo.captains string if it exists
+            if (websiteData.jamboreeMeetingInfo?.captains) {
+              const captainsString = websiteData.jamboreeMeetingInfo.captains;
+              // Check if email is mentioned in the captains string
+              if (user.email && captainsString.includes(user.email)) {
+                setIsEditor(true);
+              }
+            }
+          } else if (user && userRole === 'sponsor' && !isEditor) {
+            // Check if user's email is in the sponsorEmails array
+            const sponsorsArray = websiteData.sponsorEmails || [];
+            if (sponsorsArray.includes(user.email as string)) {
+              setIsEditor(true);
+            }
+            
+            // Check jamboreeMeetingInfo.sponsor string if it exists
+            if (websiteData.jamboreeMeetingInfo?.sponsor) {
+              const sponsorsString = websiteData.jamboreeMeetingInfo.sponsor;
+              // Check if email is mentioned in the sponsors string
+              if (user.email && sponsorsString.includes(user.email)) {
+                setIsEditor(true);
+              }
+            }
+          }
         } else if (isNew && user) {
           // Handle new website creation
           setIsNewWebsite(true);
@@ -166,7 +162,7 @@ export default function ClubWebsitePage() {
     };
 
     checkAuth();
-  }, [clubSlug, user, isNew, initialClubName, isPreview]);
+  }, [clubSlug, user, isNew, initialClubName, isPreview, userRole, captainClubs]);
 
   useEffect(() => {
     // Set edit mode based on URL parameter and user permission

@@ -196,17 +196,33 @@ export default function CaptainDashboard() {
     try {
       setLoading(true);
       
-      // Get websites created by this captain
-      const websitesQuery = query(
-        collection(db, 'clubSites'),
-        where('createdBy', '==', user.email)
-      );
+      // Get all club websites from the collection
+      const allWebsitesSnapshot = await getDocs(collection(db, 'clubSites'));
+      const websitesData: ClubSite[] = [];
+      const userEmail = user.email; // Cache the user email
       
-      const websitesSnapshot = await getDocs(websitesQuery);
-      const websitesData = websitesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ClubSite[];
+      // Filter websites where the user is a captain
+      allWebsitesSnapshot.forEach(doc => {
+        const data = doc.data() as Partial<ClubSite>;
+        const siteData = {
+          ...data,
+          id: doc.id
+        } as ClubSite;
+        
+        const isCreator = siteData.createdBy === userEmail;
+        const isCaptain = 
+          // Check various captain fields, handle null/undefined values
+          (typeof siteData.captain === 'string' && siteData.captain === userEmail) || 
+          (Array.isArray(siteData.captains) && siteData.captains.includes(userEmail)) ||
+          (siteData.jamboreeMeetingInfo?.captains && 
+           typeof siteData.jamboreeMeetingInfo.captains === 'string' && 
+           siteData.jamboreeMeetingInfo.captains.includes(userEmail));
+        
+        // Add website if user is creator or captain
+        if (isCreator || isCaptain) {
+          websitesData.push(siteData);
+        }
+      });
       
       setWebsites(websitesData);
     } catch (error) {

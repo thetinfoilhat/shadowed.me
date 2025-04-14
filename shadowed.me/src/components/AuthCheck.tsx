@@ -5,7 +5,7 @@ import { collection, getDocs, doc, getDoc, setDoc, updateDoc, arrayUnion } from 
 import { db } from '@/lib/firebase';
 import { Dialog } from '@headlessui/react';
 import LoadingSpinner from './LoadingSpinner';
-import { ClubListing } from '@/types/club';
+import { ClubSite } from '@/types/club';
 
 export default function AuthCheck() {
   const { user, setUserRole, setCaptainClubs } = useAuth();
@@ -13,7 +13,7 @@ export default function AuthCheck() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loadingClubs, setLoadingClubs] = useState(true);
-  const [clubs, setClubs] = useState<ClubListing[]>([]);
+  const [clubs, setClubs] = useState<ClubSite[]>([]);
   const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,14 +51,15 @@ export default function AuthCheck() {
     const fetchClubs = async () => {
       try {
         setLoadingClubs(true);
-        const clubsSnapshot = await getDocs(collection(db, 'clubs'));
+        // Updated to use clubSites collection instead of clubs
+        const clubsSnapshot = await getDocs(collection(db, 'clubSites'));
         const clubsData = clubsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as ClubListing[];
+        })) as ClubSite[];
         
         // Sort clubs alphabetically to ensure consistent order
-        clubsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        clubsData.sort((a, b) => (a.clubName || '').localeCompare(b.clubName || ''));
         setClubs(clubsData);
       } catch (error) {
         console.error('Error fetching clubs:', error);
@@ -82,17 +83,19 @@ export default function AuthCheck() {
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       
-      // Preserve existing role if user already has one
-      const role = userDoc.exists() && userDoc.data().role 
-        ? userDoc.data().role 
-        : 'captain'; // Default to captain only for new users
+      // Set role to captain if clubs are selected, otherwise preserve existing role
+      const role = selectedClubs.length > 0 
+        ? 'captain' 
+        : (userDoc.exists() && userDoc.data().role) 
+          ? userDoc.data().role 
+          : 'student'; // Default to student if no clubs selected and no previous role
       
       // Update user data
       await setDoc(doc(db, 'users', user.uid), {
         displayName: name,
         email: email,
         role: role,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         photoURL: user.photoURL,
         captainClubs: selectedClubs
       });
@@ -100,22 +103,61 @@ export default function AuthCheck() {
       // If captain role and clubs were selected, update them
       if (role === 'captain' && selectedClubs.length > 0) {
         for (const clubId of selectedClubs) {
-          const clubRef = doc(db, 'clubs', clubId);
+          const clubRef = doc(db, 'clubSites', clubId);
           const clubDoc = await getDoc(clubRef);
           
           if (clubDoc.exists()) {
             const clubData = clubDoc.data();
-            const captains = clubData.captains || [];
             
-            // Check if email already exists in captains array
-            if (!captains.includes(email)) {
-              captains.push(email);
+            // Format captain data with display name - standardized format
+            const formattedCaptain = `${name} (${email})`;
+            
+            // Get or create the jamboreeMeetingInfo object
+            const jamboreeMeetingInfo = clubData.jamboreeMeetingInfo || {};
+            
+            // Format captains as a comma-separated string with display names and emails
+            let captainsString = "";
+            
+            // If captains exist in jamboreeMeetingInfo, parse and add the new captain
+            if (jamboreeMeetingInfo.captains) {
+              const existingCaptains = jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+              // Check if the new captain is already in the list (check for email match)
+              const alreadyExists = existingCaptains.some((captain: string) => 
+                captain.includes(`(${email})`) || captain === email
+              );
+              
+              if (!alreadyExists) {
+                existingCaptains.push(formattedCaptain);
+              }
+              captainsString = existingCaptains.join(', ');
+            } else {
+              captainsString = formattedCaptain;
             }
             
+            // Update the jamboreeMeetingInfo with the standardized format
+            jamboreeMeetingInfo.captains = captainsString;
+            
+            // Create arrays of captain emails for backwards compatibility
+            const emails = captainsString.split(/,\s*/)
+              .map(captain => {
+                // Extract email from "Display Name (email)" format
+                const emailMatch = captain.match(/\(([^)]+)\)/);
+                return emailMatch ? emailMatch[1] : captain;
+              });
+            
+            // Update the document with standardized captain information
+            // and remove any legacy fields to prevent duplication
             await updateDoc(clubRef, {
-              captain: email, // Set as primary captain
-              captains: captains, // Update all captains
-              updated: new Date().toISOString()
+              // Include jamboreeMeetingInfo with properly formatted captains
+              jamboreeMeetingInfo: jamboreeMeetingInfo,
+              // For backwards compatibility, keep the captains array
+              captains: emails,
+              // Remove legacy fields by setting to null
+              captain: null,
+              captainsList: null,
+              captainsString: null,
+              // Update timestamp
+              updatedAt: new Date()
             });
           }
         }
@@ -131,7 +173,7 @@ export default function AuthCheck() {
               captainEmail: email,
               captainName: name,
               clubIds: selectedClubs,
-              assignedAt: new Date().toISOString()
+              assignedAt: new Date()
             })
           });
         } else {
@@ -141,7 +183,7 @@ export default function AuthCheck() {
               captainEmail: email,
               captainName: name,
               clubIds: selectedClubs,
-              assignedAt: new Date().toISOString()
+              assignedAt: new Date()
             }]
           });
         }
@@ -211,34 +253,43 @@ export default function AuthCheck() {
                   </div>
                 ) : (
                   <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                    {clubs.map((club, idx) => (
-                      <div key={`club-item-${club.id}-${idx}`} className="flex items-center mb-2">
-                        <input
-                          type="checkbox"
-                          id={`club-${club.id}`}
-                          checked={selectedClubs.includes(club.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              if (selectedClubs.length < 8) {
-                                setSelectedClubs([...selectedClubs, club.id]);
+                    {clubs.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">No clubs found</p>
+                    ) : (
+                      clubs.map((club, idx) => (
+                        <div key={`club-item-${club.id}-${idx}`} className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            id={`club-${club.id}`}
+                            checked={selectedClubs.includes(club.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                if (selectedClubs.length < 8) {
+                                  setSelectedClubs([...selectedClubs, club.id]);
+                                }
+                              } else {
+                                setSelectedClubs(selectedClubs.filter(id => id !== club.id));
                               }
-                            } else {
-                              setSelectedClubs(selectedClubs.filter(id => id !== club.id));
-                            }
-                          }}
-                          className="h-4 w-4 text-[#38BFA1] border-gray-300 rounded focus:ring-[#38BFA1]"
-                        />
-                        <label htmlFor={`club-${club.id}`} className="ml-2 block text-sm text-black">
-                          {club.name}
-                        </label>
-                      </div>
-                    ))}
+                            }}
+                            className="h-4 w-4 text-[#38BFA1] border-gray-300 rounded focus:ring-[#38BFA1]"
+                          />
+                          <label htmlFor={`club-${club.id}`} className="ml-2 block text-sm text-black">
+                            {club.clubName}
+                          </label>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
                 
                 <p className="mt-2 text-xs text-black">
-                  Select the clubs you are a captain of. You can add more later.
+                  Select the clubs you are a captain of (maximum 8). You can add more later.
                 </p>
+                {selectedClubs.length >= 8 && (
+                  <p className="mt-1 text-xs text-orange-600 font-medium">
+                    Maximum selection reached (8 clubs).
+                  </p>
+                )}
               </div>
             </div>
             

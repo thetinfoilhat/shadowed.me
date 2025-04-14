@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LinkIcon, UserIcon, XMarkIcon, DocumentIcon, PencilIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
@@ -8,6 +8,7 @@ import { ClubSite } from '@/types/club';
 import { getColorById, getTextColorById } from '@/utils/colors';
 import { getFontById } from '@/utils/fonts';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
 
 // Format date for display (used for image metadata)
 const formatUploadDate = (date: Date | string): string => {
@@ -26,6 +27,9 @@ interface WebsiteViewerProps {
 }
 
 export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteViewerProps) {
+  const { user, userRole, captainClubs } = useAuth();
+  const [canEdit, setCanEdit] = useState(false);
+  
   // State for lightbox and gallery viewing
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -45,6 +49,70 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
   const textColor = getTextColorById(website.theme?.textColor || 'dark').value;
   const fontClass = getFontById(website.theme?.font || 'inter').className;
+
+  // Check if the current user is authorized to edit this club website
+  useEffect(() => {
+    if (!user) {
+      setCanEdit(false);
+      return;
+    }
+
+    // Admins can edit any club
+    if (userRole === 'admin') {
+      setCanEdit(true);
+      return;
+    }
+
+    // Check if the user is a captain assigned to this club
+    if (userRole === 'captain') {
+      // If club has captains array, check if user's email is in it
+      if (website.captains?.includes(user.email!)) {
+        setCanEdit(true);
+        return;
+      }
+
+      // If club has captain string, check if it matches user's email
+      if (website.captain === user.email) {
+        setCanEdit(true);
+        return;
+      }
+
+      // Check if club is in user's captainClubs array
+      if (captainClubs.includes(website.id)) {
+        setCanEdit(true);
+        return;
+      }
+
+      // If jamboreeMeetingInfo has captains, check if user's email is in it
+      if (website.jamboreeMeetingInfo?.captains?.includes(user.email!)) {
+        setCanEdit(true);
+        return;
+      }
+    }
+
+    // Sponsors can edit clubs assigned to them
+    if (userRole === 'sponsor') {
+      // Check if user's email is in sponsorEmails array
+      if (website.sponsorEmails?.includes(user.email!)) {
+        setCanEdit(true);
+        return;
+      }
+
+      // Check if user's email matches sponsorEmail
+      if (website.sponsorEmail === user.email) {
+        setCanEdit(true);
+        return;
+      }
+
+      // Check jamboreeMeetingInfo for sponsor email
+      if (website.jamboreeMeetingInfo?.sponsor?.includes(user.email!)) {
+        setCanEdit(true);
+        return;
+      }
+    }
+
+    setCanEdit(false);
+  }, [user, userRole, website, captainClubs]);
 
   // Helper function to extract captain names from members array
   const getCaptains = (members?: { name: string; role: string }[]) => {
@@ -169,8 +237,8 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
   return (
     <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
-      {/* Add floating action buttons for editors */}
-      {isEditor && (
+      {/* Add floating action buttons for authorized editors only */}
+      {(isEditor || canEdit) && (
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
           <Link
             href={`/${website.slug}?edit=true`}
@@ -179,19 +247,21 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
           >
             <PencilIcon className="h-6 w-6 text-gray-700" />
           </Link>
-          <button
-            onClick={async () => {
-              if (window.confirm('Are you sure you want to delete this website? This action cannot be undone.')) {
-                if (onDelete) {
-                  await onDelete();
+          {userRole === 'admin' && (
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to delete this website? This action cannot be undone.')) {
+                  if (onDelete) {
+                    await onDelete();
+                  }
                 }
-              }
-            }}
-            className="bg-red-500 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
-            title="Delete Website"
-          >
-            <TrashIcon className="h-6 w-6 text-white" />
-          </button>
+              }}
+              className="bg-red-500 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+              title="Delete Website"
+            >
+              <TrashIcon className="h-6 w-6 text-white" />
+            </button>
+          )}
         </div>
       )}
 

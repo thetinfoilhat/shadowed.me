@@ -1,12 +1,26 @@
 'use client';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState, useEffect } from 'react';
-import { doc, updateDoc, collection, getDocs, query, where, setDoc, DocumentData } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
-import { ClubListing } from '@/types/club';
+import { ClubSite } from '@/types/club';
 import LoadingSpinner from './LoadingSpinner';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
+
+// Update the imported ClubSite type to include captain and sponsor details
+declare module '@/types/club' {
+  interface ClubSite {
+    captainDetails?: {
+      email: string;
+      displayName: string;
+    }[];
+    sponsorDetails?: {
+      email: string;
+      displayName: string;
+    }[];
+  }
+}
 
 interface User {
   id: string;
@@ -18,7 +32,7 @@ interface User {
 interface ClubAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  club: Partial<ClubListing>;
+  club: Partial<ClubSite>;
   onAssignmentComplete: () => void;
 }
 
@@ -38,16 +52,6 @@ export default function ClubAssignmentModal({
   );
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
-  // New state for adding entities
-  const [showAddCaptain, setShowAddCaptain] = useState(false);
-  const [showAddSponsor, setShowAddSponsor] = useState(false);
-  const [newCaptainEmail, setNewCaptainEmail] = useState('');
-  const [newCaptainName, setNewCaptainName] = useState('');
-  const [newSponsorEmail, setNewSponsorEmail] = useState('');
-  const [newSponsorName, setNewSponsorName] = useState('');
-  const [addingCaptain, setAddingCaptain] = useState(false);
-  const [addingSponsor, setAddingSponsor] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -73,9 +77,40 @@ export default function ClubAssignmentModal({
         })) as User[];
         setSponsors(sponsorsData);
         
+        // Initialize arrays to hold selected captains and sponsors
+        let captainEmailsToSelect: string[] = [];
+        let sponsorEmailsToSelect: string[] = [];
+        
+        // PRIORITY 1: Use captainDetails and sponsorDetails (most accurate with both email and display name)
+        if (club.captainDetails && club.captainDetails.length > 0) {
+          captainEmailsToSelect = club.captainDetails.map(captain => captain.email);
+        } 
+        // PRIORITY 2: Use captains array (direct emails) 
+        else if (club.captains && club.captains.length > 0) {
+          captainEmailsToSelect = club.captains;
+        } 
+        // PRIORITY 3: Use single captain value (legacy)
+        else if (club.captain) {
+          captainEmailsToSelect = [club.captain];
+        }
+        
+        // Same priority order for sponsors
+        // PRIORITY 1: Use sponsorDetails
+        if (club.sponsorDetails && club.sponsorDetails.length > 0) {
+          sponsorEmailsToSelect = club.sponsorDetails.map(sponsor => sponsor.email);
+        }
+        // PRIORITY 2: Use sponsorEmails array 
+        else if (club.sponsorEmails && club.sponsorEmails.length > 0) {
+          sponsorEmailsToSelect = club.sponsorEmails;
+        } 
+        // PRIORITY 3: Use single sponsorEmail value (legacy)
+        else if (club.sponsorEmail) {
+          sponsorEmailsToSelect = [club.sponsorEmail];
+        }
+        
         // Set initial values
-        setSelectedCaptains(club.captains ? club.captains : club.captain ? [club.captain] : []);
-        setSelectedSponsors(club.sponsorEmails ? club.sponsorEmails : club.sponsorEmail ? [club.sponsorEmail] : []);
+        setSelectedCaptains(captainEmailsToSelect.length > 0 ? captainEmailsToSelect : []);
+        setSelectedSponsors(sponsorEmailsToSelect.length > 0 ? sponsorEmailsToSelect : []);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast.error('Failed to load users');
@@ -100,20 +135,78 @@ export default function ClubAssignmentModal({
         updatedAt: new Date()
       };
       
-      // Keep backward compatibility by setting the primary captain/sponsor
-      if (selectedCaptains.length > 0) {
-        updateData.captain = selectedCaptains[0];
-        updateData.captains = selectedCaptains;
+      // Create or update jamboreeMeetingInfo field
+      const jamboreeMeetingInfo: Record<string, unknown> = { 
+        ...(club.jamboreeMeetingInfo as Record<string, unknown> || {})
+      };
+      
+      // Filter out any empty values
+      const filteredCaptains = selectedCaptains.filter(email => email.trim() !== '');
+      const filteredSponsors = selectedSponsors.filter(email => email.trim() !== '');
+      
+      // Update captains and sponsors in jamboreeMeetingInfo
+      if (filteredCaptains.length > 0) {
+        // Create captain details array with both email and display name
+        const captainDetailsArray = filteredCaptains.map(email => {
+          const captain = captains.find(c => c.email === email);
+          const displayName = captain && captain.displayName ? captain.displayName : email;
+          return { email, displayName };
+        });
+        
+        // Format captain data with display names
+        const formattedCaptains = captainDetailsArray
+          .map(captain => captain.displayName)
+          .join(', ');
+        
+        // Also keep backward compatibility 
+        updateData.captain = filteredCaptains[0];
+        updateData.captains = filteredCaptains;
+        updateData.captainDetails = captainDetailsArray;
+        
+        // Format for jamboreeMeetingInfo as comma-separated string with display names
+        jamboreeMeetingInfo.captains = formattedCaptains;
+      } else {
+        // Clear captains if the filtered array is empty
+        updateData.captain = '';
+        updateData.captains = [];
+        updateData.captainDetails = [];
+        jamboreeMeetingInfo.captains = '';
       }
       
-      if (selectedSponsors.length > 0) {
-        updateData.sponsorEmail = selectedSponsors[0];
-        updateData.sponsorEmails = selectedSponsors;
+      if (filteredSponsors.length > 0) {
+        // Create sponsor details array with both email and display name
+        const sponsorDetailsArray = filteredSponsors.map(email => {
+          const sponsor = sponsors.find(s => s.email === email);
+          const displayName = sponsor && sponsor.displayName ? sponsor.displayName : email;
+          return { email, displayName };
+        });
+        
+        // Format sponsor data with display names
+        const formattedSponsors = sponsorDetailsArray
+          .map(sponsor => sponsor.displayName)
+          .join(', ');
+        
+        // Also keep backward compatibility
+        updateData.sponsorEmail = filteredSponsors[0];
+        updateData.sponsorEmails = filteredSponsors;
+        updateData.sponsorDetails = sponsorDetailsArray;
+        
+        // Format for jamboreeMeetingInfo as comma-separated string with display names
+        jamboreeMeetingInfo.sponsor = formattedSponsors;
+      } else {
+        // Clear sponsors if the filtered array is empty
+        updateData.sponsorEmail = '';
+        updateData.sponsorEmails = [];
+        updateData.sponsorDetails = [];
+        jamboreeMeetingInfo.sponsor = '';
       }
+      
+      // Add jamboreeMeetingInfo to update data
+      updateData.jamboreeMeetingInfo = jamboreeMeetingInfo;
       
       // Add a check to ensure club.id is defined
       if (club.id) {
-        await updateDoc(doc(db, 'clubs', club.id), updateData as DocumentData);
+        await updateDoc(doc(db, 'clubSites', club.id), updateData as DocumentData);
         
         toast.success('Club assignments updated successfully');
         onAssignmentComplete();
@@ -126,94 +219,6 @@ export default function ClubAssignmentModal({
       toast.error('Failed to update club assignments');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleAddCaptain = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCaptainEmail || !newCaptainName) {
-      toast.error('Please provide both email and name for the new captain');
-      return;
-    }
-
-    try {
-      setAddingCaptain(true);
-      
-      // Add new user with captain role
-      const userRef = doc(collection(db, 'users'));
-      await setDoc(userRef, {
-        email: newCaptainEmail,
-        displayName: newCaptainName,
-        role: 'captain',
-        createdAt: new Date()
-      });
-      
-      // Add to local state
-      const newCaptain = {
-        id: userRef.id,
-        email: newCaptainEmail,
-        displayName: newCaptainName,
-        role: 'captain'
-      };
-      
-      setCaptains([...captains, newCaptain]);
-      setSelectedCaptains([...selectedCaptains, newCaptainEmail]);
-      
-      // Reset form
-      setNewCaptainEmail('');
-      setNewCaptainName('');
-      setShowAddCaptain(false);
-      
-      toast.success('New captain added successfully');
-    } catch (error) {
-      console.error('Error adding captain:', error);
-      toast.error('Failed to add new captain');
-    } finally {
-      setAddingCaptain(false);
-    }
-  };
-
-  const handleAddSponsor = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSponsorEmail || !newSponsorName) {
-      toast.error('Please provide both email and name for the new sponsor');
-      return;
-    }
-
-    try {
-      setAddingSponsor(true);
-      
-      // Add new user with sponsor role
-      const userRef = doc(collection(db, 'users'));
-      await setDoc(userRef, {
-        email: newSponsorEmail,
-        displayName: newSponsorName,
-        role: 'sponsor',
-        createdAt: new Date()
-      });
-      
-      // Add to local state
-      const newSponsor = {
-        id: userRef.id,
-        email: newSponsorEmail,
-        displayName: newSponsorName,
-        role: 'sponsor'
-      };
-      
-      setSponsors([...sponsors, newSponsor]);
-      setSelectedSponsors([...selectedSponsors, newSponsorEmail]);
-      
-      // Reset form
-      setNewSponsorEmail('');
-      setNewSponsorName('');
-      setShowAddSponsor(false);
-      
-      toast.success('New sponsor added successfully');
-    } catch (error) {
-      console.error('Error adding sponsor:', error);
-      toast.error('Failed to add new sponsor');
-    } finally {
-      setAddingSponsor(false);
     }
   };
 
@@ -286,7 +291,7 @@ export default function ClubAssignmentModal({
               </button>
 
               <Dialog.Title className="text-xl font-semibold text-[#0A2540] mb-6 pr-8">
-                {club.id ? `Assign Club: ${club.name}` : 'Create New Club Assignment'}
+                {club.id ? `Assign Club: ${club.clubName || 'Unnamed Club'}` : 'Create New Club Assignment'}
               </Dialog.Title>
 
               {loading ? (
@@ -301,66 +306,7 @@ export default function ClubAssignmentModal({
                         <label className="block text-sm font-medium text-gray-700">
                           Captains (up to 4)
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddCaptain(!showAddCaptain)}
-                          className="text-xs flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <PlusCircleIcon className="w-3 h-3 mr-1" />
-                          Add New
-                        </button>
                       </div>
-                      
-                      {showAddCaptain && (
-                        <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                          <h4 className="text-xs font-medium text-blue-800 mb-2">Add New Captain</h4>
-                          <form onSubmit={handleAddCaptain} className="space-y-2">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Email
-                              </label>
-                              <input
-                                type="email"
-                                value={newCaptainEmail}
-                                onChange={(e) => setNewCaptainEmail(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="captain@example.com"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Name
-                              </label>
-                              <input
-                                type="text"
-                                value={newCaptainName}
-                                onChange={(e) => setNewCaptainName(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Full Name"
-                              />
-                            </div>
-                            
-                            <div className="flex justify-end space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => setShowAddCaptain(false)}
-                                className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-gray-700"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleAddCaptain}
-                                disabled={addingCaptain}
-                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {addingCaptain ? 'Adding...' : 'Add Captain'}
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      )}
                       
                       <div className="space-y-2">
                         {selectedCaptains.map((captainEmail, index) => (
@@ -407,66 +353,7 @@ export default function ClubAssignmentModal({
                         <label className="block text-sm font-medium text-gray-700">
                           Sponsors (up to 4)
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddSponsor(!showAddSponsor)}
-                          className="text-xs flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <PlusCircleIcon className="w-3 h-3 mr-1" />
-                          Add New
-                        </button>
                       </div>
-                      
-                      {showAddSponsor && (
-                        <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                          <h4 className="text-xs font-medium text-blue-800 mb-2">Add New Sponsor</h4>
-                          <form onSubmit={handleAddSponsor} className="space-y-2">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Email
-                              </label>
-                              <input
-                                type="email"
-                                value={newSponsorEmail}
-                                onChange={(e) => setNewSponsorEmail(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="sponsor@example.com"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Name
-                              </label>
-                              <input
-                                type="text"
-                                value={newSponsorName}
-                                onChange={(e) => setNewSponsorName(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Full Name"
-                              />
-                            </div>
-                            
-                            <div className="flex justify-end space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => setShowAddSponsor(false)}
-                                className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-gray-700"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleAddSponsor}
-                                disabled={addingSponsor}
-                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {addingSponsor ? 'Adding...' : 'Add Sponsor'}
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      )}
                       
                       <div className="space-y-2">
                         {selectedSponsors.map((sponsorEmail, index) => (

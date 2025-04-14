@@ -5,6 +5,9 @@ import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
 import { COLOR_OPTIONS, getColorById } from '@/utils/colors';
 import { uploadImage, uploadPDF, deleteFile, uploadPDFResource} from '@/utils/fileUpload';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 // Icon imports
 import { 
@@ -57,8 +60,8 @@ export interface ClubSite {
     table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")
     room?: string;           // Room where meetings are held
-    captains?: string;       // Captains information
-    sponsor?: string;        // Sponsor information
+    captains?: string;       // Captains information (display names as comma-separated string)
+    sponsor?: string;        // Sponsor information (display names as comma-separated string)
     email?: string;          // Contact email
   };
   galleryImages?: string[];  // URLs to images
@@ -101,6 +104,18 @@ export interface ClubSite {
     day: string;
     startTime: string;
     endTime: string;
+  }[];
+  captains?: string[];       // Email addresses of captains
+  captain?: string;          // Single captain email (legacy)
+  sponsorEmails?: string[];  // Email addresses of sponsors
+  sponsorEmail?: string;     // Single sponsor email (legacy)
+  captainDetails?: {         // NEW: Store both email and display name together
+    email: string;
+    displayName: string;
+  }[];
+  sponsorDetails?: {         // NEW: Store both email and display name together
+    email: string;
+    displayName: string;
   }[];
 }
 
@@ -167,10 +182,19 @@ const getCategoryColor = (category: string | undefined): { bg: string, text: str
 
 export default function WebsiteEditor({ website, onSave, isNew = false }: WebsiteEditorProps) {
   // State variables
+  const { /* user */ } = useAuth(); // Unused for now but component needs auth context
   const [activeTab, setActiveTab] = useState<'content' | 'media' | 'members' | 'design' | 'form'>('content');
   const [formData, setFormData] = useState<ClubSite>({ ...website });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // User state for dropdowns
+  const [captains, setCaptains] = useState<{id: string, email: string, displayName: string}[]>([]);
+  const [sponsors, setSponsors] = useState<{id: string, email: string, displayName: string}[]>([]);
+  const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
+  const [selectedSponsors, setSelectedSponsors] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isLoadingUsers, setIsLoadingUsers] = useState(false); // Loading state for future use
   
   // Debounced autosave state
   const [autosaveTimeout, setAutosaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -804,10 +828,285 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     }
   };
 
+  // Fetch captains and sponsors
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoadingUsers(true);
+        const usersCollection = collection(db, 'users');
+        
+        // Fetch captains
+        const captainsQuery = query(usersCollection, where('role', '==', 'captain'));
+        const captainsSnapshot = await getDocs(captainsQuery);
+        const captainsData = captainsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          email: doc.data().email || '',
+          displayName: doc.data().displayName || doc.data().email || '',
+        }));
+        setCaptains(captainsData);
+        
+        // Fetch sponsors
+        const sponsorsQuery = query(usersCollection, where('role', '==', 'sponsor'));
+        const sponsorsSnapshot = await getDocs(sponsorsQuery);
+        const sponsorsData = sponsorsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          email: doc.data().email || '',
+          displayName: doc.data().displayName || doc.data().email || '',
+        }));
+        setSponsors(sponsorsData);
+
+        // Initialize arrays to hold the selected user emails
+        let captainEmailsToSelect: string[] = [];
+        let sponsorEmailsToSelect: string[] = [];
+        
+        // PRIORITY 1: Use captainDetails and sponsorDetails (most accurate with both email and display name)
+        if (formData.captainDetails && formData.captainDetails.length > 0) {
+          captainEmailsToSelect = formData.captainDetails.map(captain => captain.email);
+        } 
+        // PRIORITY 2: Use captains array (direct emails) 
+        else if (formData.captains && formData.captains.length > 0) {
+          captainEmailsToSelect = formData.captains;
+        } 
+        // PRIORITY 3: Use single captain value (legacy)
+        else if (formData.captain) {
+          captainEmailsToSelect = [formData.captain];
+        } 
+        // PRIORITY 4: Use jamboreeMeetingInfo.captains (display names only)
+        else if (formData.jamboreeMeetingInfo?.captains) {
+          // Try to match display names to emails for existing captains
+          const captainNames = formData.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+          
+          // For each name, try to find a matching captain by display name
+          captainNames.forEach(name => {
+            // Find a captain whose display name matches the stored name
+            const matchingCaptain = captainsData.find(c => c.displayName === name);
+            if (matchingCaptain) {
+              captainEmailsToSelect.push(matchingCaptain.email);
+            }
+          });
+
+          // If we couldn't match any by display name but have captains,
+          // populate with the first few captain emails as a fallback
+          if (captainEmailsToSelect.length === 0 && captainsData.length > 0) {
+            captainEmailsToSelect = captainsData.slice(0, Math.min(captainNames.length, captainsData.length)).map(c => c.email);
+          }
+        }
+        
+        // Same priority order for sponsors
+        // PRIORITY 1: Use sponsorDetails
+        if (formData.sponsorDetails && formData.sponsorDetails.length > 0) {
+          sponsorEmailsToSelect = formData.sponsorDetails.map(sponsor => sponsor.email);
+        }
+        // PRIORITY 2: Use sponsorEmails array 
+        else if (formData.sponsorEmails && formData.sponsorEmails.length > 0) {
+          sponsorEmailsToSelect = formData.sponsorEmails;
+        } 
+        // PRIORITY 3: Use single sponsorEmail value (legacy)
+        else if (formData.sponsorEmail) {
+          sponsorEmailsToSelect = [formData.sponsorEmail];
+        } 
+        // PRIORITY 4: Use jamboreeMeetingInfo.sponsor
+        else if (formData.jamboreeMeetingInfo?.sponsor) {
+          // Try to match display names to emails for existing sponsors
+          const sponsorNames = formData.jamboreeMeetingInfo.sponsor.split(/,\s*/).filter(Boolean);
+          
+          // For each name, try to find a matching sponsor by display name
+          sponsorNames.forEach(name => {
+            // Find a sponsor whose display name matches the stored name
+            const matchingSponsor = sponsorsData.find(s => s.displayName === name);
+            if (matchingSponsor) {
+              sponsorEmailsToSelect.push(matchingSponsor.email);
+            }
+          });
+
+          // If we couldn't match any by display name but have sponsors,
+          // populate with the first few sponsor emails as a fallback
+          if (sponsorEmailsToSelect.length === 0 && sponsorsData.length > 0) {
+            sponsorEmailsToSelect = sponsorsData.slice(0, Math.min(sponsorNames.length, sponsorsData.length)).map(s => s.email);
+          }
+        }
+        
+        // Set the selectedCaptains and selectedSponsors states with the emails
+        setSelectedCaptains(captainEmailsToSelect.length > 0 ? captainEmailsToSelect : []);
+        setSelectedSponsors(sponsorEmailsToSelect.length > 0 ? sponsorEmailsToSelect : []);
+        
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Failed to load users');
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [formData.jamboreeMeetingInfo, formData.captainDetails, formData.sponsorDetails, formData.captains, formData.sponsorEmails, formData.captain, formData.sponsorEmail]);
+
+  // Handle adding, removing, and updating captains
+  const addCaptainSelection = () => {
+    if (selectedCaptains.length < 4) {
+      setSelectedCaptains([...selectedCaptains, '']);
+    }
+  };
+
+  const removeCaptainSelection = (index: number) => {
+    const updatedCaptains = selectedCaptains.filter((_, i) => i !== index);
+    setSelectedCaptains(updatedCaptains);
+    
+    // Filter out any empty values
+    const filteredCaptains = updatedCaptains.filter(email => email.trim() !== '');
+    
+    // Format captain data with display names
+    const captainDetailsArray = filteredCaptains.map(email => {
+      const captain = captains.find(c => c.email === email);
+      const displayName = captain && captain.displayName ? captain.displayName : email;
+      return { email, displayName };
+    });
+    
+    const formattedCaptains = captainDetailsArray
+      .map(captain => captain.displayName)
+      .join(', ');
+    
+    // Update the jamboreeMeetingInfo with the standardized format
+    const updatedJamboreeMeetingInfo = {
+      ...(formData.jamboreeMeetingInfo || {}),
+      captains: formattedCaptains
+    };
+    
+    // Handle the case where all captains are removed
+    const updatedData: Partial<ClubSite> = {
+      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
+      captains: filteredCaptains,
+      captain: filteredCaptains.length > 0 ? filteredCaptains[0] : '',
+      captainDetails: captainDetailsArray
+    };
+    
+    // Save all captain-related updates at once
+    handleSave(updatedData);
+  };
+  
+  // Handle adding, removing, and updating sponsors
+  const addSponsorSelection = () => {
+    if (selectedSponsors.length < 4) {
+      setSelectedSponsors([...selectedSponsors, '']);
+    }
+  };
+
+  const removeSponsorSelection = (index: number) => {
+    const updatedSponsors = selectedSponsors.filter((_, i) => i !== index);
+    setSelectedSponsors(updatedSponsors);
+    
+    // Filter out any empty values
+    const filteredSponsors = updatedSponsors.filter(email => email.trim() !== '');
+    
+    // Format sponsor data with display names
+    const sponsorDetailsArray = filteredSponsors.map(email => {
+      const sponsor = sponsors.find(s => s.email === email);
+      const displayName = sponsor && sponsor.displayName ? sponsor.displayName : email;
+      return { email, displayName };
+    });
+    
+    const formattedSponsors = sponsorDetailsArray
+      .map(sponsor => sponsor.displayName)
+      .join(', ');
+    
+    // Update the jamboreeMeetingInfo with the standardized format
+    const updatedJamboreeMeetingInfo = {
+      ...(formData.jamboreeMeetingInfo || {}),
+      sponsor: formattedSponsors
+    };
+    
+    // Handle the case where all sponsors are removed
+    const updatedData: Partial<ClubSite> = {
+      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
+      sponsorEmails: filteredSponsors,
+      sponsorEmail: filteredSponsors.length > 0 ? filteredSponsors[0] : '',
+      sponsorDetails: sponsorDetailsArray
+    };
+    
+    // Save all sponsor-related updates at once
+    handleSave(updatedData);
+  };
+
+  // Update captain selection
+  const updateCaptainSelection = (index: number, value: string) => {
+    const updatedCaptains = [...selectedCaptains];
+    updatedCaptains[index] = value;
+    setSelectedCaptains(updatedCaptains);
+    
+    // Filter out any empty values
+    const filteredCaptains = updatedCaptains.filter(email => email.trim() !== '');
+    
+    // Format captain data with display names
+    const captainDetailsArray = filteredCaptains.map(email => {
+      const captain = captains.find(c => c.email === email);
+      const displayName = captain && captain.displayName ? captain.displayName : email;
+      return { email, displayName };
+    });
+    
+    const formattedCaptains = captainDetailsArray
+      .map(captain => captain.displayName)
+      .join(', ');
+    
+    // Update the jamboreeMeetingInfo with the standardized format
+    const updatedJamboreeMeetingInfo = {
+      ...(formData.jamboreeMeetingInfo || {}),
+      captains: formattedCaptains
+    };
+    
+    // Clear any legacy fields to prevent duplication
+    const updatedData: Partial<ClubSite> = {
+      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
+      captains: filteredCaptains,
+      captain: filteredCaptains.length > 0 ? filteredCaptains[0] : '',
+      captainDetails: captainDetailsArray
+    };
+    
+    // Save all captain-related updates at once
+    handleSave(updatedData);
+  };
+
+  // Update sponsor selection
+  const updateSponsorSelection = (index: number, value: string) => {
+    const updatedSponsors = [...selectedSponsors];
+    updatedSponsors[index] = value;
+    setSelectedSponsors(updatedSponsors);
+    
+    // Filter out any empty values
+    const filteredSponsors = updatedSponsors.filter(email => email.trim() !== '');
+    
+    // Format sponsor data with display names
+    const sponsorDetailsArray = filteredSponsors.map(email => {
+      const sponsor = sponsors.find(s => s.email === email);
+      const displayName = sponsor && sponsor.displayName ? sponsor.displayName : email;
+      return { email, displayName };
+    });
+    
+    const formattedSponsors = sponsorDetailsArray
+      .map(sponsor => sponsor.displayName)
+      .join(', ');
+    
+    // Update the jamboreeMeetingInfo with the standardized format
+    const updatedJamboreeMeetingInfo = {
+      ...(formData.jamboreeMeetingInfo || {}),
+      sponsor: formattedSponsors
+    };
+    
+    // Clear any legacy fields to prevent duplication
+    const updatedData: Partial<ClubSite> = {
+      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
+      sponsorEmails: filteredSponsors,
+      sponsorEmail: filteredSponsors.length > 0 ? filteredSponsors[0] : '',
+      sponsorDetails: sponsorDetailsArray
+    };
+    
+    // Save all sponsor-related updates at once
+    handleSave(updatedData);
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Top sticky navigation bar */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-100 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <h1 className="text-lg font-bold text-[#180D39] hidden md:block">
@@ -1391,43 +1690,115 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Captains
                         </label>
-                        <input
-                          type="text"
-                          value={formData.jamboreeMeetingInfo?.captains || ''}
-                          onChange={(e) => {
-                            const updatedInfo = {
-                              ...(formData.jamboreeMeetingInfo || {}),
-                              captains: e.target.value
-                            };
-                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
-                          }}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                          placeholder="e.g., TBD"
-                        />
+                        <div className="space-y-2">
+                          {selectedCaptains.map((captainEmail, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <select
+                                value={captainEmail}
+                                onChange={(e) => updateCaptainSelection(index, e.target.value)}
+                                className="flex-grow px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                              >
+                                <option value="">-- Select Captain --</option>
+                                {captains.map((captain) => (
+                                  <option key={captain.id} value={captain.email}>
+                                    {captain.displayName || captain.email}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => removeCaptainSelection(index)}
+                                className="p-1 text-red-500 hover:text-red-700 rounded"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {selectedCaptains.length === 0 && (
+                          <div className="text-center py-4 border border-dashed border-gray-300 rounded-md">
+                            <p className="text-gray-500 mb-2">No captains added yet</p>
+                            <button
+                              type="button"
+                              onClick={addCaptainSelection}
+                              className="text-[#38BFA1] hover:text-[#2DA891] font-medium"
+                            >
+                              + Add Captain
+                            </button>
+                          </div>
+                        )}
+                        
+                        {selectedCaptains.length < 4 && selectedCaptains.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={addCaptainSelection}
+                            className="mt-2 text-sm text-[#38BFA1] hover:text-[#2DA891] font-medium flex items-center"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                            Add Another Captain
+                          </button>
+                        )}
                       </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Sponsor
+                          Sponsors
                         </label>
-                        <input
-                          type="text"
-                          value={formData.jamboreeMeetingInfo?.sponsor || ''}
-                          onChange={(e) => {
-                            const updatedInfo = {
-                              ...(formData.jamboreeMeetingInfo || {}),
-                              sponsor: e.target.value
-                            };
-                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
-                          }}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                          placeholder="e.g., Sponsor"
-                        />
+                        <div className="space-y-2">
+                          {selectedSponsors.map((sponsorEmail, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <select
+                                value={sponsorEmail}
+                                onChange={(e) => updateSponsorSelection(index, e.target.value)}
+                                className="flex-grow px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
+                              >
+                                <option value="">-- Select Sponsor --</option>
+                                {sponsors.map((sponsor) => (
+                                  <option key={sponsor.id} value={sponsor.email}>
+                                    {sponsor.displayName || sponsor.email}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => removeSponsorSelection(index)}
+                                className="p-1 text-red-500 hover:text-red-700 rounded"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {selectedSponsors.length === 0 && (
+                          <div className="text-center py-4 border border-dashed border-gray-300 rounded-md">
+                            <p className="text-gray-500 mb-2">No sponsors added yet</p>
+                            <button
+                              type="button"
+                              onClick={addSponsorSelection}
+                              className="text-[#38BFA1] hover:text-[#2DA891] font-medium"
+                            >
+                              + Add Sponsor
+                            </button>
+                          </div>
+                        )}
+                        
+                        {selectedSponsors.length < 4 && selectedSponsors.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={addSponsorSelection}
+                            className="mt-2 text-sm text-[#38BFA1] hover:text-[#2DA891] font-medium flex items-center"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                            Add Another Sponsor
+                          </button>
+                        )}
                       </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Contact Email
+                          Primary Contact Email
                         </label>
                         <input
                           type="email"
