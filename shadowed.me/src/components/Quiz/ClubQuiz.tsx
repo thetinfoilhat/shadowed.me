@@ -1428,11 +1428,8 @@ const ClubQuiz: React.FC = () => {
   const handlePrevious = () => {
     try {
       if (currentQuestionIndex !== null && currentQuestionIndex > 0) {
-        // Use functional update to ensure we're working with the latest state
-        setCurrentQuestionIndex(prevIndex => {
-          if (prevIndex === null || prevIndex <= 0) return 0;
-          return prevIndex - 1;
-        });
+        // Simply decrement the index by 1
+        setCurrentQuestionIndex(currentQuestionIndex - 1);
       }
     } catch (error) {
       console.error("Error navigating to previous question:", error);
@@ -2261,7 +2258,6 @@ const ClubQuiz: React.FC = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    Previous
                   </span>
                 </motion.button>
                 
@@ -2304,7 +2300,7 @@ const ClubQuiz: React.FC = () => {
                   }`}
                 >
                   <span className="flex items-center">
-                    {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'}
+                    {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 ? '' : 'See Results'}
                     {currentQuestionIndex !== null && currentQuestionIndex < questions.length - 1 && (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
