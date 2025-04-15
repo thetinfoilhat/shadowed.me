@@ -2479,30 +2479,62 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   <h2 className="text-xl font-bold text-[#180D39]">Interest Form Submissions</h2>
                   
                   {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 && (
-                    <button
-                      onClick={() => {
-                        // Extract and format just the emails as a comma-separated list
-                        const emails = formData.interestForm!.submissions
-                          .map(submission => submission.email)
-                          .join(', ');
-                        
-                        // Copy to clipboard
-                        navigator.clipboard.writeText(emails)
-                          .then(() => {
-                            toast.success('Emails copied to clipboard!');
-                          })
-                          .catch(err => {
-                            console.error('Failed to copy:', err);
-                            toast.error('Failed to copy data.');
-                          });
-                      }}
-                      className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      Copy for Excel
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          // Add column headers
+                          const headers = "Name\tEmail";
+                          
+                          // Format the data for Excel (tab separated for columns)
+                          const formattedData = formData.interestForm!.submissions
+                            .map(submission => `${submission.name}\t${submission.email}`)
+                            .join('\n');
+                          
+                          // Combine headers and data
+                          const dataWithHeaders = headers + '\n' + formattedData;
+                          
+                          // Copy to clipboard
+                          navigator.clipboard.writeText(dataWithHeaders)
+                            .then(() => {
+                              toast.success('Copied to clipboard! Paste into Excel.');
+                            })
+                            .catch(err => {
+                              console.error('Failed to copy:', err);
+                              toast.error('Failed to copy data.');
+                            });
+                        }}
+                        className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copy for Excel
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Extract and format just the emails as a comma-separated list
+                          const emails = formData.interestForm!.submissions
+                            .map(submission => submission.email)
+                            .join(', ');
+                          
+                          // Copy to clipboard
+                          navigator.clipboard.writeText(emails)
+                            .then(() => {
+                              toast.success('Emails copied to clipboard!');
+                            })
+                            .catch(err => {
+                              console.error('Failed to copy:', err);
+                              toast.error('Failed to copy data.');
+                            });
+                        }}
+                        className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Copy Emails
+                      </button>
+                    </div>
                   )}
                 </div>
                 
