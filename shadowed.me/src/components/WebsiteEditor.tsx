@@ -2481,21 +2481,15 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 && (
                     <button
                       onClick={() => {
-                        // Add column headers
-                        const headers = "Name\tEmail";
-                        
-                        // Format the data for Excel (tab separated for columns)
-                        const formattedData = formData.interestForm!.submissions
-                          .map(submission => `${submission.name}\t${submission.email}`)
-                          .join('\n');
-                        
-                        // Combine headers and data
-                        const dataWithHeaders = headers + '\n' + formattedData;
+                        // Extract and format just the emails as a comma-separated list
+                        const emails = formData.interestForm!.submissions
+                          .map(submission => submission.email)
+                          .join(', ');
                         
                         // Copy to clipboard
-                        navigator.clipboard.writeText(dataWithHeaders)
+                        navigator.clipboard.writeText(emails)
                           .then(() => {
-                            toast.success('Copied to clipboard! Paste into Excel.');
+                            toast.success('Emails copied to clipboard!');
                           })
                           .catch(err => {
                             console.error('Failed to copy:', err);
