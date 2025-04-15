@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
+
 // Category color mapping
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
