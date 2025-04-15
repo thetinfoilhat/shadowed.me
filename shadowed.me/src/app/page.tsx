@@ -32,14 +32,14 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/clubs">
-                  <button className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center justify-center hover:bg-[#2A7CD3] transition-colors shadow-sm">
+                  <button className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center justify-center hover:bg-[#2A7CD3] transition-all duration-300 hover:shadow-lg hover:shadow-[#4A9DFF]/30 transform hover:translate-y-[-2px]">
                     Find Clubs 
-                    <ArrowRightIcon className="w-5 h-5 ml-2" />
+                    <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                   </button>
                 </Link>
                 
                 <Link href="/about">
-                  <button className="px-6 py-3 bg-white/10 border border-white text-white font-medium rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <button className="px-6 py-3 bg-white/10 border border-white text-white font-medium rounded-lg flex items-center justify-center hover:bg-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/20 transform hover:translate-y-[-2px]">
                     Learn More
                   </button>
                 </Link>
@@ -50,7 +50,7 @@ export default function Home() {
             <div className="hidden lg:block">
               <div className="relative w-full">
                 {/* Main Feature Card */}
-                <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E5EEFF] hover:shadow-lg transition-all">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E5EEFF] hover:shadow-lg transition-all duration-500 transform hover:-translate-y-1 group">
                   <div className="bg-[#4A9DFF] px-6 py-4 flex items-center">
                     <div className="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-lg mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@ export default function Home() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div className="flex items-center gap-3">
-                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm">
+                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
                             <span className="text-xs font-medium">MAR</span>
                             <span className="text-xl font-bold">17</span>
                           </div>
@@ -80,7 +80,7 @@ export default function Home() {
                       
                       <div className="flex items-center justify-between pb-3">
                         <div className="flex items-center gap-3">
-                          <div className="bg-[#38BFA1] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm">
+                          <div className="bg-[#38BFA1] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
                             <span className="text-xs font-medium">MAR</span>
                             <span className="text-xl font-bold">23</span>
                           </div>
@@ -93,15 +93,15 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline">
+                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline group">
                       View all opportunities
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                     </Link>
                   </div>
                 </div>
                 
                 {/* Stats Card */}
-                <div className="absolute -top-6 -right-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300">
+                <div className="absolute -top-6 -right-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-8 h-8 bg-white/20 text-white flex items-center justify-center rounded-md">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,7 +119,7 @@ export default function Home() {
         </div>
         
         {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-10">
+        <div className="absolute bottom-0 left-0 right-0 translate-y-10 hover:translate-y-8 transition-transform duration-1000 ease-in-out">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full">
             <path fill="#ffffff" fillOpacity="1" d="M0,96L48,106.7C96,117,192,139,288,154.7C384,171,480,181,576,165.3C672,149,768,107,864,101.3C960,96,1056,128,1152,138.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
           </svg>
@@ -227,10 +227,10 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="order-2 lg:order-1"
             >
-              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E9EFFD] hover:shadow-lg transition-all">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E9EFFD] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-[#4A9DFF]/50 group">
                 <div className="flex flex-col h-full">
                   <div className="bg-[#E9EFFD] p-4 flex items-center">
-                    <div className="w-12 h-12 bg-[#4A9DFF] text-white flex items-center justify-center rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-[#4A9DFF] text-white flex items-center justify-center rounded-lg shadow-sm transform group-hover:scale-110 transition-transform duration-300">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
@@ -243,9 +243,9 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="px-6 pb-5">
-                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center hover:underline">
+                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center hover:underline group">
                       Browse clubs
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                     </Link>
                   </div>
                 </div>
@@ -267,7 +267,9 @@ export default function Home() {
               </p>
               <Link href="/clubs">
                 <motion.button 
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(74, 157, 255, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Browse All Clubs
@@ -292,7 +294,9 @@ export default function Home() {
               </p>
               <Link href="/what-fits-you">
                 <motion.button 
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(74, 157, 255, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Take the Quiz
@@ -307,10 +311,10 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E7F5FF] hover:shadow-lg transition-all">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E7F5FF] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-[#38BFA1]/50 hover:bg-gradient-to-br hover:from-white hover:to-[#E7F5FF] group">
                 <div className="flex flex-col h-full">
                   <div className="bg-[#E7F5FF] p-4 flex items-center">
-                    <div className="w-12 h-12 bg-[#38BFA1] text-white flex items-center justify-center rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-[#38BFA1] text-white flex items-center justify-center rounded-lg shadow-sm transform group-hover:rotate-12 transition-transform duration-300">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
@@ -323,9 +327,9 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="px-6 pb-5">
-                    <Link href="/what-fits-you" className="text-[#38BFA1] text-sm font-medium flex items-center hover:underline">
+                    <Link href="/what-fits-you" className="text-[#38BFA1] text-sm font-medium flex items-center hover:underline group">
                       Take the quiz
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                     </Link>
                   </div>
                 </div>
@@ -341,25 +345,25 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="order-2 lg:order-1"
             >
-              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#FFF1E6] hover:shadow-lg transition-all">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#FFF1E6] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01] hover:border-[#FF9913]/50 group">
                 <div className="flex flex-col h-full">
                   <div className="bg-[#FFF1E6] p-4 flex items-center">
-                    <div className="w-12 h-12 bg-[#FF9913] text-white flex items-center justify-center rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-[#FF9913] text-white flex items-center justify-center rounded-lg shadow-sm transform group-hover:scale-110 transition-transform duration-300">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-bold text-[#001440] ml-4">Serve</h3>
+                    <h3 className="text-xl font-bold text-[#001440] ml-4">About</h3>
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Keep track of the clubs you&apos;re interested in and their schedules. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed.
+                      Learn about our mission to connect students with clubs and opportunities at Naperville North. Discover how we help you find your perfect fit.
                     </p>
                   </div>
                   <div className="px-6 pb-5">
-                    <Link href="/my-visits" className="text-[#FF9913] text-sm font-medium flex items-center hover:underline">
-                      Track hours
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    <Link href="/about" className="text-[#FF9913] text-sm font-medium flex items-center hover:underline group">
+                      Learn more
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                     </Link>
                   </div>
                 </div>
@@ -374,17 +378,19 @@ export default function Home() {
               className="order-1 lg:order-2"
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-[#001440] mb-6">
-                Track Your Impact
+                Learn About Us
               </h2>
               <p className="text-xl text-[#000000] mb-6">
-                Record your participation and volunteer hours all in one place.
+                Discover our mission and how we support NNHS students.
               </p>
-              <Link href="/my-visits">
+              <Link href="/about">
                 <motion.button 
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(74, 157, 255, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
-                  View My Records
+                  About Our Platform
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
                 </motion.button>
               </Link>
@@ -406,7 +412,9 @@ export default function Home() {
               </p>
               <Link href="/captain-dashboard">
                 <motion.button 
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(74, 157, 255, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Captain Dashboard
@@ -421,10 +429,10 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#EBE7FF] hover:shadow-lg transition-all">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#EBE7FF] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:rotate-[0.5deg] hover:border-[#7C3AED]/50 group">
                 <div className="flex flex-col h-full">
                   <div className="bg-[#EBE7FF] p-4 flex items-center">
-                    <div className="w-12 h-12 bg-[#7C3AED] text-white flex items-center justify-center rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-[#7C3AED] text-white flex items-center justify-center rounded-lg shadow-sm transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
@@ -437,9 +445,9 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="px-6 pb-5">
-                    <Link href="/captain-dashboard" className="text-[#7C3AED] text-sm font-medium flex items-center hover:underline">
+                    <Link href="/captain-dashboard" className="text-[#7C3AED] text-sm font-medium flex items-center hover:underline group">
                       Dashboard
-                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                     </Link>
                   </div>
                 </div>
@@ -484,7 +492,7 @@ export default function Home() {
             className="relative z-10"
           >
             <Link href="/clubs">
-              <button className="px-10 py-4 bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] text-white text-base font-medium rounded-lg hover:from-[#38BFA1] hover:to-[#4A9DFF] transition-all duration-300 shadow-lg transform hover:scale-105">
+              <button className="px-10 py-4 bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] text-white text-base font-medium rounded-lg hover:from-[#38BFA1] hover:to-[#4A9DFF] transition-all duration-300 shadow-lg transform hover:scale-105 hover:shadow-xl hover:shadow-[#4A9DFF]/20">
                 Get Started
               </button>
             </Link>
