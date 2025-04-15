@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
@@ -7,11 +8,11 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] overflow-hidden">
+      <section className="relative min-h-[95vh] overflow-hidden">
         {/* Background with gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#001440] to-[#002D80]"></div>
         
-        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10 pt-12 md:pt-24 lg:pt-32">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10 pt-12 md:pt-24 lg:pt-32 pb-16 md:pb-24 lg:pb-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center">
             {/* Text content */}
             <div className="text-white">
@@ -92,7 +93,7 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <Link href="/events" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline">
+                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline">
                       View all opportunities
                       <ArrowRightIcon className="w-4 h-4 ml-1" />
                     </Link>
@@ -118,7 +119,7 @@ export default function Home() {
         </div>
         
         {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
+        <div className="absolute bottom-0 left-0 right-0 translate-y-10">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full">
             <path fill="#ffffff" fillOpacity="1" d="M0,96L48,106.7C96,117,192,139,288,154.7C384,171,480,181,576,165.3C672,149,768,107,864,101.3C960,96,1056,128,1152,138.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
           </svg>
@@ -352,7 +353,7 @@ export default function Home() {
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed.
+                      Keep track of the clubs you&apos;re interested in and their schedules. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed.
                     </p>
                   </div>
                   <div className="px-6 pb-5">
@@ -401,7 +402,7 @@ export default function Home() {
                 Manage Your Club
               </h2>
               <p className="text-xl text-[#000000] mb-6">
-                Captains and sponsors can easily organize their club activities.
+                Captains and sponsors can easily create a club site and display key info.
               </p>
               <Link href="/captain-dashboard">
                 <motion.button 
@@ -432,7 +433,7 @@ export default function Home() {
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Captains and club sponsors will use shadowed.me as their all-in-one platform to post meeting times, room numbers, competitions, and volunteer opportunities.
+                      Shadowed.me is here to serve as the first touchpoint for your club. Take a look at who&apos;s interested and manage your club site&apos;s information.
                     </p>
                   </div>
                   <div className="px-6 pb-5">

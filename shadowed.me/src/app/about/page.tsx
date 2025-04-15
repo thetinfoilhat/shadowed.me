@@ -327,6 +327,49 @@ export default function About() {
           </div>
         </motion.div>
 
+        {/* FAQ Section */}
+        <motion.div 
+          className="mb-24"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <h2 className="text-3xl md:text-4xl font-bold text-[#180D39] mb-12 text-center">Frequently Asked Questions</h2>
+          
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">Can I show interest in a club even if I missed the Jamboree?</h3>
+              <p className="text-[#180D39]/70">Yes! Just head to the &quot;Clubs&quot; page and click the &quot;I&apos;m Interested!&quot; button. Captains and sponsors will be able to see who&apos;s interested and use it to share information about the club throughout the school year.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">What is the 25-question quiz and how does it work?</h3>
+              <p className="text-[#180D39]/70">Our 25-question quiz helps students—and their parents—better understand their interests and discover clubs that align with them. Students are matched based on attributes, and no personal information is collected.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">What does it mean to &quot;shadow&quot; an event?</h3>
+              <p className="text-[#180D39]/70">Clubs post meetings, events, and volunteer opportunities that students can attend—like 8th graders joining a freshman intro session or current students visiting a competition. It&apos;s completely free and requires no commitment.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">How do I track my volunteer hours and event attendance?</h3>
+              <p className="text-[#180D39]/70">In the 2025-2026 school year, the student dashboard automatically logs hours and events for any club you attend through the platform. Additionally, club captains and sponsors will be able to verify your participation!</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">Where can I find updates from club captains and sponsors?</h3>
+              <p className="text-[#180D39]/70">All updates—like meeting reminders, announcements, and important dates—will appear on your dashboard if you&apos;re marked as &quot;Interested&quot; in a club.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
+              <h3 className="text-xl font-bold text-[#180D39] mb-3">Can I be in more than one club at the same time?</h3>
+              <p className="text-[#180D39]/70">Absolutely! Most students are involved in multiple clubs, and this platform is designed to help you explore as many as you&apos;d like.</p>
+            </div>
+          </div>
+        </motion.div>
+
         <motion.div 
           className="bg-gradient-to-br from-[#38BFA1] to-[#2A8E9E] rounded-3xl p-10 md:p-16 text-white"
           initial={{ opacity: 0, y: 20 }}

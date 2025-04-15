@@ -56,7 +56,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="text-white/80 hover:text-white transition-colors"
                 >
-                  Naperville North website
+                  NNHS Website
                 </a>
               </li>
               <li>
