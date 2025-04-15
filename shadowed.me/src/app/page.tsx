@@ -126,60 +126,92 @@ export default function Home() {
       </section>
       
       {/* Mission Section */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
-          <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-wrap justify-center items-center"
-            >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#001440] flex flex-wrap items-center justify-center">
-                <span>We help students</span>&nbsp;
-                
-                {/* Inline Text Carousel */}
-                <span className="relative inline-block h-[60px] sm:h-[72px] overflow-hidden" style={{ minWidth: '500px', maxWidth: '700px', transform: 'translateY(13px)' }}>
-                  {[
-                    { text: "Connect curiosity to action", color: "#4A9DFF" },
-                    { text: "Explore interests & passions", color: "#4A9DFF" },
-                    { text: "Serve their communities", color: "#4A9DFF" },
-                    { text: "Lead with confidence", color: "#4A9DFF" }
-                  ].map((item, index) => {
-                    const words = item.text.split(' ');
-                    const firstWord = words[0];
-                    const restWords = words.slice(1).join(' ');
-                    
-                    return (
-                      <motion.span
-                        key={index}
-                        className="absolute left-0 whitespace-nowrap w-full"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ 
-                          opacity: [0, 1, 1, 0],
-                          y: [20, 0, 0, -20]
-                        }}
-                        transition={{
-                          times: [0, 0.1, 0.9, 1],
-                          duration: 4,
-                          delay: index * 4,
-                          repeat: Infinity,
-                          repeatDelay: 12
-                        }}
-                      >
-                        <span className="font-bold" style={{ color: item.color }}>{firstWord}</span>
-                        <span className="text-[#001440]"> {restWords}</span>
-                      </motion.span>
-                    );
-                  })}
-                </span>
-              </h2>
-              <div className="w-full mt-3">
-                <span className="inline-block h-1 bg-[#4A9DFF] w-full max-w-[900px]"></span>
+      <section className="py-12 bg-gradient-to-br from-[#F8FAFC] via-white to-[#F0F7FF] relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-[#4A9DFF]/5 rounded-full -translate-x-1/4 -translate-y-1/4"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#38BFA1]/5 rounded-full translate-x-1/4 translate-y-1/4"></div>
+        
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="max-w-5xl mx-auto"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="inline-flex items-center justify-center bg-[#4A9DFF]/10 px-4 py-2 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#4A9DFF] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-[#4A9DFF] font-medium">Our Mission</span>
               </div>
-            </motion.div>
-          </div>
+              
+              <h2 className="text-4xl sm:text-5xl font-bold text-[#001440] mb-4">
+                We help students
+              </h2>
+              
+              <div className="w-full h-[60px] sm:h-[72px] relative mb-8 overflow-hidden">
+                {[
+                  { text: "Connect curiosity to action", color: "#FF9913", bg: "transparent" },
+                  { text: "Explore interests & passions", color: "#E77D22", bg: "transparent" },
+                  { text: "Serve their communities", color: "#CC5900", bg: "transparent" },
+                  { text: "Lead with confidence", color: "#A64500", bg: "transparent" }
+                ].map((item, index) => {
+                  return (
+                    <motion.div
+                      key={index}
+                      className="absolute inset-0 flex items-center justify-center"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: [0, 1, 1, 0],
+                        y: [20, 0, 0, -20]
+                      }}
+                      transition={{
+                        times: [0, 0.1, 0.9, 1],
+                        duration: 4,
+                        delay: index * 4,
+                        repeat: Infinity,
+                        repeatDelay: 12
+                      }}
+                      style={{ backgroundColor: item.bg }}
+                    >
+                      <span className="font-bold text-4xl sm:text-5xl" style={{ color: item.color }}>
+                        {item.text.split(' ')[0]}
+                      </span>
+                      <span className="text-4xl sm:text-5xl text-[#001440] font-bold">
+                        &nbsp;{item.text.split(' ').slice(1).join(' ')}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-lg text-gray-600 max-w-2xl mx-auto mb-6"
+              >
+                At shadowed.me, we're dedicated to helping students at Naperville North discover their passions, engage with their community, and develop leadership skills through meaningful club participation.
+              </motion.p>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <Link href="/about">
+                  <button className="px-6 py-2 bg-white border border-[#4A9DFF] text-[#4A9DFF] font-medium rounded-lg flex items-center hover:bg-[#4A9DFF] hover:text-white transition-colors shadow-sm">
+                    Learn about our mission
+                    <ArrowRightIcon className="w-4 h-4 ml-2" />
+                  </button>
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
       </section>
       
