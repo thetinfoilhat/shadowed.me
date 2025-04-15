@@ -14,21 +14,21 @@ import { ClubSite } from '@/types/club';
 
 // Category color mapping
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
-  'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
-  'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
-  'Business': { bg: '#34A853', text: '#ffffff', lighter: '#d0f0d9' },
-  'Music, Arts, & Performing Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
-  'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
-  'Language & Culture': { bg: '#8E44AD', text: '#ffffff', lighter: '#e9d0f0' },
-  'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
-  'Community Service & Leadership': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
-  'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
+  'STEM': { bg: '#3B7DD3', text: '#ffffff', lighter: '#D5E4F7' }, // Softer blue for STEM
+  'Humanities': { bg: '#9D68B2', text: '#ffffff', lighter: '#E9DAEF' }, // Muted purple for humanities
+  'Business': { bg: '#4DA96C', text: '#ffffff', lighter: '#DBF0E1' }, // Subdued green for business
+  'Music, Arts, & Performing Arts': { bg: '#E8667F', text: '#ffffff', lighter: '#F9DFE4' }, // Softer pink/red for arts
+  'Academic': { bg: '#D4AF37', text: '#000000', lighter: '#F5EDCF' }, // Darker gold/beige for academic
+  'Language & Culture': { bg: '#E87F3A', text: '#ffffff', lighter: '#F8E2D2' }, // Softer orange for language & culture
+  'Medical': { bg: '#CF5050', text: '#ffffff', lighter: '#F4DCDC' }, // Muted red for medical
+  'Community Service & Leadership': { bg: '#55B2B2', text: '#000000', lighter: '#DAF0F0' }, // Softer teal for community service
+  'Miscellaneous': { bg: '#7D7DA8', text: '#ffffff', lighter: '#E5E5EF' }, // Muted slate blue for miscellaneous
   // Keeping these for backward compatibility
-  'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
-  'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
-  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
-  'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
-  'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' }
+  'Arts': { bg: '#E8667F', text: '#ffffff', lighter: '#F9DFE4' }, // Same as Music, Arts, & Performing Arts
+  'Community Service': { bg: '#55B2B2', text: '#000000', lighter: '#DAF0F0' }, // Same as Community Service & Leadership
+  'Sports': { bg: '#63B574', text: '#000000', lighter: '#DFF0E3' }, // Softer green for sports
+  'Technology': { bg: '#5C7CE0', text: '#ffffff', lighter: '#DEE4F8' }, // Softer bright blue for technology
+  'Performing Arts': { bg: '#BC6ABC', text: '#ffffff', lighter: '#F2DEF2' } // Muted magenta for performing arts
 };
 
 // Function to get color for category
@@ -344,16 +344,41 @@ export default function Jamboree() {
 
         // Sort websites: first by category, then by updated date
         const sortedWebsites = websites.sort((a, b) => {
-          // First sort by category
-          if (a.category && b.category) {
-            return a.category.localeCompare(b.category);
-          } else if (a.category) {
-            return -1; // a has category, b doesn't
-          } else if (b.category) {
-            return 1; // b has category, a doesn't
+          // Define category priority order (higher priority categories come first)
+          const categoryOrder = [
+            'STEM', 
+            'Business', 
+            'Academic',
+            'Music, Arts, & Performing Arts',
+            'Medical',
+            'Technology',
+            'Sports',
+            'Community Service & Leadership',
+            'Humanities',
+            'Language & Culture',
+            'Arts',
+            'Performing Arts',
+            'Community Service',
+            'Miscellaneous'
+          ];
+          
+          // Get position in priority list (if not found, put at end)
+          const getCategoryPriority = (category: string | undefined) => {
+            if (!category) return Number.MAX_SAFE_INTEGER; // Undefined categories go last
+            const index = categoryOrder.indexOf(category);
+            return index === -1 ? Number.MAX_SAFE_INTEGER - 1 : index;
+          };
+          
+          // Sort by category priority first
+          const aPriority = getCategoryPriority(a.category);
+          const bPriority = getCategoryPriority(b.category);
+          
+          // If priorities differ, sort by priority
+          if (aPriority !== bPriority) {
+            return aPriority - bPriority;
           }
           
-          // Then by update date (most recent first)
+          // If same category, sort by update date (most recent first)
           return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
         });
 
@@ -456,7 +481,7 @@ export default function Jamboree() {
               >
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-colors"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#1750AC] hover:bg-[#003396] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-colors"
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Create New Website
