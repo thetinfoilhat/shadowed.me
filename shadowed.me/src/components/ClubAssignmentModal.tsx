@@ -48,6 +48,7 @@ export default function ClubAssignmentModal({
   const [selectedSponsors, setSelectedSponsors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [renderKey, setRenderKey] = useState(Date.now());
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -195,6 +196,12 @@ export default function ClubAssignmentModal({
         // Set initial values
         setSelectedCaptains(captainEmailsToSelect);
         setSelectedSponsors(sponsorEmailsToSelect);
+        
+        console.log("Final state after initialization:");
+        console.log("- Captains data:", captainsData);
+        console.log("- Selected captains:", captainEmailsToSelect);
+        console.log("- Sponsors data:", sponsorsData);
+        console.log("- Selected sponsors:", sponsorEmailsToSelect);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast.error('Failed to load users');
@@ -204,33 +211,17 @@ export default function ClubAssignmentModal({
     };
 
     if (isOpen) {
+      setRenderKey(Date.now()); // Force a re-render by updating the key
       fetchUsers();
     }
   }, [isOpen, club]);
 
-  // Add a special effect to handle the case of Aiden Xie specifically for debugging
-  useEffect(() => {
-    if (isOpen && 
-        club.jamboreeMeetingInfo?.captains && 
-        club.jamboreeMeetingInfo.captains.includes("Aiden Xie") && 
-        selectedCaptains.length === 1 && 
-        selectedCaptains[0] === '') {
-      
-      console.log("Aviation Club detected - looking for Aiden Xie's email");
-      // Find Aiden Xie's email
-      const aidenCaptain = captains.find(c => c.displayName === "Aiden Xie");
-      if (aidenCaptain) {
-        console.log("Found Aiden Xie's email:", aidenCaptain.email);
-        // Force update the selectedCaptains
-        setSelectedCaptains([aidenCaptain.email]);
-      } else {
-        console.log("Aiden Xie not found in captains:", captains);
-      }
-    }
-  }, [isOpen, club, captains, selectedCaptains]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Log the current state for debugging
+    console.log("Submitting with captains:", selectedCaptains);
+    console.log("Submitting with sponsors:", selectedSponsors);
     
     try {
       setSubmitting(true);
@@ -361,6 +352,8 @@ export default function ClubAssignmentModal({
     const newSelections = [...selectedCaptains];
     newSelections[index] = value;
     setSelectedCaptains(newSelections);
+    
+    console.log("Updated captain selections:", newSelections);
   };
 
   const addCaptainSelection = () => {
@@ -373,6 +366,8 @@ export default function ClubAssignmentModal({
     const newSelections = [...selectedCaptains];
     newSelections.splice(index, 1);
     setSelectedCaptains(newSelections);
+    
+    console.log("After removing captain:", newSelections);
   };
 
   // Sponsor selection dropdown
@@ -380,6 +375,8 @@ export default function ClubAssignmentModal({
     const newSelections = [...selectedSponsors];
     newSelections[index] = value;
     setSelectedSponsors(newSelections);
+    
+    console.log("Updated sponsor selections:", newSelections);
   };
 
   const addSponsorSelection = () => {
@@ -392,12 +389,14 @@ export default function ClubAssignmentModal({
     const newSelections = [...selectedSponsors];
     newSelections.splice(index, 1);
     setSelectedSponsors(newSelections);
+    
+    console.log("After removing sponsor:", newSelections);
   };
 
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog 
-        key={`club-assignment-${club.id || 'new'}-${Date.now()}`} 
+        key={`club-assignment-modal-${club.id || 'new'}-${renderKey}`} 
         onClose={onClose} 
         className="relative z-50"
       >
@@ -445,7 +444,7 @@ export default function ClubAssignmentModal({
               ) : (
                 <div className="space-y-6">
                   <form 
-                    key={`club-form-${club.id}-${isOpen ? 'open' : 'closed'}`}
+                    key={`club-form-${club.id}-${renderKey}`}
                     onSubmit={handleSubmit} 
                     className="space-y-5"
                   >
@@ -458,46 +457,31 @@ export default function ClubAssignmentModal({
                       
                       <div className="space-y-2">
                         {selectedCaptains.map((captainEmail, index) => (
-                          <div key={`captain-${index}-${captainEmail}`} className="flex items-center space-x-2">
+                          <div key={`captain-${index}-${captainEmail}-${renderKey}`} className="flex items-center space-x-2">
                             <select
                               value={captainEmail}
+                              defaultValue={captainEmail}
                               onChange={(e) => updateCaptainSelection(index, e.target.value)}
                               className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                              disabled={submitting}
                             >
                               <option value="">-- Select Captain --</option>
-                              {captains.map((captain) => {
-                                // If the captain's display name matches the display name shown in jamboreeMeetingInfo.captains
-                                // but the email doesn't match what we have in selectedCaptains, this would cause the dropdown
-                                // to show "Select Captain" instead of the actual captain
-                                const isMatchingDisplayName = club.jamboreeMeetingInfo?.captains && 
-                                                            typeof club.jamboreeMeetingInfo.captains === 'string' &&
-                                                            club.jamboreeMeetingInfo.captains.includes(captain.displayName) &&
-                                                            !selectedCaptains.includes(captain.email);
-                                
-                                // If we detect a match but the value isn't in the array, update it
-                                if (isMatchingDisplayName && index === 0 && captainEmail === '') {
-                                  // Use setTimeout to avoid state updates during render
-                                  setTimeout(() => {
-                                    updateCaptainSelection(index, captain.email);
-                                  }, 0);
-                                }
-                                
-                                return (
-                                  <option 
-                                    key={captain.id} 
-                                    value={captain.email}
-                                  >
-                                    {captain.displayName || captain.email}
-                                  </option>
-                                );
-                              })}
+                              {captains.map((captain) => (
+                                <option 
+                                  key={captain.id} 
+                                  value={captain.email}
+                                >
+                                  {captain.displayName || captain.email}
+                                </option>
+                              ))}
                             </select>
                             <button
                               type="button"
                               onClick={() => removeCaptainSelection(index)}
                               className="p-1 text-red-500 hover:text-red-700 rounded"
+                              disabled={submitting}
                             >
-                              <svg className="w-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
@@ -526,15 +510,20 @@ export default function ClubAssignmentModal({
                       
                       <div className="space-y-2">
                         {selectedSponsors.map((sponsorEmail, index) => (
-                          <div key={`sponsor-${index}-${sponsorEmail}`} className="flex items-center space-x-2">
+                          <div key={`sponsor-${index}-${sponsorEmail}-${renderKey}`} className="flex items-center space-x-2">
                             <select
                               value={sponsorEmail}
+                              defaultValue={sponsorEmail}
                               onChange={(e) => updateSponsorSelection(index, e.target.value)}
                               className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                              disabled={submitting}
                             >
                               <option value="">-- Select Sponsor --</option>
                               {sponsors.map((sponsor) => (
-                                <option key={sponsor.id} value={sponsor.email}>
+                                <option 
+                                  key={sponsor.id} 
+                                  value={sponsor.email}
+                                >
                                   {sponsor.displayName || sponsor.email}
                                 </option>
                               ))}
@@ -543,6 +532,7 @@ export default function ClubAssignmentModal({
                               type="button"
                               onClick={() => removeSponsorSelection(index)}
                               className="p-1 text-red-500 hover:text-red-700 rounded"
+                              disabled={submitting}
                             >
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
