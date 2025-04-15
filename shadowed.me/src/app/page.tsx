@@ -194,7 +194,7 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-lg text-gray-600 max-w-2xl mx-auto mb-6"
               >
-                At shadowed.me, we're dedicated to helping students at Naperville North discover their passions, engage with their community, and develop leadership skills through meaningful club participation.
+                At shadowed.me, we&apos;re dedicated to helping students at Naperville North discover their passions, engage with their community, and develop leadership skills through meaningful club participation.
               </motion.p>
               
               <motion.div
@@ -238,7 +238,7 @@ export default function Home() {
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Connect with 110+ clubs at Naperville North and the events & opportunities they offer. Visit the "Clubs" page to read detailed descriptions and join communication lists.
+                      Connect with 110+ clubs at Naperville North and the events & opportunities they offer. Visit the &quot;Clubs&quot; page to read detailed descriptions and join communication lists.
                     </p>
                   </div>
                   <div className="px-6 pb-5">
@@ -318,7 +318,7 @@ export default function Home() {
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Try out the 25-question quiz to discover clubs that fit your interests, goals, and schedule. Whether you're looking to compete, create, lead, or perform.
+                      Try out the 25-question quiz to discover clubs that fit your interests, goals, and schedule. Whether you&apos;re looking to compete, create, lead, or perform.
                     </p>
                   </div>
                   <div className="px-6 pb-5">
@@ -352,7 +352,7 @@ export default function Home() {
                   </div>
                   <div className="p-6 flex-grow">
                     <p className="text-gray-600">
-                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you've done—no spreadsheets needed.
+                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed.
                     </p>
                   </div>
                   <div className="px-6 pb-5">
