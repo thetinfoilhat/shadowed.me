@@ -31,14 +31,14 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/clubs">
-                  <button className="px-8 py-4 bg-[#FF9913] text-white font-medium rounded-full flex items-center justify-center hover:bg-[#e68a10] transition-colors shadow-lg">
+                  <button className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center justify-center hover:bg-[#2A7CD3] transition-colors shadow-sm">
                     Find Clubs 
                     <ArrowRightIcon className="w-5 h-5 ml-2" />
                   </button>
                 </Link>
                 
                 <Link href="/about">
-                  <button className="px-8 py-4 bg-transparent border-2 border-white text-white font-medium rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
+                  <button className="px-6 py-3 bg-white/10 border border-white text-white font-medium rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
                     Learn More
                   </button>
                 </Link>
@@ -49,41 +49,46 @@ export default function Home() {
             <div className="hidden lg:block">
               <div className="relative w-full">
                 {/* Main Feature Card */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-white/20">
-                  <div className="px-8 py-6 border-b border-white/20">
-                    <h3 className="text-white text-xl font-semibold">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E5EEFF] hover:shadow-lg transition-all">
+                  <div className="bg-[#4A9DFF] px-6 py-4 flex items-center">
+                    <div className="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-lg mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white text-lg font-semibold">
                       Upcoming Opportunities
                     </h3>
                   </div>
                   
-                  <div className="px-8 py-4">
+                  <div className="p-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-white/20 pb-3">
-                        <div className="flex items-center gap-4">
-                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-md">
-                            <span className="text-xs">MAR</span>
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm">
+                            <span className="text-xs font-medium">MAR</span>
                             <span className="text-xl font-bold">17</span>
                           </div>
                           <div>
-                            <div className="text-white font-medium">Physics Club</div>
-                            <div className="text-white/80 text-sm mt-1">Naperville North High School</div>
+                            <div className="text-[#001440] font-medium">Physics Club</div>
+                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
                           </div>
                         </div>
-                        <div className="text-white/80 text-sm">Mar 15</div>
+                        <div className="text-gray-500 text-xs">Mar 15</div>
                       </div>
                       
                       <div className="flex items-center justify-between pb-3">
-                        <div className="flex items-center gap-4">
-                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-md">
-                            <span className="text-xs">MAR</span>
+                        <div className="flex items-center gap-3">
+                          <div className="bg-[#38BFA1] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm">
+                            <span className="text-xs font-medium">MAR</span>
                             <span className="text-xl font-bold">23</span>
                           </div>
                           <div>
-                            <div className="text-white font-medium">HOSA Competition</div>
-                            <div className="text-white/80 text-sm mt-1">Naperville North High School</div>
+                            <div className="text-[#001440] font-medium">HOSA Competition</div>
+                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
                           </div>
                         </div>
-                        <div className="text-white/80 text-sm">Mar 18</div>
+                        <div className="text-gray-500 text-xs">Mar 18</div>
                       </div>
                     </div>
                     
@@ -95,10 +100,17 @@ export default function Home() {
                 </div>
                 
                 {/* Stats Card */}
-                <div className="absolute -top-6 -right-6 bg-[#4A9DFF] rounded-2xl p-4 shadow-xl transform rotate-6">
-                  <div className="text-white text-sm font-medium">Active Students</div>
-                  <div className="text-white text-2xl font-bold mt-1">500+</div>
-                  <div className="text-white/90 text-xs mt-1">across 110 clubs</div>
+                <div className="absolute -top-6 -right-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-8 h-8 bg-white/20 text-white flex items-center justify-center rounded-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-white text-sm font-medium">Active Students</div>
+                  </div>
+                  <div className="text-white text-2xl font-bold">500+</div>
+                  <div className="text-white/90 text-xs font-medium">across 110 clubs</div>
                 </div>
               </div>
             </div>
@@ -124,11 +136,11 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="flex flex-wrap justify-center items-center"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#001440] inline-flex items-center justify-center w-full">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#001440] flex flex-wrap items-center justify-center">
                 <span>We help students</span>&nbsp;
                 
                 {/* Inline Text Carousel */}
-                <span className="relative inline-block h-[60px] sm:h-[72px] overflow-hidden align-bottom" style={{ minWidth: '650px', maxWidth: '800px', transform: 'translateY(13px)' }}>
+                <span className="relative inline-block h-[60px] sm:h-[72px] overflow-hidden" style={{ minWidth: '500px', maxWidth: '700px', transform: 'translateY(13px)' }}>
                   {[
                     { text: "Connect curiosity to action", color: "#4A9DFF" },
                     { text: "Explore interests & passions", color: "#4A9DFF" },
@@ -164,7 +176,7 @@ export default function Home() {
                 </span>
               </h2>
               <div className="w-full mt-3">
-                <span className="inline-block h-1 bg-[#4A9DFF] w-[650px] sm:w-[750px] md:w-[900px]"></span>
+                <span className="inline-block h-1 bg-[#4A9DFF] w-full max-w-[900px]"></span>
               </div>
             </motion.div>
           </div>
@@ -182,16 +194,26 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="order-2 lg:order-1"
             >
-              <div className="p-2 bg-white shadow-xl rounded-3xl">
-                <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#4A9DFF] to-[#2A7CD3] p-1">
-                  <div className="bg-white rounded-xl p-8">
-                    <div className="w-16 h-16 bg-[#4A9DFF]/10 text-[#4A9DFF] flex items-center justify-center rounded-xl text-2xl mb-6">
-                      🔍
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E9EFFD] hover:shadow-lg transition-all">
+                <div className="flex flex-col h-full">
+                  <div className="bg-[#E9EFFD] p-4 flex items-center">
+                    <div className="w-12 h-12 bg-[#4A9DFF] text-white flex items-center justify-center rounded-lg shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-[#001440] mb-4">Connect</h3>
-                    <p className="text-[#000000]">
-                      Connect with 110+ clubs at Naperville North and the events & opportunities they offer. Visit the &quot;Clubs&quot; page to read detailed descriptions and join communication lists linked to club sponsors, and check the &quot;Club Visits&quot; page during the school year to find meetings you can &quot;shadow&quot;.
+                    <h3 className="text-xl font-bold text-[#001440] ml-4">Connect</h3>
+                  </div>
+                  <div className="p-6 flex-grow">
+                    <p className="text-gray-600">
+                      Connect with 110+ clubs at Naperville North and the events & opportunities they offer. Visit the "Clubs" page to read detailed descriptions and join communication lists.
                     </p>
+                  </div>
+                  <div className="px-6 pb-5">
+                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center hover:underline">
+                      Browse clubs
+                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -212,8 +234,8 @@ export default function Home() {
               </p>
               <Link href="/clubs">
                 <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-full flex items-center shadow-md"
+                  whileHover={{ scale: 1.02 }}
+                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Browse All Clubs
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
@@ -224,7 +246,7 @@ export default function Home() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
@@ -237,8 +259,8 @@ export default function Home() {
               </p>
               <Link href="/what-fits-you">
                 <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-full flex items-center shadow-md"
+                  whileHover={{ scale: 1.02 }}
+                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Take the Quiz
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
@@ -252,16 +274,26 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="p-2 bg-white shadow-xl rounded-3xl">
-                <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#4A9DFF] to-[#2A7CD3] p-1">
-                  <div className="bg-white rounded-xl p-8">
-                    <div className="w-16 h-16 bg-[#4A9DFF]/10 text-[#4A9DFF] flex items-center justify-center rounded-xl text-2xl mb-6">
-                      🧭
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E7F5FF] hover:shadow-lg transition-all">
+                <div className="flex flex-col h-full">
+                  <div className="bg-[#E7F5FF] p-4 flex items-center">
+                    <div className="w-12 h-12 bg-[#38BFA1] text-white flex items-center justify-center rounded-lg shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-[#001440] mb-4">Explore</h3>
-                    <p className="text-[#000000]">
-                      Try out the 25-question quiz to discover the clubs that fit your interests, goals, and schedule. Whether you&apos;re looking to compete, create, lead, perform, or just try something new, it only takes a few minutes and might introduce you to a club you never expected to love!
+                    <h3 className="text-xl font-bold text-[#001440] ml-4">Explore</h3>
+                  </div>
+                  <div className="p-6 flex-grow">
+                    <p className="text-gray-600">
+                      Try out the 25-question quiz to discover clubs that fit your interests, goals, and schedule. Whether you're looking to compete, create, lead, or perform.
                     </p>
+                  </div>
+                  <div className="px-6 pb-5">
+                    <Link href="/what-fits-you" className="text-[#38BFA1] text-sm font-medium flex items-center hover:underline">
+                      Take the quiz
+                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -276,16 +308,26 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="order-2 lg:order-1"
             >
-              <div className="p-2 bg-white shadow-xl rounded-3xl">
-                <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#4A9DFF] to-[#2A7CD3] p-1">
-                  <div className="bg-white rounded-xl p-8">
-                    <div className="w-16 h-16 bg-[#4A9DFF]/10 text-[#4A9DFF] flex items-center justify-center rounded-xl text-2xl mb-6">
-                      🤝
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#FFF1E6] hover:shadow-lg transition-all">
+                <div className="flex flex-col h-full">
+                  <div className="bg-[#FFF1E6] p-4 flex items-center">
+                    <div className="w-12 h-12 bg-[#FF9913] text-white flex items-center justify-center rounded-lg shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-[#001440] mb-4">Serve</h3>
-                    <p className="text-[#000000]">
-                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you&apos;ve done—no spreadsheets needed. Great for resumes, service goals, or just looking back on the impact you&apos;ve made in the community.
+                    <h3 className="text-xl font-bold text-[#001440] ml-4">Serve</h3>
+                  </div>
+                  <div className="p-6 flex-grow">
+                    <p className="text-gray-600">
+                      Keep track of the events you have attended and the hours you volunteer. Shadowed.me helps you stay on top of everything you've done—no spreadsheets needed.
                     </p>
+                  </div>
+                  <div className="px-6 pb-5">
+                    <Link href="/my-visits" className="text-[#FF9913] text-sm font-medium flex items-center hover:underline">
+                      Track hours
+                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -306,8 +348,8 @@ export default function Home() {
               </p>
               <Link href="/my-visits">
                 <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-full flex items-center shadow-md"
+                  whileHover={{ scale: 1.02 }}
+                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   View My Records
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
@@ -331,8 +373,8 @@ export default function Home() {
               </p>
               <Link href="/captain-dashboard">
                 <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-full flex items-center shadow-md"
+                  whileHover={{ scale: 1.02 }}
+                  className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center shadow-sm"
                 >
                   Captain Dashboard
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
@@ -346,16 +388,26 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="p-2 bg-white shadow-xl rounded-3xl">
-                <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#4A9DFF] to-[#2A7CD3] p-1">
-                  <div className="bg-white rounded-xl p-8">
-                    <div className="w-16 h-16 bg-[#4A9DFF]/10 text-[#4A9DFF] flex items-center justify-center rounded-xl text-2xl mb-6">
-                      ⭐
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#EBE7FF] hover:shadow-lg transition-all">
+                <div className="flex flex-col h-full">
+                  <div className="bg-[#EBE7FF] p-4 flex items-center">
+                    <div className="w-12 h-12 bg-[#7C3AED] text-white flex items-center justify-center rounded-lg shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-[#001440] mb-4">Lead</h3>
-                    <p className="text-[#000000]">
-                      Captains and club sponsors will use shadowed.me as their all-in-one platform to post everything students need to know—meeting times, room numbers, upcoming competitions, volunteer opportunities, and anything in between. It&apos;s easier than ever to keep your club organized and driven!
+                    <h3 className="text-xl font-bold text-[#001440] ml-4">Lead</h3>
+                  </div>
+                  <div className="p-6 flex-grow">
+                    <p className="text-gray-600">
+                      Captains and club sponsors will use shadowed.me as their all-in-one platform to post meeting times, room numbers, competitions, and volunteer opportunities.
                     </p>
+                  </div>
+                  <div className="px-6 pb-5">
+                    <Link href="/captain-dashboard" className="text-[#7C3AED] text-sm font-medium flex items-center hover:underline">
+                      Dashboard
+                      <ArrowRightIcon className="w-4 h-4 ml-1" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -365,8 +417,12 @@ export default function Home() {
       </section>
       
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-b from-[#002D80] to-[#001440]">
-        <div className="container mx-auto px-6 sm:px-8 lg:px-16 text-center">
+      <section className="py-24 bg-gradient-to-br from-[#001440] via-[#0F2A80] to-[#1F49B3]">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 text-center relative">
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-xl"></div>
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#4A9DFF]/10 rounded-full translate-x-1/3 translate-y-1/3 blur-xl"></div>
+          
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -382,7 +438,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-xl text-white mb-10 max-w-2xl mx-auto"
+            className="text-xl text-white/80 mb-12 max-w-2xl mx-auto"
           >
             Join thousands of students discovering events and opportunities.
           </motion.p>
@@ -392,9 +448,10 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative z-10"
           >
             <Link href="/clubs">
-              <button className="px-10 py-5 bg-[#4A9DFF] text-white text-lg font-medium rounded-full hover:bg-[#2A7CD3] transition-colors shadow-lg">
+              <button className="px-10 py-4 bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] text-white text-base font-medium rounded-lg hover:from-[#38BFA1] hover:to-[#4A9DFF] transition-all duration-300 shadow-lg transform hover:scale-105">
                 Get Started
               </button>
             </Link>
