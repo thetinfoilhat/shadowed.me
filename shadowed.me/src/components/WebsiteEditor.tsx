@@ -5,7 +5,7 @@ import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
 import { COLOR_OPTIONS, getColorById } from '@/utils/colors';
 import { uploadImage, uploadPDF, deleteFile, uploadPDFResource} from '@/utils/fileUpload';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -954,6 +954,8 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
 
   const removeCaptainSelection = (index: number) => {
     const updatedCaptains = selectedCaptains.filter((_, i) => i !== index);
+    const removedCaptain = selectedCaptains[index]; // The captain being removed
+    
     setSelectedCaptains(updatedCaptains);
     
     // Filter out any empty values
@@ -976,7 +978,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       captains: formattedCaptains
     };
     
-    // Handle the case where all captains are removed
+    // Create a complete update object with all captain-related fields
     const updatedData: Partial<ClubSite> = {
       jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
       captains: filteredCaptains,
@@ -984,10 +986,49 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       captainDetails: captainDetailsArray
     };
     
+    // Update formData first
+    setFormData(prev => ({
+      ...prev,
+      ...updatedData
+    }));
+    
+    // If a captain was removed, update their user document
+    if (removedCaptain && removedCaptain.trim() !== '') {
+      updateCaptainUserData(removedCaptain);
+    }
+    
     // Save all captain-related updates at once
     handleSave(updatedData);
   };
   
+  // Function to update a captain's user document
+  const updateCaptainUserData = async (captainEmail: string) => {
+    if (!formData.id) return; // Ensure we have a club ID
+    
+    try {
+      const usersCollection = collection(db, 'users');
+      const captainQuery = query(usersCollection, where('email', '==', captainEmail));
+      const captainSnapshot = await getDocs(captainQuery);
+      
+      if (!captainSnapshot.empty) {
+        const captainDoc = captainSnapshot.docs[0];
+        const captainData = captainDoc.data();
+        
+        // Remove club ID from captainClubs array
+        if (captainData.captainClubs && Array.isArray(captainData.captainClubs)) {
+          const updatedClubs = captainData.captainClubs.filter(id => id !== formData.id);
+          
+          // Update the user document
+          await updateDoc(doc(db, 'users', captainDoc.id), {
+            captainClubs: updatedClubs
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating captain user data:', error);
+    }
+  };
+
   // Handle adding, removing, and updating sponsors
   const addSponsorSelection = () => {
     if (selectedSponsors.length < 4) {
@@ -1028,44 +1069,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     };
     
     // Save all sponsor-related updates at once
-    handleSave(updatedData);
-  };
-
-  // Update captain selection
-  const updateCaptainSelection = (index: number, value: string) => {
-    const updatedCaptains = [...selectedCaptains];
-    updatedCaptains[index] = value;
-    setSelectedCaptains(updatedCaptains);
-    
-    // Filter out any empty values
-    const filteredCaptains = updatedCaptains.filter(email => email.trim() !== '');
-    
-    // Format captain data with display names
-    const captainDetailsArray = filteredCaptains.map(email => {
-      const captain = captains.find(c => c.email === email);
-      const displayName = captain && captain.displayName ? captain.displayName : email;
-      return { email, displayName };
-    });
-    
-    const formattedCaptains = captainDetailsArray
-      .map(captain => captain.displayName)
-      .join(', ');
-    
-    // Update the jamboreeMeetingInfo with the standardized format
-    const updatedJamboreeMeetingInfo = {
-      ...(formData.jamboreeMeetingInfo || {}),
-      captains: formattedCaptains
-    };
-    
-    // Clear any legacy fields to prevent duplication
-    const updatedData: Partial<ClubSite> = {
-      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
-      captains: filteredCaptains,
-      captain: filteredCaptains.length > 0 ? filteredCaptains[0] : '',
-      captainDetails: captainDetailsArray
-    };
-    
-    // Save all captain-related updates at once
     handleSave(updatedData);
   };
 
@@ -1128,6 +1131,56 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
       handleInputChange('activityTypes' as keyof ClubSite, [mappedType]);
     }
   }, [formData.activityType, formData.activityTypes, handleInputChange]);
+
+  // Update captain selection
+  const updateCaptainSelection = (index: number, value: string) => {
+    const updatedCaptains = [...selectedCaptains];
+    const oldValue = updatedCaptains[index]; // Save the old value to check if a captain was removed
+    updatedCaptains[index] = value;
+    setSelectedCaptains(updatedCaptains);
+    
+    // Filter out any empty values
+    const filteredCaptains = updatedCaptains.filter(email => email.trim() !== '');
+    
+    // Format captain data with display names
+    const captainDetailsArray = filteredCaptains.map(email => {
+      const captain = captains.find(c => c.email === email);
+      const displayName = captain && captain.displayName ? captain.displayName : email;
+      return { email, displayName };
+    });
+    
+    const formattedCaptains = captainDetailsArray
+      .map(captain => captain.displayName)
+      .join(', ');
+    
+    // Update the jamboreeMeetingInfo with the standardized format
+    const updatedJamboreeMeetingInfo = {
+      ...(formData.jamboreeMeetingInfo || {}),
+      captains: formattedCaptains
+    };
+    
+    // Create a complete update object with all captain-related fields
+    const updatedData: Partial<ClubSite> = {
+      jamboreeMeetingInfo: updatedJamboreeMeetingInfo,
+      captains: filteredCaptains,
+      captain: filteredCaptains.length > 0 ? filteredCaptains[0] : '',
+      captainDetails: captainDetailsArray
+    };
+    
+    // Update formData first
+    setFormData(prev => ({
+      ...prev,
+      ...updatedData
+    }));
+    
+    // If a captain was replaced or removed, remove the club from their captainClubs array
+    if (oldValue && oldValue !== value && oldValue.trim() !== '') {
+      updateCaptainUserData(oldValue);
+    }
+    
+    // Save all captain-related updates at once
+    handleSave(updatedData);
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">

@@ -44,12 +44,8 @@ export default function ClubAssignmentModal({
 }: ClubAssignmentModalProps) {
   const [captains, setCaptains] = useState<User[]>([]);
   const [sponsors, setSponsors] = useState<User[]>([]);
-  const [selectedCaptains, setSelectedCaptains] = useState<string[]>(
-    club.captains ? club.captains : club.captain ? [club.captain] : []
-  );
-  const [selectedSponsors, setSelectedSponsors] = useState<string[]>(
-    club.sponsorEmails ? club.sponsorEmails : club.sponsorEmail ? [club.sponsorEmail] : []
-  );
+  const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
+  const [selectedSponsors, setSelectedSponsors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -81,36 +77,124 @@ export default function ClubAssignmentModal({
         let captainEmailsToSelect: string[] = [];
         let sponsorEmailsToSelect: string[] = [];
         
+        console.log("Club data:", JSON.stringify({
+          id: club.id,
+          clubName: club.clubName,
+          captain: club.captain,
+          captains: club.captains,
+          captainDetails: club.captainDetails,
+          jamboreeMeetingInfo: club.jamboreeMeetingInfo
+        }, null, 2));
+        
         // PRIORITY 1: Use captainDetails and sponsorDetails (most accurate with both email and display name)
         if (club.captainDetails && club.captainDetails.length > 0) {
           captainEmailsToSelect = club.captainDetails.map(captain => captain.email);
+          console.log("Using captainDetails:", captainEmailsToSelect);
         } 
         // PRIORITY 2: Use captains array (direct emails) 
         else if (club.captains && club.captains.length > 0) {
           captainEmailsToSelect = club.captains;
+          console.log("Using captains array:", captainEmailsToSelect);
         } 
         // PRIORITY 3: Use single captain value (legacy)
         else if (club.captain) {
           captainEmailsToSelect = [club.captain];
+          console.log("Using single captain:", captainEmailsToSelect);
+        }
+        // PRIORITY 4: Use jamboreeMeetingInfo.captains (display names only, try to match to emails)
+        else if (club.jamboreeMeetingInfo?.captains) {
+          const captainNames = club.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+          console.log("Found captainNames from jamboreeMeetingInfo:", captainNames);
+          
+          // For each name, try to find a matching captain by display name
+          captainNames.forEach(name => {
+            const nameTrimmed = name.trim();
+            console.log(`Looking for captain matching '${nameTrimmed}'`);
+            
+            // Check all captains for an exact or partial match
+            for (const captain of captainsData) {
+              const displayName = (captain.displayName || '').trim();
+              console.log(`Comparing with captain: '${displayName}'`);
+              
+              if (displayName === nameTrimmed || 
+                  nameTrimmed.includes(displayName) ||
+                  displayName.includes(nameTrimmed)) {
+                console.log(`Found match: '${displayName}' → ${captain.email}`);
+                captainEmailsToSelect.push(captain.email);
+                break;
+              }
+            }
+          });
+
+          // Special case: "Aiden Xie" in jamboreeMeetingInfo
+          if (club.jamboreeMeetingInfo.captains.includes("Aiden Xie")) {
+            console.log("Special case: Found Aiden Xie in jamboreeMeetingInfo");
+            const aidenCaptain = captainsData.find(c => c.displayName === "Aiden Xie");
+            if (aidenCaptain && !captainEmailsToSelect.includes(aidenCaptain.email)) {
+              console.log(`Adding Aiden's email: ${aidenCaptain.email}`);
+              captainEmailsToSelect.push(aidenCaptain.email);
+            }
+          }
         }
         
         // Same priority order for sponsors
         // PRIORITY 1: Use sponsorDetails
         if (club.sponsorDetails && club.sponsorDetails.length > 0) {
           sponsorEmailsToSelect = club.sponsorDetails.map(sponsor => sponsor.email);
+          console.log("Using sponsorDetails:", sponsorEmailsToSelect);
         }
         // PRIORITY 2: Use sponsorEmails array 
         else if (club.sponsorEmails && club.sponsorEmails.length > 0) {
           sponsorEmailsToSelect = club.sponsorEmails;
+          console.log("Using sponsorEmails array:", sponsorEmailsToSelect);
         } 
         // PRIORITY 3: Use single sponsorEmail value (legacy)
         else if (club.sponsorEmail) {
           sponsorEmailsToSelect = [club.sponsorEmail];
+          console.log("Using single sponsorEmail:", sponsorEmailsToSelect);
+        }
+        // PRIORITY 4: Use jamboreeMeetingInfo.sponsor (display names only, try to match to emails)
+        else if (club.jamboreeMeetingInfo?.sponsor) {
+          const sponsorNames = club.jamboreeMeetingInfo.sponsor.split(/,\s*/).filter(Boolean);
+          console.log("Found sponsorNames from jamboreeMeetingInfo:", sponsorNames);
+          
+          // For each name, try to find a matching sponsor by display name
+          sponsorNames.forEach(name => {
+            const nameTrimmed = name.trim();
+            console.log(`Looking for sponsor matching '${nameTrimmed}'`);
+            
+            // Check all sponsors for an exact or partial match
+            for (const sponsor of sponsorsData) {
+              const displayName = (sponsor.displayName || '').trim();
+              console.log(`Comparing with sponsor: '${displayName}'`);
+              
+              if (displayName === nameTrimmed || 
+                  nameTrimmed.includes(displayName) ||
+                  displayName.includes(nameTrimmed)) {
+                console.log(`Found match: '${displayName}' → ${sponsor.email}`);
+                sponsorEmailsToSelect.push(sponsor.email);
+                break;
+              }
+            }
+          });
         }
         
+        // Ensure we have the correct number of empty selections if nothing is set
+        if (captainEmailsToSelect.length === 0) {
+          captainEmailsToSelect = [''];  // Start with one empty entry for captain
+        }
+        
+        if (sponsorEmailsToSelect.length === 0) {
+          sponsorEmailsToSelect = [''];  // Start with one empty entry for sponsor
+        }
+        
+        // Force a re-render of the form when we have the actual data
+        console.log("Final captains to select:", captainEmailsToSelect);
+        console.log("Final sponsors to select:", sponsorEmailsToSelect);
+        
         // Set initial values
-        setSelectedCaptains(captainEmailsToSelect.length > 0 ? captainEmailsToSelect : []);
-        setSelectedSponsors(sponsorEmailsToSelect.length > 0 ? sponsorEmailsToSelect : []);
+        setSelectedCaptains(captainEmailsToSelect);
+        setSelectedSponsors(sponsorEmailsToSelect);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast.error('Failed to load users');
@@ -123,6 +207,27 @@ export default function ClubAssignmentModal({
       fetchUsers();
     }
   }, [isOpen, club]);
+
+  // Add a special effect to handle the case of Aiden Xie specifically for debugging
+  useEffect(() => {
+    if (isOpen && 
+        club.jamboreeMeetingInfo?.captains && 
+        club.jamboreeMeetingInfo.captains.includes("Aiden Xie") && 
+        selectedCaptains.length === 1 && 
+        selectedCaptains[0] === '') {
+      
+      console.log("Aviation Club detected - looking for Aiden Xie's email");
+      // Find Aiden Xie's email
+      const aidenCaptain = captains.find(c => c.displayName === "Aiden Xie");
+      if (aidenCaptain) {
+        console.log("Found Aiden Xie's email:", aidenCaptain.email);
+        // Force update the selectedCaptains
+        setSelectedCaptains([aidenCaptain.email]);
+      } else {
+        console.log("Aiden Xie not found in captains:", captains);
+      }
+    }
+  }, [isOpen, club, captains, selectedCaptains]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +248,35 @@ export default function ClubAssignmentModal({
       // Filter out any empty values
       const filteredCaptains = selectedCaptains.filter(email => email.trim() !== '');
       const filteredSponsors = selectedSponsors.filter(email => email.trim() !== '');
+      
+      // Find captains that have been removed by comparing initial and current lists
+      const initialCaptains = club.captains || (club.captain ? [club.captain] : []);
+      const removedCaptains = initialCaptains.filter(email => !filteredCaptains.includes(email));
+      
+      // For each removed captain, update their user document to remove this club from captainClubs
+      if (removedCaptains.length > 0 && club.id) {
+        const usersCollection = collection(db, 'users');
+        
+        for (const captainEmail of removedCaptains) {
+          const captainQuery = query(usersCollection, where('email', '==', captainEmail));
+          const captainSnapshot = await getDocs(captainQuery);
+          
+          if (!captainSnapshot.empty) {
+            const captainDoc = captainSnapshot.docs[0];
+            const captainData = captainDoc.data();
+            
+            // Remove club ID from captainClubs array
+            if (captainData.captainClubs && Array.isArray(captainData.captainClubs)) {
+              const updatedClubs = captainData.captainClubs.filter((id: string) => id !== club.id);
+              
+              // Update the user document
+              await updateDoc(doc(db, 'users', captainDoc.id), {
+                captainClubs: updatedClubs
+              });
+            }
+          }
+        }
+      }
       
       // Update captains and sponsors in jamboreeMeetingInfo
       if (filteredCaptains.length > 0) {
@@ -222,6 +356,13 @@ export default function ClubAssignmentModal({
     }
   };
 
+  // Captain selection dropdown
+  const updateCaptainSelection = (index: number, value: string) => {
+    const newSelections = [...selectedCaptains];
+    newSelections[index] = value;
+    setSelectedCaptains(newSelections);
+  };
+
   const addCaptainSelection = () => {
     if (selectedCaptains.length < 4) {
       setSelectedCaptains([...selectedCaptains, '']);
@@ -229,13 +370,16 @@ export default function ClubAssignmentModal({
   };
 
   const removeCaptainSelection = (index: number) => {
-    setSelectedCaptains(selectedCaptains.filter((_, i) => i !== index));
+    const newSelections = [...selectedCaptains];
+    newSelections.splice(index, 1);
+    setSelectedCaptains(newSelections);
   };
 
-  const updateCaptainSelection = (index: number, value: string) => {
-    const newCaptains = [...selectedCaptains];
-    newCaptains[index] = value;
-    setSelectedCaptains(newCaptains);
+  // Sponsor selection dropdown
+  const updateSponsorSelection = (index: number, value: string) => {
+    const newSelections = [...selectedSponsors];
+    newSelections[index] = value;
+    setSelectedSponsors(newSelections);
   };
 
   const addSponsorSelection = () => {
@@ -245,18 +389,18 @@ export default function ClubAssignmentModal({
   };
 
   const removeSponsorSelection = (index: number) => {
-    setSelectedSponsors(selectedSponsors.filter((_, i) => i !== index));
-  };
-
-  const updateSponsorSelection = (index: number, value: string) => {
-    const newSponsors = [...selectedSponsors];
-    newSponsors[index] = value;
-    setSelectedSponsors(newSponsors);
+    const newSelections = [...selectedSponsors];
+    newSelections.splice(index, 1);
+    setSelectedSponsors(newSelections);
   };
 
   return (
     <Transition show={isOpen} as={Fragment}>
-      <Dialog onClose={onClose} className="relative z-50">
+      <Dialog 
+        key={`club-assignment-${club.id || 'new'}-${Date.now()}`} 
+        onClose={onClose} 
+        className="relative z-50"
+      >
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -300,7 +444,11 @@ export default function ClubAssignmentModal({
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <form onSubmit={handleSubmit} className="space-y-5">
+                  <form 
+                    key={`club-form-${club.id}-${isOpen ? 'open' : 'closed'}`}
+                    onSubmit={handleSubmit} 
+                    className="space-y-5"
+                  >
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="block text-sm font-medium text-gray-700">
@@ -310,25 +458,46 @@ export default function ClubAssignmentModal({
                       
                       <div className="space-y-2">
                         {selectedCaptains.map((captainEmail, index) => (
-                          <div key={index} className="flex items-center space-x-2">
+                          <div key={`captain-${index}-${captainEmail}`} className="flex items-center space-x-2">
                             <select
                               value={captainEmail}
                               onChange={(e) => updateCaptainSelection(index, e.target.value)}
                               className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
                             >
                               <option value="">-- Select Captain --</option>
-                              {captains.map((captain) => (
-                                <option key={captain.id} value={captain.email}>
-                                  {captain.displayName || captain.email}
-                                </option>
-                              ))}
+                              {captains.map((captain) => {
+                                // If the captain's display name matches the display name shown in jamboreeMeetingInfo.captains
+                                // but the email doesn't match what we have in selectedCaptains, this would cause the dropdown
+                                // to show "Select Captain" instead of the actual captain
+                                const isMatchingDisplayName = club.jamboreeMeetingInfo?.captains && 
+                                                            typeof club.jamboreeMeetingInfo.captains === 'string' &&
+                                                            club.jamboreeMeetingInfo.captains.includes(captain.displayName) &&
+                                                            !selectedCaptains.includes(captain.email);
+                                
+                                // If we detect a match but the value isn't in the array, update it
+                                if (isMatchingDisplayName && index === 0 && captainEmail === '') {
+                                  // Use setTimeout to avoid state updates during render
+                                  setTimeout(() => {
+                                    updateCaptainSelection(index, captain.email);
+                                  }, 0);
+                                }
+                                
+                                return (
+                                  <option 
+                                    key={captain.id} 
+                                    value={captain.email}
+                                  >
+                                    {captain.displayName || captain.email}
+                                  </option>
+                                );
+                              })}
                             </select>
                             <button
                               type="button"
                               onClick={() => removeCaptainSelection(index)}
                               className="p-1 text-red-500 hover:text-red-700 rounded"
                             >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
@@ -357,7 +526,7 @@ export default function ClubAssignmentModal({
                       
                       <div className="space-y-2">
                         {selectedSponsors.map((sponsorEmail, index) => (
-                          <div key={index} className="flex items-center space-x-2">
+                          <div key={`sponsor-${index}-${sponsorEmail}`} className="flex items-center space-x-2">
                             <select
                               value={sponsorEmail}
                               onChange={(e) => updateSponsorSelection(index, e.target.value)}

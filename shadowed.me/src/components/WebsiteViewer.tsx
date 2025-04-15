@@ -65,14 +65,16 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
     // Check if the user is a captain assigned to this club
     if (userRole === 'captain') {
+      const userEmail = user.email;
+      
       // If club has captains array, check if user's email is in it
-      if (website.captains?.includes(user.email!)) {
+      if (Array.isArray(website.captains) && website.captains.includes(userEmail!)) {
         setCanEdit(true);
         return;
       }
 
       // If club has captain string, check if it matches user's email
-      if (website.captain === user.email) {
+      if (website.captain === userEmail) {
         setCanEdit(true);
         return;
       }
@@ -83,8 +85,10 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         return;
       }
 
-      // If jamboreeMeetingInfo has captains, check if user's email is in it
-      if (website.jamboreeMeetingInfo?.captains?.includes(user.email!)) {
+      // Check if user's email is mentioned in jamboreeMeetingInfo.captains string
+      if (website.jamboreeMeetingInfo?.captains && 
+          typeof website.jamboreeMeetingInfo.captains === 'string' && 
+          website.jamboreeMeetingInfo.captains.includes(userEmail!)) {
         setCanEdit(true);
         return;
       }
@@ -92,20 +96,24 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
     // Sponsors can edit clubs assigned to them
     if (userRole === 'sponsor') {
+      const userEmail = user.email;
+      
       // Check if user's email is in sponsorEmails array
-      if (website.sponsorEmails?.includes(user.email!)) {
+      if (Array.isArray(website.sponsorEmails) && website.sponsorEmails.includes(userEmail!)) {
         setCanEdit(true);
         return;
       }
 
       // Check if user's email matches sponsorEmail
-      if (website.sponsorEmail === user.email) {
+      if (website.sponsorEmail === userEmail) {
         setCanEdit(true);
         return;
       }
 
-      // Check jamboreeMeetingInfo for sponsor email
-      if (website.jamboreeMeetingInfo?.sponsor?.includes(user.email!)) {
+      // Check if user's email is mentioned in jamboreeMeetingInfo.sponsor string
+      if (website.jamboreeMeetingInfo?.sponsor && 
+          typeof website.jamboreeMeetingInfo.sponsor === 'string' && 
+          website.jamboreeMeetingInfo.sponsor.includes(userEmail!)) {
         setCanEdit(true);
         return;
       }
