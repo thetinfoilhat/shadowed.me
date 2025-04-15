@@ -71,7 +71,7 @@ export default function Home() {
                             <span className="text-xl font-bold">17</span>
                           </div>
                           <div>
-                            <div className="text-[#001440] font-medium">Physics Club</div>
+                            <div className="text-[#001440] font-medium">DECA</div>
                             <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
                           </div>
                         </div>
@@ -85,7 +85,7 @@ export default function Home() {
                             <span className="text-xl font-bold">23</span>
                           </div>
                           <div>
-                            <div className="text-[#001440] font-medium">HOSA Competition</div>
+                            <div className="text-[#001440] font-medium">Investment Club</div>
                             <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
                           </div>
                         </div>

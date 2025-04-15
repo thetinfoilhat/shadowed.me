@@ -1,192 +1,319 @@
 'use client';
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 export default function About() {
-  // Set initial state based on sessionStorage (default to true if can't access sessionStorage)
-  const [showModal, setShowModal] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-
-  // Check when user scrolls to the bottom of the modal
-  const handleScroll = () => {
-    if (contentRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
-      if (scrollTop + clientHeight >= scrollHeight - 5) {
-        setHasScrolledToBottom(true);
-      }
-    }
-  };
-
-  // Handle accepting the privacy policy
-  const handleAcceptPolicy = () => {
-    setShowModal(false);
-    try {
-      // Save to sessionStorage that the user has seen the policy
-      sessionStorage.setItem('policyAccepted', 'true');
-    } catch (error) {
-      console.error('Failed to save to sessionStorage:', error);
-    }
-  };
-
-  // Check if user has already seen the policy in this session
-  useEffect(() => {
-    try {
-      const hasAcceptedPolicy = sessionStorage.getItem('policyAccepted') === 'true';
-      setShowModal(!hasAcceptedPolicy);
-    } catch (error) {
-      // If sessionStorage is not available, default to showing the modal
-      console.error('Failed to access sessionStorage:', error);
-      setShowModal(true);
-    }
-    
-    setHasScrolledToBottom(false);
-    
-    // Reset scroll position
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
-    }
-  }, []);
 
   return (
-    <div className="pt-[100px] min-h-screen bg-gradient-to-b from-[#FAFAFA] to-white">
-      {/* Terms of Service Modal */}
-      {showModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
-          aria-modal="true"
-          role="dialog"
-          aria-labelledby="terms-modal-title"
-        >
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-xl">
-            <div className="p-6 border-b border-gray-200">
-              <h2 id="terms-modal-title" className="text-2xl font-bold text-[#180D39]">Terms of Service & Student Data Privacy Policy</h2>
-              <p className="text-gray-500 text-sm mt-1">Effective Date: March 9th, 2025 | Last Updated: March 9th, 2025</p>
-            </div>
+    <div className="min-h-screen overflow-x-hidden bg-white">
+      {/* Hero Section */}
+      <section className="relative pt-20 min-h-[70vh] overflow-hidden">
+        {/* Background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#001440] to-[#002D80]"></div>
+        
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10 pt-12 md:pt-24 lg:pt-20 pb-24 md:pb-32 lg:pb-40">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-tight mb-6">
+              About <span className="text-[#FF9913]">Shadowed.me</span>
+            </h1>
             
-            <div 
-              ref={contentRef}
-              onScroll={handleScroll}
-              className="p-6 overflow-y-auto flex-grow text-[#180D39]/80 text-sm"
-              tabIndex={0}
-              aria-label="Terms of Service content, scroll to bottom to enable accept button"
-            >
-              <h3 className="font-bold text-lg mb-2">1. Introduction</h3>
-              <p className="mb-4">
-                Welcome to Shadowed.me (&quot;Platform,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We provide a platform that connects K-12 students with school clubs, events, activities, and opportunities. This Terms of Service & Student Data Privacy Policy (&quot;Agreement&quot;) outlines how we collect, use, and protect student data in compliance with the Student Online Personal Protection Act (SOPPA) and other applicable laws.
-              </p>
-              <p className="mb-6">
-                By creating an account or using our services, students, parents, and school administrators agree to the terms outlined below. If you do not agree with these terms, please do not use our platform.
-              </p>
-
-              <h3 className="font-bold text-lg mb-2">2. Information We Collect</h3>
-              <p className="mb-4">
-                We collect and store the following personally identifiable information (PII) when students and school administrators voluntarily register on the platform:
-              </p>
-              <ul className="list-disc pl-6 mb-6">
-                <li>Student Name</li>
-                <li>Email Address</li>
-                <li>Phone Number</li>
-                <li>Grade Level</li>
-              </ul>
-
-              <h3 className="font-bold text-lg mb-2">3. How We Use Student Data</h3>
-              <p className="mb-4">
-                The data collected is used solely for educational purposes to facilitate connections between students and school-sponsored clubs, events, and activities. Specifically, we use the data to:
-              </p>
-              <ul className="list-disc pl-6 mb-6">
-                <li>Allow students to register and manage their participation in school activities.</li>
-                <li>Enable communication between students and school administrators.</li>
-                <li>Improve platform functionality and user experience.</li>
-              </ul>
-
-              <h3 className="font-bold text-lg mb-2">4. Data Protection & Security Measures</h3>
-              <p className="mb-4">
-                We implement strict security controls to safeguard student data, including:
-              </p>
-              <ul className="list-disc pl-6 mb-6">
-                <li>Access Restrictions: Only authorized personnel and school administrators can access student data.</li>
-                <li>Secure Hosting: Data is stored using Firebase and Vercel, which provide industry-standard encryption and security.</li>
-                <li>Data Minimization: We collect only the necessary information required for platform functionality.</li>
-              </ul>
-
-              <h3 className="font-bold text-lg mb-2">5. Data Sharing & Third-Party Services</h3>
-              <p className="mb-6">
-                We do not sell, rent, or share student data with third-party advertisers or unrelated entities. However, we use Firebase, Vercel, and Google Cloud for hosting and platform services. These third-party providers are required to comply with industry security standards to protect student data.
-              </p>
-
-              <h3 className="font-bold text-lg mb-2">6. Student & Parental Rights</h3>
-              <p className="mb-4">
-                Parents have the right to:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Review & Delete Data: Users can delete their account at any time, which will remove all personal information from our system.</li>
-                <li>Consent for Collection: Students must actively register on our platform before any data is collected.</li>
-              </ul>
-              <p className="mb-6">
-                If you need to access, modify, or delete student data, please contact infoshadowed@gmail.com.
-              </p>
-
-              <h3 className="font-bold text-lg mb-2">7. Data Breach Notification</h3>
-              <p className="mb-4">
-                In the event of a data breach that compromises student information, we will:
-              </p>
-              <ul className="list-disc pl-6 mb-6">
-                <li>Notify affected high school administrations within 30 days of the breach.</li>
-                <li>Provide details about the nature of the breach, what data was affected, and the steps being taken to mitigate any risks.</li>
-              </ul>
-
-              <h3 className="font-bold text-lg mb-2">8. Compliance with SOPPA & Illinois Law</h3>
-              <p className="mb-6">
-                Since Shadowed.me operates exclusively in Illinois, we comply with SOPPA (105 ILCS 85), which requires that all student data collected is used strictly for educational purposes and is never sold or shared for commercial purposes.
-              </p>
-
-              <h3 className="font-bold text-lg mb-2">9. Contact Information</h3>
-              <p className="mb-6">
-                If you have any questions about this policy or how your data is handled, please contact us at:
-                <br />Email: infoshadowed@gmail.com
-                <br />Phone: +1 (630) 765-4125
-              </p>
-
-              <p className="font-medium">
-                By continuing to use Shadowed.me, you agree to these terms and acknowledge that you have read and understood our Student Data Privacy Policy.
-              </p>
-            </div>
+            <p className="text-xl text-white/90 mt-6 mb-10 max-w-3xl mx-auto leading-relaxed">
+              Empowering students to discover their passions and create meaningful
+              connections within their school community.
+            </p>
             
-            <div className="p-6 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={handleAcceptPolicy}
-                disabled={!hasScrolledToBottom}
-                aria-disabled={!hasScrolledToBottom}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                  hasScrolledToBottom 
-                    ? 'bg-[#2A8E9E] text-white hover:bg-[#247A87]' 
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                }`}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/clubs">
+                <button className="px-6 py-3 bg-[#4A9DFF] text-white font-medium rounded-lg flex items-center justify-center hover:bg-[#2A7CD3] transition-all duration-300 hover:shadow-lg hover:shadow-[#4A9DFF]/30 transform hover:translate-y-[-2px]">
+                  Find Clubs 
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </button>
+              </Link>
+              
+              <button 
+                onClick={() => setShowContactModal(true)}
+                className="px-6 py-3 bg-white/10 border border-white text-white font-medium rounded-lg flex items-center justify-center hover:bg-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/20 transform hover:translate-y-[-2px]"
               >
-                {hasScrolledToBottom ? 'I Accept' : 'Please scroll to the bottom to accept'}
+                Contact Us
               </button>
             </div>
+          </motion.div>
+        </div>
+        
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0 translate-y-1/3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full">
+            <path fill="#ffffff" fillOpacity="1" d="M0,96L48,106.7C96,117,192,139,288,154.7C384,171,480,181,576,165.3C672,149,768,107,864,101.3C960,96,1056,128,1152,138.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+        </div>
+      </section>
+      
+      {/* Our Team Section */}
+      <section className="py-20 bg-white relative z-10">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#001440] mb-6">
+              Our Team
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Meet the students behind Shadowed.me
+            </p>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {[
+              { name: "Arnav Sharma", role: "Co-founder" },
+              { name: "Aiden Xie", role: "Co-founder" },
+              { name: "Allen Xu", role: "Co-founder" },
+              { name: "Rohan Rao", role: "Co-founder" }
+            ].map((member, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-gradient-to-br from-white to-[#F8FAFC] rounded-xl p-6 border border-[#E9EFFD] shadow-sm hover:shadow-lg transition-all duration-300 hover:border-[#4A9DFF]/30 group"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[#4A9DFF]/10 to-[#38BFA1]/10 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
+                    <span className="text-3xl font-bold text-[#001440]">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#001440] mb-1 group-hover:text-[#4A9DFF] transition-colors duration-300">
+                    {member.name}
+                  </h3>
+                  <p className="text-gray-600">{member.role}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
-      )}
-
+      </section>
+      
+      {/* Mission & Vision Section */}
+      <section className="py-20 bg-gradient-to-br from-[#F8FAFC] via-white to-[#F0F7FF] relative overflow-hidden">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#001440] mb-6">
+                Our Mission
+              </h2>
+              
+              <p className="text-lg text-[#000000] mb-6 leading-relaxed">
+                To revolutionize how students connect with school activities by providing 
+                a modern platform that makes discovering and joining clubs effortless.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#001440] mb-6">
+                Our Vision
+              </h2>
+              
+              <p className="text-lg text-[#000000] mb-6 leading-relaxed">
+                Building a vibrant ecosystem where every student can explore their interests, 
+                develop leadership skills, and contribute to their school community.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
+      {/* How We Help Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#001440] mb-6">
+              How We Help
+            </h2>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E9EFFD] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-[#4A9DFF]/50 group p-6"
+            >
+              <h3 className="text-xl font-bold text-[#001440] mb-3">Connect</h3>
+              <p className="text-gray-600">
+                Find clubs and activities that align with your interests and schedule.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E7F5FF] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-[#38BFA1]/50 group p-6"
+            >
+              <h3 className="text-xl font-bold text-[#001440] mb-3">Explore</h3>
+              <p className="text-gray-600">
+                Discover new opportunities and activities through our matching quiz.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white rounded-xl shadow-md overflow-hidden border border-[#EBE7FF] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-[#7C3AED]/50 group p-6"
+            >
+              <h3 className="text-xl font-bold text-[#001440] mb-3">Lead</h3>
+              <p className="text-gray-600">
+                Club captains and sponsors can create sites and connect with interested students.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
+      {/* FAQ Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#001440] mb-6">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Everything you need to know about Shadowed.me
+            </p>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                question: "Can I show interest in a club even if I missed the Jamboree?",
+                answer: "Yes! Just head to the &quot;Clubs&quot; page and click the &quot;I'm Interested!&quot; button. Captains and sponsors will be able to see who's interested and use it to share information about the club throughout the school year."
+              },
+              {
+                question: "What is the 25-question quiz and how does it work?",
+                answer: "Our 25-question quiz helps students—and their parents—better understand their interests and discover clubs that align with them. Students are matched based on attributes, and no personal information is collected."
+              },
+              {
+                question: "What does it mean to &quot;shadow&quot; an event?",
+                answer: "Clubs post meetings, events, and volunteer opportunities that students can attend—like 8th graders joining a freshman intro session or current students visiting a competition. It's completely free and requires no commitment."
+              },
+              {
+                question: "How do I track my volunteer hours and event attendance?",
+                answer: "In the 2025-2026 school year, the student dashboard automatically logs hours and events for any club you attend through the platform. Additionally, club captains and sponsors will be able to verify your participation!"
+              },
+              {
+                question: "Where can I find updates from club captains and sponsors?",
+                answer: "All updates—like meeting reminders, announcements, and important dates—will appear on your dashboard if you're marked as &quot;Interested&quot; in a club."
+              },
+              {
+                question: "Can I be in more than one club at the same time?",
+                answer: "Absolutely! Most students are involved in multiple clubs, and this platform is designed to help you explore as many as you'd like."
+              }
+            ].map((faq, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E9EFFD] shadow-sm hover:shadow-md transition-all duration-300 hover:border-[#4A9DFF]/30"
+              >
+                <h3 className="text-xl font-bold text-[#001440] mb-3">{faq.question}</h3>
+                <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: faq.answer }}></p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* CTA Section */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="bg-gradient-to-br from-[#001440] via-[#0F2A80] to-[#1F49B3] rounded-3xl overflow-hidden shadow-xl"
+          >
+            <div className="relative py-16 px-6 md:px-12 lg:px-24">
+              <div className="relative z-10 max-w-3xl mx-auto text-center">
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+                  Ready to get involved?
+                </h2>
+                
+                <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+                  Join thousands of students discovering events and opportunities.
+                </p>
+                
+                <button 
+                  onClick={() => setShowContactModal(true)}
+                  className="px-10 py-4 bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] text-white text-base font-medium rounded-lg hover:from-[#38BFA1] hover:to-[#4A9DFF] transition-all duration-300 shadow-lg transform hover:scale-105 hover:shadow-xl hover:shadow-[#4A9DFF]/20"
+                >
+                  Contact Us
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+      
       {/* Contact Modal */}
       {showContactModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
           onClick={() => setShowContactModal(false)}
         >
-          <div 
-            className="bg-white rounded-2xl max-w-2xl w-full mx-4 shadow-2xl"
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            className="bg-white rounded-2xl max-w-2xl w-full mx-4 shadow-2xl overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-[#180D39]">Contact Us</h2>
+            <div className="bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] p-6 text-white flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Contact Us</h2>
               <button 
                 onClick={() => setShowContactModal(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white hover:text-white/80 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -194,203 +321,47 @@ export default function About() {
               </button>
             </div>
             
-            <div className="p-6 space-y-8">
-              {/* Dean Section */}
+            <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-[#38BFA1] mb-2">Dean of Student Activities</h3>
-                <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-xl font-semibold text-[#4A9DFF] mb-2">Dean of Student Activities</h3>
+                <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-300">
                   <p className="text-[#180D39] font-medium">Jennifer Baumgartner</p>
                   <a 
                     href="mailto:jbaumgartner@naperville203.org"
-                    className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
+                    className="text-[#4A9DFF] hover:text-[#38BFA1] transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
                     jbaumgartner@naperville203.org
                   </a>
                 </div>
               </div>
 
-              {/* Website Support Section */}
               <div>
                 <h3 className="text-xl font-semibold text-[#38BFA1] mb-2">Website Support</h3>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                  <div>
-                    <p className="text-[#180D39] font-medium">Arnav Sharma</p>
-                    <a 
-                      href="mailto:asharma1@stu.naperville203.org"
-                      className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      asharma1@stu.naperville203.org
-                    </a>
-                  </div>
-                  <div>
-                    <p className="text-[#180D39] font-medium">Aiden Xie</p>
-                    <a 
-                      href="mailto:amxie@stu.naperville203.org"
-                      className="text-[#2A8E9E] hover:text-[#38BFA1] transition-colors inline-flex items-center gap-2 mt-1"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      amxie@stu.naperville203.org
-                    </a>
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-300">
+                  <p className="text-[#180D39] font-medium">Arnav Sharma</p>
+                  <a 
+                    href="mailto:asharma1@stu.naperville203.org"
+                    className="text-[#38BFA1] hover:text-[#4A9DFF] transition-colors block mb-4"
+                  >
+                    asharma1@stu.naperville203.org
+                  </a>
+                  <p className="text-[#180D39] font-medium">Aiden Xie</p>
+                  <a 
+                    href="mailto:amxie@stu.naperville203.org"
+                    className="text-[#38BFA1] hover:text-[#4A9DFF] transition-colors"
+                  >
+                    amxie@stu.naperville203.org
+                  </a>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-              <p className="text-sm text-gray-500 text-center">
-                We typically respond within 24-48 hours during school days.
-              </p>
+            <div className="p-4 border-t border-gray-200 bg-[#F0F7FF] text-center text-sm text-[#001440]">
+              We typically respond within 24-48 hours during school days.
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
-
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-16 py-12 md:py-20">
-        <motion.div 
-          className="text-center mb-16 md:mb-24"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[#38BFA1] to-[#2A8E9E] text-transparent bg-clip-text mb-6">
-            About Shadowed.me
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-[#180D39]/70 max-w-3xl mx-auto leading-relaxed">
-            Empowering students to discover their passions and create meaningful connections 
-            within their school community.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
-          <motion.div 
-            className="bg-white rounded-2xl p-8 md:p-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="bg-gradient-to-br from-[#38BFA1]/10 to-[#2A8E9E]/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-              <span className="text-3xl">🎯</span>
-            </div>
-            <h3 className="text-2xl font-bold text-[#180D39] mb-4">Our Mission</h3>
-            <p className="text-lg text-[#180D39]/70 leading-relaxed">
-              To revolutionize how students connect with school activities by providing a modern platform 
-              that makes discovering and joining clubs effortless and engaging.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            className="bg-white rounded-2xl p-8 md:p-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
-            <div className="bg-gradient-to-br from-[#38BFA1]/10 to-[#2A8E9E]/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-              <span className="text-3xl">👁️</span>
-            </div>
-            <h3 className="text-2xl font-bold text-[#180D39] mb-4">Our Vision</h3>
-            <p className="text-lg text-[#180D39]/70 leading-relaxed">
-              Building a vibrant ecosystem where every student can explore their interests, develop leadership skills,
-              and make lasting contributions to their school community.
-            </p>
-          </motion.div>
-        </div>
-
-        <motion.div 
-          className="mb-24"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-[#180D39] mb-12 text-center">How We Help</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
-              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Discover</div>
-              <p className="text-[#180D39]/70 text-lg">Connect with clubs and activities that align perfectly with your interests and goals.</p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
-              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Engage</div>
-              <p className="text-[#180D39]/70 text-lg">Participate in meaningful activities and create lasting connections within your school.</p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border border-[#38BFA1]/10 group hover:-translate-y-1">
-              <div className="text-[#38BFA1] font-semibold text-xl mb-4 group-hover:text-[#2A8E9E] transition-colors">Grow</div>
-              <p className="text-[#180D39]/70 text-lg">Develop leadership skills and make a positive impact in your community.</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* FAQ Section */}
-        <motion.div 
-          className="mb-24"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-[#180D39] mb-12 text-center">Frequently Asked Questions</h2>
-          
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">Can I show interest in a club even if I missed the Jamboree?</h3>
-              <p className="text-[#180D39]/70">Yes! Just head to the &quot;Clubs&quot; page and click the &quot;I&apos;m Interested!&quot; button. Captains and sponsors will be able to see who&apos;s interested and use it to share information about the club throughout the school year.</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">What is the 25-question quiz and how does it work?</h3>
-              <p className="text-[#180D39]/70">Our 25-question quiz helps students—and their parents—better understand their interests and discover clubs that align with them. Students are matched based on attributes, and no personal information is collected.</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">What does it mean to &quot;shadow&quot; an event?</h3>
-              <p className="text-[#180D39]/70">Clubs post meetings, events, and volunteer opportunities that students can attend—like 8th graders joining a freshman intro session or current students visiting a competition. It&apos;s completely free and requires no commitment.</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">How do I track my volunteer hours and event attendance?</h3>
-              <p className="text-[#180D39]/70">In the 2025-2026 school year, the student dashboard automatically logs hours and events for any club you attend through the platform. Additionally, club captains and sponsors will be able to verify your participation!</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">Where can I find updates from club captains and sponsors?</h3>
-              <p className="text-[#180D39]/70">All updates—like meeting reminders, announcements, and important dates—will appear on your dashboard if you&apos;re marked as &quot;Interested&quot; in a club.</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all border border-gray-200">
-              <h3 className="text-xl font-bold text-[#180D39] mb-3">Can I be in more than one club at the same time?</h3>
-              <p className="text-[#180D39]/70">Absolutely! Most students are involved in multiple clubs, and this platform is designed to help you explore as many as you&apos;d like.</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          className="bg-gradient-to-br from-[#38BFA1] to-[#2A8E9E] rounded-3xl p-10 md:p-16 text-white"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
-            <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
-              Join our growing community of students and clubs. Whether you&apos;re looking to join a club
-              or showcase your organization, we&apos;re here to help you succeed.
-            </p>
-            <button 
-              onClick={() => setShowContactModal(true)}
-              className="bg-white text-[#38BFA1] px-8 py-4 rounded-full text-lg font-semibold hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
-            >
-            Contact Us →
-          </button>
-          </div>
-        </motion.div>
-      </div>
     </div>
   );
 } 
