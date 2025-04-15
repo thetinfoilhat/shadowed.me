@@ -16,6 +16,7 @@ export default function AuthCheck() {
   const [clubs, setClubs] = useState<ClubSite[]>([]);
   const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -202,6 +203,11 @@ export default function AuthCheck() {
     }
   };
 
+  // Filter clubs based on search query
+  const filteredClubs = clubs.filter(club => 
+    (club.clubName || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Only show the dialog when we need to set up the profile
   if (!user || !showProfileSetup) return null;
 
@@ -250,16 +256,29 @@ export default function AuthCheck() {
                   Select Clubs You Captain (up to 8)
                 </label>
                 
+                {/* Search bar for clubs */}
+                <div className="mb-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search clubs..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#38BFA1] focus:border-[#38BFA1] outline-none text-black"
+                  />
+                </div>
+                
                 {loadingClubs ? (
                   <div className="flex justify-center py-4">
                     <LoadingSpinner size="sm" />
                   </div>
                 ) : (
                   <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                    {clubs.length === 0 ? (
-                      <p className="text-center text-gray-500 py-4">No clubs found</p>
+                    {filteredClubs.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">
+                        {searchQuery ? "No matching clubs found" : "No clubs found"}
+                      </p>
                     ) : (
-                      clubs.map((club, idx) => (
+                      filteredClubs.map((club, idx) => (
                         <div key={`club-item-${club.id}-${idx}`} className="flex items-center mb-2">
                           <input
                             type="checkbox"
