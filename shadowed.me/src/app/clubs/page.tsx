@@ -479,13 +479,6 @@ export default function Jamboree() {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="mt-6"
               >
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#1750AC] hover:bg-[#003396] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-colors"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Create New Website
-                </button>
               </motion.div>
             )}
             

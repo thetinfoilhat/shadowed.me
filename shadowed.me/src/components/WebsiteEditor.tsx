@@ -11,7 +11,6 @@ import { useAuth } from '@/context/AuthContext';
 
 // Icon imports
 import { 
-  XMarkIcon, 
   PhotoIcon, 
   UserIcon, 
   LinkIcon, 
@@ -21,7 +20,7 @@ import {
   DocumentIcon,
   EyeIcon,
   SwatchIcon,
-  PaintBrushIcon,
+  // PaintBrushIcon, // Removed since we commented out the design tab
   DocumentTextIcon,
   CheckIcon,
   GlobeAltIcon
@@ -1254,59 +1253,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
         </div>
       </div>
       
-      {/* Theme editor panel */}
-      {showThemeEditor && (
-        <div className="bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#180D39]">Theme Color</h2>
-              <button 
-                onClick={() => setShowThemeEditor(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div>
-              {/* Primary Color */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Theme Color
-                </label>
-                <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
-                  {COLOR_OPTIONS.map((color) => (
-                    <button
-                      key={color.id}
-                      onClick={() => handleThemeChange('primaryColor', color.id)}
-                      className={`w-full aspect-square rounded-md transition-all ${
-                        formData.theme.primaryColor === color.id 
-                          ? 'ring-2 ring-offset-2 ring-black scale-110' 
-                          : 'hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                      aria-label={`Select ${color.name} color`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Selected: {getColorById(formData.theme.primaryColor).name}
-                </p>
-                
-                <div className="mt-4 p-4 rounded-lg" style={{ 
-                  backgroundColor: getColorById(formData.theme.primaryColor).value,
-                  color: getColorById(formData.theme.primaryColor).textDark ? '#111827' : '#F8FAFC' 
-                }}>
-                  <p className="font-medium">Color Preview</p>
-                  <p className="text-sm opacity-80">This is how your color looks</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* Main content area */}
       <div className="pt-8 max-w-[1400px] mx-auto px-4 md:px-8 pb-24">
         {isNew && (
@@ -1365,6 +1311,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   Interest Form
                 </button>
                 
+                {/* 
                 <button
                   onClick={() => setActiveTab('design')}
                   className={`w-full text-left px-4 py-3 rounded-lg flex items-center mb-1 ${
@@ -1376,6 +1323,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   <PaintBrushIcon className="h-5 w-5 mr-2" />
                   Design & Links
                 </button>
+                */}
               </nav>
               
               <div className="p-4 border-t border-gray-100 mt-2">

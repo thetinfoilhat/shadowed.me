@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-b from-[#003166] to-[#040037] text-white py-12">
+    <footer className="bg-[#001440] text-white py-10">
       <div className="container mx-auto px-6 sm:px-8 lg:px-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <motion.div
@@ -74,7 +74,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-white/60 text-sm">
-          © 2024 shadowed.me. All rights reserved.
+          © {new Date().getFullYear()} shadowed.me. All rights reserved.
         </div>
       </div>
     </footer>
