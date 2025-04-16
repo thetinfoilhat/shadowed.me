@@ -119,16 +119,33 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
                 {website.category}
               </span>
             )}
-            {website.activityType && (
-              <span 
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
-                style={{ 
-                  backgroundColor: activityColor.lighter, 
-                  color: activityColor.bg
-                }}
-              >
-                {website.activityType}
-              </span>
+            {/* Display activity types from the activityTypes array */}
+            {website.activityTypes && website.activityTypes.length > 0 ? (
+              website.activityTypes.map((type, index) => (
+                <span 
+                  key={`activity-${index}`}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize" 
+                  style={{ 
+                    backgroundColor: getActivityColor(type).lighter, 
+                    color: getActivityColor(type).bg
+                  }}
+                >
+                  {type}
+                </span>
+              ))
+            ) : (
+              // Fall back to legacy activityType if no array exists
+              website.activityType && (
+                <span 
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
+                  style={{ 
+                    backgroundColor: activityColor.lighter, 
+                    color: activityColor.bg
+                  }}
+                >
+                  {website.activityType}
+                </span>
+              )
             )}
           </div>
           
@@ -274,7 +291,16 @@ export default function Jamboree() {
   }, []).sort();
 
   const activityTypes = clubWebsites.reduce((acc: string[], website) => {
-    if (website.activityType && !acc.includes(website.activityType)) {
+    // First check the new activityTypes array
+    if (website.activityTypes && website.activityTypes.length > 0) {
+      website.activityTypes.forEach(type => {
+        if (!acc.includes(type)) {
+          acc.push(type);
+        }
+      });
+    } 
+    // Fall back to legacy activityType if no array exists
+    else if (website.activityType && !acc.includes(website.activityType)) {
       acc.push(website.activityType);
     }
     return acc;
@@ -296,7 +322,11 @@ export default function Jamboree() {
     const matchesCategory = !selectedCategory || website.category === selectedCategory;
     
     // Filter by selected activity type
-    const matchesActivityType = !selectedActivityType || website.activityType === selectedActivityType;
+    const matchesActivityType = !selectedActivityType || 
+      // Check in the new activityTypes array
+      (website.activityTypes && website.activityTypes.includes(selectedActivityType)) ||
+      // Fall back to the legacy field
+      (website.activityType === selectedActivityType);
     
     return matchesSearch && matchesCategory && matchesActivityType;
   });

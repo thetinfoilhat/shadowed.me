@@ -1490,6 +1490,12 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                 const isChecked = e.target.checked;
                                 const currentTypes = formData.activityTypes || [];
                                 
+                                // If trying to add more than 3 activity types, prevent it
+                                if (isChecked && currentTypes.length >= 3) {
+                                  toast.error('Maximum 3 activity types allowed');
+                                  return;
+                                }
+                                
                                 const updatedTypes = isChecked
                                   ? [...currentTypes, type]
                                   : currentTypes.filter((t: string) => t !== type);
@@ -1497,6 +1503,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                                 handleInputChange('activityTypes' as keyof ClubSite, updatedTypes);
                               }}
                               className="h-4 w-4 text-[#38BFA1] border-gray-300 rounded focus:ring-[#38BFA1]"
+                              disabled={!(formData.activityTypes?.includes(type) || false) && (formData.activityTypes?.length ?? 0) >= 3}
                             />
                             <label htmlFor={`activity-${type}`} className="ml-2 block text-sm text-black capitalize">
                               {type}
@@ -1504,7 +1511,10 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Select all activity types that apply to your club</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select up to 3 activity types that apply to your club 
+                        {(formData.activityTypes?.length ?? 0) > 0 ? ` (${formData.activityTypes?.length ?? 0}/3 selected)` : ''}
+                      </p>
                     </div>
                   </div>
                   
