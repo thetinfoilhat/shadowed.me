@@ -510,11 +510,11 @@ export default function Header() {
             <ul className="px-6 py-4 space-y-4">
               <li>
                 <Link 
-                  href="/jamboree"
+                  href="/clubs"
                   className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
                   onClick={() => setIsOpen(false)}
                 >
-                  Jamboree
+                  Clubs
                 </Link>
               </li>
               {/* <li>
