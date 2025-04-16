@@ -35,12 +35,14 @@ export default function AuthCheck() {
           } else {
             // User needs to complete profile setup
             setName(userData.displayName || user.displayName || '');
-            setEmail(userData.email || user.email || '');
+            // Always use Google account email
+            setEmail(user.email || '');
             setShowProfileSetup(true);
           }
         } else {
           // New user, show profile setup
           setName(user.displayName || '');
+          // Always use Google account email
           setEmail(user.email || '');
           setShowProfileSetup(true);
         }
@@ -91,10 +93,10 @@ export default function AuthCheck() {
           ? userDoc.data().role 
           : 'student'; // Default to student if no clubs selected and no previous role
       
-      // Update user data
+      // Update user data - always use user.email from auth
       await setDoc(doc(db, 'users', user.uid), {
         displayName: name,
-        email: email,
+        email: user.email, // Use the email from Google account directly
         role: role,
         createdAt: new Date(),
         photoURL: user.photoURL,
@@ -245,10 +247,10 @@ export default function AuthCheck() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#38BFA1] focus:border-[#38BFA1] outline-none text-black"
+                  readOnly
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                 />
+                <p className="mt-1 text-xs text-gray-500">Email is linked to your Google account and cannot be changed</p>
               </div>
 
               <div>
