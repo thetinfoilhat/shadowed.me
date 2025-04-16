@@ -36,7 +36,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [interestFormData, setInterestFormData] = useState({
     name: '',
-    email: ''
+    email: user?.email || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -234,7 +234,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
       toast.success('Thank you for your interest!');
       setShowInterestForm(false);
-      setInterestFormData({ name: '', email: '' });
+      setInterestFormData({ name: '', email: user?.email || '' });
     } catch (error) {
       console.error('Error submitting interest form:', error);
       toast.error('Failed to submit interest form. Please try again.');
@@ -242,6 +242,16 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
       setIsSubmitting(false);
     }
   };
+
+  // Update the email field whenever the user changes
+  useEffect(() => {
+    if (user?.email) {
+      setInterestFormData(prev => ({
+        ...prev,
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
 
   return (
     <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
@@ -786,15 +796,25 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Your Email
                   </label>
-                  <input
-                    type="email"
-                    id="email"
-                    required
-                    value={interestFormData.email}
-                    onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter your email"
-                  />
+                  {user?.email ? (
+                    <input
+                      type="email"
+                      id="email"
+                      value={user.email}
+                      className="w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-50 text-gray-600 cursor-not-allowed"
+                      readOnly
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      id="email"
+                      required
+                      value={interestFormData.email}
+                      onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                      placeholder="Enter your email"
+                    />
+                  )}
                 </div>
 
                 <button
