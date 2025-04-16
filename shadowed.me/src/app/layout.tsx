@@ -22,7 +22,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Shadowed.me - Connect & Grow",
+  title: "Shadowed.me",
   description: "Connecting students to opportunities through clubs, volunteering, and career shadowing",
 };
 
