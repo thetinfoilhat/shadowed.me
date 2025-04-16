@@ -36,7 +36,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [interestFormData, setInterestFormData] = useState({
     name: '',
-    email: user?.email || ''
+    email: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -234,7 +234,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
       toast.success('Thank you for your interest!');
       setShowInterestForm(false);
-      setInterestFormData({ name: '', email: user?.email || '' });
+      setInterestFormData({ name: '', email: '' });
     } catch (error) {
       console.error('Error submitting interest form:', error);
       toast.error('Failed to submit interest form. Please try again.');
@@ -242,16 +242,6 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
       setIsSubmitting(false);
     }
   };
-
-  // Update the email field whenever the user changes
-  useEffect(() => {
-    if (user?.email) {
-      setInterestFormData(prev => ({
-        ...prev,
-        email: user.email || ''
-      }));
-    }
-  }, [user]);
 
   return (
     <div className={`pt-[80px] min-h-screen bg-[#FAFAFA] ${fontClass}`} style={{ color: textColor }}>
@@ -311,38 +301,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   </span>
                 )}
                 {website.activityTypes?.map((type: string, idx: number) => (
-                  <span key={`activity-${idx}`} className="bg-white/20 text-white px-3 py-1 rounded-full text-sm capitalize flex items-center">
-                    {type === 'competitive' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M6 3.75A2.75 2.75 0 018.75 1h2.5A2.75 2.75 0 0114 3.75v.443c.572.055 1.14.122 1.706.2C17.053 4.582 18 5.75 18 7.07v3.469c0 1.126-.694 2.191-1.83 2.54-1.952.599-4.024.921-6.17.921s-4.219-.322-6.17-.921C2.694 12.73 2 11.665 2 10.539V7.07c0-1.321.947-2.489 2.294-2.676A41.047 41.047 0 016 4.193V3.75zm6.5 0v.325a41.622 41.622 0 00-5 0V3.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25zM10 10a1 1 0 00-1 1v.01a1 1 0 001 1h.01a1 1 0 001-1V11a1 1 0 00-1-1H10z" clipRule="evenodd" />
-                        <path d="M3 15.055v-.684c.126.053.255.1.39.142 2.092.642 4.313.987 6.61.987 2.298 0 4.518-.345 6.61-.987.135-.041.264-.089.39-.142v.684c0 1.347-.985 2.53-2.363 2.686a41.454 41.454 0 01-9.274 0C3.985 17.585 3 16.402 3 15.055z" />
-                      </svg>
-                    )}
-                    {type === 'team-based' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                      </svg>
-                    )}
-                    {type === 'performance' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {type === 'public speaking' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {type === 'volunteering' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {type === 'sport' && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                      </svg>
-                    )}
+                  <span key={`activity-${idx}`} className="bg-white/20 text-white px-3 py-1 rounded-full text-sm capitalize">
                     {type}
                   </span>
                 ))}
@@ -524,57 +483,10 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               {website.meetingInfo && typeof website.meetingInfo === 'string' && (
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Meeting Details</h3>
-                  
-                  {/* More compact display for meeting info */}
                   <div className="text-gray-800">
-                    {website.meetingInfo.includes('|') ? (
-                      <div>
-                        {/* Frequency badge and meeting count */}
-                        <div className="flex items-center mb-3">
-                          {(website.meetingInfo.toLowerCase().includes('biweekly') || 
-                            website.meetingInfo.toLowerCase().includes('bi-weekly') || 
-                            website.meetingInfo.toLowerCase().includes('bi weekly') || 
-                            website.meetingInfo.toLowerCase().includes('weekly') || 
-                            website.meetingInfo.toLowerCase().includes('monthly')) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2" 
-                              style={{ 
-                                backgroundColor: `${primaryColor}20`, 
-                                color: primaryColor 
-                              }}>
-                              {website.meetingInfo.toLowerCase().includes('biweekly') || 
-                               website.meetingInfo.toLowerCase().includes('bi-weekly') || 
-                               website.meetingInfo.toLowerCase().includes('bi weekly') 
-                                ? 'Bi-weekly'
-                                : website.meetingInfo.toLowerCase().includes('monthly')
-                                  ? 'Monthly'
-                                  : 'Weekly'}
-                            </span>
-                          )}
-                          <span className="text-sm text-gray-500">
-                            {website.meetingInfo.split('|').length} meeting time{website.meetingInfo.split('|').length > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        
-                        {/* Compact grid for meeting times */}
-                        <div className="grid grid-cols-1 gap-2">
-                          {website.meetingInfo.split('|').map((meeting, i) => (
-                            <div key={i} className="p-2 border border-gray-200 rounded bg-white flex">
-                              <span className="font-medium text-[#38BFA1] mr-2 text-sm min-w-[50px]">Day {i + 1}:</span>
-                              <span>{meeting.trim()
-                                .replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '')
-                                .trim()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      // Single meeting info display
-                      <div className="p-2 border border-gray-200 rounded bg-white">
-                        {website.meetingInfo.split('\n').map((paragraph, i) => (
-                          paragraph ? <p key={i} className="mb-1">{paragraph}</p> : <br key={i} />
-                        ))}
-                      </div>
-                    )}
+                    {website.meetingInfo.split('\n').map((paragraph, i) => (
+                      paragraph ? <p key={i} className="mb-1">{paragraph}</p> : <br key={i} />
+                    ))}
                   </div>
                 </div>
               )}
@@ -874,25 +786,15 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Your Email
                   </label>
-                  {user?.email ? (
-                    <input
-                      type="email"
-                      id="email"
-                      value={user.email}
-                      className="w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-50 text-gray-600 cursor-not-allowed"
-                      readOnly
-                    />
-                  ) : (
-                    <input
-                      type="email"
-                      id="email"
-                      required
-                      value={interestFormData.email}
-                      onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                      placeholder="Enter your email"
-                    />
-                  )}
+                  <input
+                    type="email"
+                    id="email"
+                    required
+                    value={interestFormData.email}
+                    onChange={(e) => setInterestFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                    placeholder="Enter your email"
+                  />
                 </div>
 
                 <button
