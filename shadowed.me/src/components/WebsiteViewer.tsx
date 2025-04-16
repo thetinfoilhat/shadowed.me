@@ -524,10 +524,57 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               {website.meetingInfo && typeof website.meetingInfo === 'string' && (
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Meeting Details</h3>
+                  
+                  {/* More compact display for meeting info */}
                   <div className="text-gray-800">
-                    {website.meetingInfo.split('\n').map((paragraph, i) => (
-                      paragraph ? <p key={i} className="mb-1">{paragraph}</p> : <br key={i} />
-                    ))}
+                    {website.meetingInfo.includes('|') ? (
+                      <div>
+                        {/* Frequency badge and meeting count */}
+                        <div className="flex items-center mb-3">
+                          {(website.meetingInfo.toLowerCase().includes('biweekly') || 
+                            website.meetingInfo.toLowerCase().includes('bi-weekly') || 
+                            website.meetingInfo.toLowerCase().includes('bi weekly') || 
+                            website.meetingInfo.toLowerCase().includes('weekly') || 
+                            website.meetingInfo.toLowerCase().includes('monthly')) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2" 
+                              style={{ 
+                                backgroundColor: `${primaryColor}20`, 
+                                color: primaryColor 
+                              }}>
+                              {website.meetingInfo.toLowerCase().includes('biweekly') || 
+                               website.meetingInfo.toLowerCase().includes('bi-weekly') || 
+                               website.meetingInfo.toLowerCase().includes('bi weekly') 
+                                ? 'Bi-weekly'
+                                : website.meetingInfo.toLowerCase().includes('monthly')
+                                  ? 'Monthly'
+                                  : 'Weekly'}
+                            </span>
+                          )}
+                          <span className="text-sm text-gray-500">
+                            {website.meetingInfo.split('|').length} meeting time{website.meetingInfo.split('|').length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        
+                        {/* Compact grid for meeting times */}
+                        <div className="grid grid-cols-1 gap-2">
+                          {website.meetingInfo.split('|').map((meeting, i) => (
+                            <div key={i} className="p-2 border border-gray-200 rounded bg-white flex">
+                              <span className="font-medium text-[#38BFA1] mr-2 text-sm min-w-[50px]">Day {i + 1}:</span>
+                              <span>{meeting.trim()
+                                .replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '')
+                                .trim()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      // Single meeting info display
+                      <div className="p-2 border border-gray-200 rounded bg-white">
+                        {website.meetingInfo.split('\n').map((paragraph, i) => (
+                          paragraph ? <p key={i} className="mb-1">{paragraph}</p> : <br key={i} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

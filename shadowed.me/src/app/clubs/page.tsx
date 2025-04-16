@@ -73,18 +73,41 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
     return website.meetingInfo.includes('|');
   };
 
+  // Function to get the meeting frequency
+  const getMeetingFrequency = (): string => {
+    if (!website.meetingInfo) return '';
+    
+    if (website.meetingInfo.toLowerCase().includes('biweekly') || 
+        website.meetingInfo.toLowerCase().includes('bi-weekly') || 
+        website.meetingInfo.toLowerCase().includes('bi weekly')) {
+      return 'Bi-weekly';
+    } else if (website.meetingInfo.toLowerCase().includes('monthly')) {
+      return 'Monthly';
+    } else if (website.meetingInfo.toLowerCase().includes('weekly')) {
+      return 'Weekly';
+    }
+    
+    return '';
+  };
+
   // Function to get a brief preview of meeting info
   const getMeetingPreview = (): string => {
     if (!website.meetingInfo) return 'TBD';
     
-    // If it doesn't have multiple days, show as is
+    // If it doesn't have multiple days, show as is but remove frequency tags
     if (!hasMultipleMeetingDays()) {
-      return website.meetingInfo;
+      return website.meetingInfo
+        .replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '')
+        .trim();
     }
     
-    // If it has multiple days, just show the first day
-    const firstDay = website.meetingInfo.split('|')[0].trim();
-    return `${firstDay}...`;
+    // If it has multiple days, show a clear summary
+    const dayCount = website.meetingInfo.split('|').length;
+    const firstDay = website.meetingInfo.split('|')[0]
+      .replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '')
+      .trim();
+      
+    return `${firstDay} + ${dayCount-1} more`;
   };
   
   return (
@@ -180,44 +203,66 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
                   {/* Meeting times display */}
                   {hasMultipleMeetingDays() ? (
                     <div className="relative">
-                      <button
-                        onClick={() => setShowAllMeetings(!showAllMeetings)}
-                        className="font-medium text-gray-900 flex items-center"
-                      >
-                        View All Times
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className={`h-4 w-4 ml-1 transition-transform ${showAllMeetings ? "rotate-180" : ""}`} 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+                      <div className="flex flex-col">
+                        {/* Badge showing frequency and number of meetings */}
+                        <div className="flex items-center mb-1">
+                          {getMeetingFrequency() && (
+                            <span 
+                              className="inline-flex mr-2 items-center px-1.5 py-0.5 rounded text-xs font-medium"
+                              style={{ 
+                                backgroundColor: "#38BFA1", 
+                                color: "white" 
+                              }}
+                            >
+                              {getMeetingFrequency()}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setShowAllMeetings(!showAllMeetings)}
+                            className="text-xs text-gray-600 flex items-center hover:text-[#38BFA1]"
+                          >
+                            {showAllMeetings ? 'Hide details' : 'More details'}
+                            <svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              className={`h-3 w-3 ml-1 transition-transform ${showAllMeetings ? "rotate-180" : ""}`} 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Compact preview of all meeting times */}
+                        <div className="text-sm">
+                          {website.meetingInfo?.split('|').map((meetingDay, index) => (
+                            <div key={index} className="font-medium text-gray-900">
+                              <span className="text-xs text-[#38BFA1] mr-1">Day {index + 1}:</span>
+                              {meetingDay.trim().replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '').trim()}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                       
                       {/* Dropdown */}
                       {showAllMeetings && (
-                        <div className="absolute left-0 mt-2 w-64 p-3 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                          {/* Extract frequency if it exists in the meetingInfo */}
-                          {website.meetingInfo && (website.meetingInfo.includes('weekly') || 
-                                               website.meetingInfo.includes('monthly') || 
-                                               website.meetingInfo.includes('biweekly')) && (
-                            <div className="mb-2 pb-2 border-b border-gray-100">
-                              <span className="text-sm font-medium text-gray-700">
-                                Frequency: <span className="font-bold text-[#38BFA1]">
-                                  {website.meetingInfo.includes('weekly') ? 'Weekly' : 
-                                   website.meetingInfo.includes('monthly') ? 'Monthly' : 
-                                   website.meetingInfo.includes('biweekly') ? 'Biweekly' : ''}
-                                </span>
+                        <div className="absolute left-0 md:right-0 md:left-auto mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-hidden">
+                          {/* Compact frequency header */}
+                          {getMeetingFrequency() && (
+                            <div className="bg-[#38BFA1]/10 py-2 px-3 border-b border-gray-100 flex items-center">
+                              <span className="text-xs font-medium text-[#38BFA1] rounded-full bg-[#38BFA1]/20 px-2 py-0.5">
+                                {getMeetingFrequency()}
                               </span>
                             </div>
                           )}
-                          <div className="py-1 space-y-2">
+                          
+                          {/* Compact meeting times list */}
+                          <div className="py-2 px-3">
                             {website.meetingInfo?.split('|').map((meetingDay, index) => (
-                              <div key={index} className="text-sm text-gray-800 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                                {/* Remove any frequency information from individual meeting times */}
-                                {meetingDay.trim().replace(/\s*\([^)]*\)\s*$/, '')} 
+                              <div key={index} className="text-sm text-gray-800 py-1.5 flex items-start">
+                                <span className="font-semibold mr-2 min-w-[45px] text-[#38BFA1]">Day {index + 1}:</span>
+                                <span className="break-normal">{meetingDay.trim().replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '').trim()}</span>
                               </div>
                             ))}
                           </div>
