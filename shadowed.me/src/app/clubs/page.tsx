@@ -21,12 +21,12 @@ const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: strin
   'Academic': { bg: '#D4AF37', text: '#000000', lighter: '#F5EDCF' }, // Darker gold/beige for academic
   'Language & Culture': { bg: '#E87F3A', text: '#ffffff', lighter: '#F8E2D2' }, // Softer orange for language & culture
   'Medical': { bg: '#CF5050', text: '#ffffff', lighter: '#F4DCDC' }, // Muted red for medical
+  'Sports': { bg: '#63B574', text: '#000000', lighter: '#DFF0E3' }, // Softer green for sports
   'Community Service & Leadership': { bg: '#55B2B2', text: '#000000', lighter: '#DAF0F0' }, // Softer teal for community service
   'Miscellaneous': { bg: '#7D7DA8', text: '#ffffff', lighter: '#E5E5EF' }, // Muted slate blue for miscellaneous
   // Keeping these for backward compatibility
   'Arts': { bg: '#E8667F', text: '#ffffff', lighter: '#F9DFE4' }, // Same as Music, Arts, & Performing Arts
   'Community Service': { bg: '#55B2B2', text: '#000000', lighter: '#DAF0F0' }, // Same as Community Service & Leadership
-  'Sports': { bg: '#63B574', text: '#000000', lighter: '#DFF0E3' }, // Softer green for sports
   'Technology': { bg: '#5C7CE0', text: '#ffffff', lighter: '#DEE4F8' }, // Softer bright blue for technology
   'Performing Arts': { bg: '#BC6ABC', text: '#ffffff', lighter: '#F2DEF2' } // Muted magenta for performing arts
 };

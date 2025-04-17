@@ -1,332 +1,77 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog } from '@headlessui/react';
-import LoadingSpinner from './LoadingSpinner';
-import { ClubSite } from '@/types/club';
 
 export default function AuthCheck() {
-  const { user, setUserRole, setCaptainClubs } = useAuth();
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [loadingClubs, setLoadingClubs] = useState(true);
-  const [clubs, setClubs] = useState<ClubSite[]>([]);
-  const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { user, setUserRole } = useAuth();
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchUserProfile = async () => {
+    const setupNewUser = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
+        if (!userDoc.exists()) {
+          // New user - automatically set as student
+          await setDoc(doc(db, 'users', user.uid), {
+            displayName: user.displayName || '',
+            email: user.email,
+            role: 'student',
+            createdAt: new Date(),
+            photoURL: user.photoURL
+          });
+          
+          setUserRole('student');
+          setShowInfoDialog(true);
+        } else {
           const userData = userDoc.data();
-          
-          // If name and role exist, user has completed setup
-          if (userData.displayName && userData.role) {
-            setShowProfileSetup(false);
+          if (userData.role) {
             setUserRole(userData.role);
-            setCaptainClubs(userData.captainClubs || []);
-          } else {
-            // User needs to complete profile setup
-            setName(userData.displayName || user.displayName || '');
-            // Always use Google account email
-            setEmail(user.email || '');
-            setShowProfileSetup(true);
           }
-        } else {
-          // New user, show profile setup
-          setName(user.displayName || '');
-          // Always use Google account email
-          setEmail(user.email || '');
-          setShowProfileSetup(true);
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('Error setting up new user:', error);
       }
     };
 
-    const fetchClubs = async () => {
-      try {
-        setLoadingClubs(true);
-        // Updated to use clubSites collection instead of clubs
-        const clubsSnapshot = await getDocs(collection(db, 'clubSites'));
-        const clubsData = clubsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ClubSite[];
-        
-        // Sort clubs alphabetically to ensure consistent order
-        clubsData.sort((a, b) => (a.clubName || '').localeCompare(b.clubName || ''));
-        setClubs(clubsData);
-      } catch (error) {
-        console.error('Error fetching clubs:', error);
-      } finally {
-        setLoadingClubs(false);
-      }
-    };
+    setupNewUser();
+  }, [user, setUserRole]);
 
-    fetchUserProfile();
-    fetchClubs();
-  }, [user, setUserRole, setCaptainClubs]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    
-    try {
-      setIsSubmitting(true);
-      
-      // Check if user already exists and has a role
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      
-      // Set role to captain if clubs are selected, otherwise preserve existing role
-      const role = selectedClubs.length > 0 
-        ? 'captain' 
-        : (userDoc.exists() && userDoc.data().role) 
-          ? userDoc.data().role 
-          : 'student'; // Default to student if no clubs selected and no previous role
-      
-      // Update user data - always use user.email from auth
-      await setDoc(doc(db, 'users', user.uid), {
-        displayName: name,
-        email: user.email, // Use the email from Google account directly
-        role: role,
-        createdAt: new Date(),
-        photoURL: user.photoURL,
-        captainClubs: selectedClubs
-      });
-      
-      // If captain role and clubs were selected, update them
-      if (role === 'captain' && selectedClubs.length > 0) {
-        for (const clubId of selectedClubs) {
-          const clubRef = doc(db, 'clubSites', clubId);
-          const clubDoc = await getDoc(clubRef);
-          
-          if (clubDoc.exists()) {
-            const clubData = clubDoc.data();
-            
-            // Format captain data with display name - standardized format
-            const formattedCaptain = `${name} (${email})`;
-            
-            // Get or create the jamboreeMeetingInfo object
-            const jamboreeMeetingInfo = clubData.jamboreeMeetingInfo || {};
-            
-            // Format captains as a comma-separated string with display names and emails
-            let captainsString = "";
-            
-            // If captains exist in jamboreeMeetingInfo, parse and add the new captain
-            if (jamboreeMeetingInfo.captains) {
-              const existingCaptains = jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
-              // Check if the new captain is already in the list (check for email match)
-              const alreadyExists = existingCaptains.some((captain: string) => 
-                captain.includes(`(${email})`) || captain === email
-              );
-              
-              if (!alreadyExists) {
-                existingCaptains.push(formattedCaptain);
-              }
-              captainsString = existingCaptains.join(', ');
-            } else {
-              captainsString = formattedCaptain;
-            }
-            
-            // Update the jamboreeMeetingInfo with the standardized format
-            jamboreeMeetingInfo.captains = captainsString;
-            
-            // Create arrays of captain emails for backwards compatibility
-            const emails = captainsString.split(/,\s*/)
-              .map(captain => {
-                // Extract email from "Display Name (email)" format
-                const emailMatch = captain.match(/\(([^)]+)\)/);
-                return emailMatch ? emailMatch[1] : captain;
-              });
-            
-            // Update the document with standardized captain information
-            // and remove any legacy fields to prevent duplication
-            await updateDoc(clubRef, {
-              // Include jamboreeMeetingInfo with properly formatted captains
-              jamboreeMeetingInfo: jamboreeMeetingInfo,
-              // For backwards compatibility, keep the captains array
-              captains: emails,
-              // Remove legacy fields by setting to null
-              captain: null,
-              captainsList: null,
-              captainsString: null,
-              // Update timestamp
-              updatedAt: new Date()
-            });
-          }
-        }
-        
-        // Update admin records to ensure captain assignments are tracked
-        const adminRecordRef = doc(db, 'adminRecords', 'captainAssignments');
-        const adminDoc = await getDoc(adminRecordRef);
-        
-        if (adminDoc.exists()) {
-          // Update existing record
-          await updateDoc(adminRecordRef, {
-            captainAssignments: arrayUnion({
-              captainEmail: email,
-              captainName: name,
-              clubIds: selectedClubs,
-              assignedAt: new Date()
-            })
-          });
-        } else {
-          // Create new record if it doesn't exist
-          await setDoc(adminRecordRef, {
-            captainAssignments: [{
-              captainEmail: email,
-              captainName: name,
-              clubIds: selectedClubs,
-              assignedAt: new Date()
-            }]
-          });
-        }
-      }
-      
-      setUserRole(role);
-      setCaptainClubs(selectedClubs);
-      setShowProfileSetup(false);
-      
-      // Refresh the page to update UI and fetch latest data
-      window.location.reload();
-    } catch (error) {
-      console.error('Error saving profile:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Filter clubs based on search query
-  const filteredClubs = clubs.filter(club => 
-    (club.clubName || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Only show the dialog when we need to set up the profile
-  if (!user || !showProfileSetup) return null;
+  // Only show the info dialog for new users
+  if (!user || !showInfoDialog) return null;
 
   return (
-    <Dialog open={showProfileSetup} onClose={() => {}} className="relative z-50">
+    <Dialog open={showInfoDialog} onClose={() => setShowInfoDialog(false)} className="relative z-50">
       <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-          <Dialog.Title className="text-2xl font-semibold text-black mb-6">
-            Complete Your Profile
+          <Dialog.Title className="text-2xl font-semibold text-black mb-4">
+            Welcome to Shadowed!
           </Dialog.Title>
           
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 mb-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-black mb-1">
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#38BFA1] focus:border-[#38BFA1] outline-none text-black"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-black mb-1">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-gray-500">Email is linked to your Google account and cannot be changed</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-black mb-3">
-                  Select Clubs You Captain (up to 8)
-                </label>
-                
-                {/* Search bar for clubs */}
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search clubs..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#38BFA1] focus:border-[#38BFA1] outline-none text-black"
-                  />
-                </div>
-                
-                {loadingClubs ? (
-                  <div className="flex justify-center py-4">
-                    <LoadingSpinner size="sm" />
-                  </div>
-                ) : (
-                  <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                    {filteredClubs.length === 0 ? (
-                      <p className="text-center text-gray-500 py-4">
-                        {searchQuery ? "No matching clubs found" : "No clubs found"}
-                      </p>
-                    ) : (
-                      filteredClubs.map((club, idx) => (
-                        <div key={`club-item-${club.id}-${idx}`} className="flex items-center mb-2">
-                          <input
-                            type="checkbox"
-                            id={`club-${club.id}`}
-                            checked={selectedClubs.includes(club.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                if (selectedClubs.length < 8) {
-                                  setSelectedClubs([...selectedClubs, club.id]);
-                                }
-                              } else {
-                                setSelectedClubs(selectedClubs.filter(id => id !== club.id));
-                              }
-                            }}
-                            className="h-4 w-4 text-[#38BFA1] border-gray-300 rounded focus:ring-[#38BFA1]"
-                          />
-                          <label htmlFor={`club-${club.id}`} className="ml-2 block text-sm text-black">
-                            {club.clubName}
-                          </label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-                
-                <p className="mt-2 text-xs text-black">
-                  Select the clubs you are a captain of (maximum 8). You can add more later.
-                </p>
-                {selectedClubs.length >= 8 && (
-                  <p className="mt-1 text-xs text-orange-600 font-medium">
-                    Maximum selection reached (8 clubs).
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6 py-2 bg-[#38BFA1] text-white rounded-lg shadow hover:bg-[#2DA891] transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? 'Saving...' : 'Continue'}
-              </button>
-            </div>
-          </form>
+          <div className="mb-6 text-gray-600">
+            <p className="mb-4">
+              You&apos;ve been automatically registered as a student. If you&apos;re a club captain and missed our onboarding meeting on April 16th, 2025, please email <span className="text-blue-600">infoshadowed@gmail.com</span> to get your captain access set up.
+            </p>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                setShowInfoDialog(false);
+                // Force a page reload after dialog dismissal
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+            >
+              Got it
+            </button>
+          </div>
         </Dialog.Panel>
       </div>
     </Dialog>

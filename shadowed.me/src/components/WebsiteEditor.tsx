@@ -166,13 +166,13 @@ const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: strin
   'Humanities': { bg: '#E67E22', text: '#ffffff', lighter: '#fae0cc' },
   'Medical': { bg: '#1ABC9C', text: '#ffffff', lighter: '#d0f5ef' },
   'Academic': { bg: '#F1C40F', text: '#000000', lighter: '#fef7d0' },
+  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' },
   'Miscellaneous': { bg: '#95A5A6', text: '#ffffff', lighter: '#ebeeee' },
   // Keeping these for backward compatibility
   'Arts': { bg: '#FBBC05', text: '#000000', lighter: '#fff2d0' },
   'Community Service': { bg: '#3498DB', text: '#ffffff', lighter: '#d0e8f7' },
   'Performing Arts': { bg: '#E74C3C', text: '#ffffff', lighter: '#fad6d1' },
-  'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' },
-  'Sports': { bg: '#2ECC71', text: '#ffffff', lighter: '#d5f9e0' }
+  'Technology': { bg: '#9B59B6', text: '#ffffff', lighter: '#ebdaf2' }
 };
 
 // Function to get color for category
@@ -1463,6 +1463,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                           <option value="Academic" style={{ backgroundColor: CATEGORY_COLORS['Academic'].lighter, color: CATEGORY_COLORS['Academic'].bg }}>Academic</option>
                           <option value="Language & Culture" style={{ backgroundColor: CATEGORY_COLORS['Language & Culture'].lighter, color: CATEGORY_COLORS['Language & Culture'].bg }}>Language & Culture</option>
                           <option value="Medical" style={{ backgroundColor: CATEGORY_COLORS['Medical'].lighter, color: CATEGORY_COLORS['Medical'].bg }}>Medical</option>
+                          <option value="Sports" style={{ backgroundColor: CATEGORY_COLORS['Sports'].lighter, color: CATEGORY_COLORS['Sports'].bg }}>Sports</option>
                           <option value="Community Service & Leadership" style={{ backgroundColor: CATEGORY_COLORS['Community Service & Leadership'].lighter, color: CATEGORY_COLORS['Community Service & Leadership'].bg }}>Community Service & Leadership</option>
                           <option value="Miscellaneous" style={{ backgroundColor: CATEGORY_COLORS['Miscellaneous'].lighter, color: CATEGORY_COLORS['Miscellaneous'].bg }}>Miscellaneous</option>
                         </select>
@@ -1480,7 +1481,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                         Activity Type
                       </label>
                       <div className="border border-gray-300 rounded-md p-2 max-h-40 overflow-y-auto">
-                        {['competitive', 'performance', 'public speaking', 'volunteering', 'team-based', 'sport'].map((type) => (
+                        {['competitive', 'performance', 'public speaking', 'volunteering', 'team-based'].map((type) => (
                           <div key={type} className="flex items-center mb-2 last:mb-0">
                             <input
                               id={`activity-${type}`}
