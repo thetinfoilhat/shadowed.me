@@ -43,11 +43,10 @@ const getCategoryColor = (category: string | undefined): { bg: string, text: str
 const ACTIVITY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'Competitive': { bg: '#FF5722', text: '#ffffff', lighter: '#ffdfd5' },
   'Leaders': { bg: '#795548', text: '#ffffff', lighter: '#e4d5d0' },
-  'Tryout': { bg: '#607D8B', text: '#ffffff', lighter: '#dfe5e8' },
+  'Team-based': { bg: '#607D8B', text: '#ffffff', lighter: '#dfe5e8' },
   'Public Speaking': { bg: '#009688', text: '#ffffff', lighter: '#ccece8' },
   'Performance': { bg: '#673AB7', text: '#ffffff', lighter: '#e1d8f2' },
-  'Casual': { bg: '#00BCD4', text: '#000000', lighter: '#ccf2f6' },
-  'Academic': { bg: '#FFC107', text: '#000000', lighter: '#fff2cc' }
+  'Volunteering': { bg: '#FFC107', text: '#000000', lighter: '#fff2cc' }
 };
 
 // Function to get color for activity type
@@ -56,6 +55,27 @@ const getActivityColor = (activityType: string | undefined): { bg: string, text:
     return { bg: '#4361EE', text: '#ffffff', lighter: '#d7ddfb' }; // Default
   }
   return ACTIVITY_COLORS[activityType];
+};
+
+// Function to get activity count for a specific activity type (case insensitive)
+const getActivityTypeCount = (type: string, websites: ClubSite[]): number => {
+  return websites.filter(website => {
+    // Check in the new activityTypes array (case-insensitive)
+    if (website.activityTypes && website.activityTypes.length > 0) {
+      return website.activityTypes.some(activityType => 
+        activityType.toLowerCase() === type.toLowerCase()
+      );
+    }
+    // Fall back to legacy activityType (case-insensitive)
+    return website.activityType?.toLowerCase() === type.toLowerCase();
+  }).length;
+};
+
+// Function to capitalize first letter of each word in a string
+const capitalizeWords = (str: string): string => {
+  return str.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
 };
 
 // Website Card Component
@@ -144,18 +164,22 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
             )}
             {/* Display activity types from the activityTypes array */}
             {website.activityTypes && website.activityTypes.length > 0 ? (
-              website.activityTypes.map((type, index) => (
-                <span 
-                  key={`activity-${index}`}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize" 
-                  style={{ 
-                    backgroundColor: getActivityColor(type).lighter, 
-                    color: getActivityColor(type).bg
-                  }}
-                >
-                  {type}
-                </span>
-              ))
+              website.activityTypes.map((type, index) => {
+                // Capitalize the activity type for display
+                const displayType = capitalizeWords(type);
+                return (
+                  <span 
+                    key={`activity-${index}`}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize" 
+                    style={{ 
+                      backgroundColor: getActivityColor(displayType).lighter, 
+                      color: getActivityColor(displayType).bg
+                    }}
+                  >
+                    {displayType}
+                  </span>
+                );
+              })
             ) : (
               // Fall back to legacy activityType if no array exists
               website.activityType && (
@@ -339,13 +363,17 @@ export default function Jamboree() {
     // First check the new activityTypes array
     if (website.activityTypes && website.activityTypes.length > 0) {
       website.activityTypes.forEach(type => {
-        if (!acc.includes(type)) {
-          acc.push(type);
+        // Convert to lowercase for comparison to avoid duplicates with different cases
+        const lowerType = type.toLowerCase();
+        if (!acc.some(t => t.toLowerCase() === lowerType)) {
+          // Store with first letter capitalized
+          acc.push(capitalizeWords(type));
         }
       });
     } 
     // Fall back to legacy activityType if no array exists
-    else if (website.activityType && !acc.includes(website.activityType)) {
+    else if (website.activityType && typeof website.activityType === 'string' && 
+             !acc.some(t => t.toLowerCase() === website.activityType!.toLowerCase())) {
       acc.push(website.activityType);
     }
     return acc;
@@ -356,22 +384,25 @@ export default function Jamboree() {
     // Filter by search query
     const matchesSearch = 
       website.clubName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      website.slogan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      website.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      website.members?.some(member => 
+      (website.slogan ? website.slogan.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
+      (website.description ? website.description.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
+      (website.members ? website.members.some(member => 
         member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.role.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      ) : false);
     
     // Filter by selected category
     const matchesCategory = !selectedCategory || website.category === selectedCategory;
     
-    // Filter by selected activity type
+    // Filter by selected activity type (case insensitive)
     const matchesActivityType = !selectedActivityType || 
-      // Check in the new activityTypes array
-      (website.activityTypes && website.activityTypes.includes(selectedActivityType)) ||
-      // Fall back to the legacy field
-      (website.activityType === selectedActivityType);
+      // Check in the new activityTypes array (case insensitive comparison)
+      (Array.isArray(website.activityTypes) && website.activityTypes.some(type => 
+        type.toLowerCase() === selectedActivityType.toLowerCase()
+      )) ||
+      // Fall back to the legacy field (case insensitive comparison)
+      (website.activityType !== undefined && typeof website.activityType === 'string' && 
+       website.activityType.toLowerCase() === selectedActivityType.toLowerCase());
     
     return matchesSearch && matchesCategory && matchesActivityType;
   });
@@ -617,18 +648,25 @@ export default function Jamboree() {
                             }}
                           >
                             <option value="">All</option>
-                            {activityTypes.map((type) => (
-                              <option 
-                                key={type} 
-                                value={type}
-                                style={{
-                                  backgroundColor: ACTIVITY_COLORS[type]?.lighter || '#f9fafb',
-                                  color: ACTIVITY_COLORS[type]?.bg || '#000000'
-                                }}
-                              >
-                                {type} ({clubWebsites.filter(w => w.activityType === type).length})
-                              </option>
-                            ))}
+                            {activityTypes.map((type) => {
+                              // Get capitalized activity type for display
+                              const displayType = capitalizeWords(type);
+                              // Get count of websites with this activity type
+                              const count = getActivityTypeCount(type, clubWebsites);
+                              
+                              return (
+                                <option 
+                                  key={type} 
+                                  value={type}
+                                  style={{
+                                    backgroundColor: ACTIVITY_COLORS[displayType]?.lighter || '#f9fafb',
+                                    color: ACTIVITY_COLORS[displayType]?.bg || '#000000'
+                                  }}
+                                >
+                                  {displayType} ({count})
+                                </option>
+                              );
+                            })}
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -672,7 +710,7 @@ export default function Jamboree() {
                               color: getActivityColor(selectedActivityType).bg 
                             }}
                           >
-                            {selectedActivityType}
+                            {capitalizeWords(selectedActivityType)}
                             <button 
                               onClick={() => setSelectedActivityType(null)}
                               className="ml-2 hover:opacity-80"
