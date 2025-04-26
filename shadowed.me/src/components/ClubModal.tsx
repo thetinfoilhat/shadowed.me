@@ -120,20 +120,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     e.preventDefault();
     if (!user?.email) return;
 
-    // Validate room number
-    const errors: {[key: string]: string} = {};
-    if (!formData.roomNumber.trim()) {
-      errors.roomNumber = 'Room number is required';
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
+    // No field validation required anymore
+    setValidationErrors({});
 
     try {
       setIsSubmitting(true);
-      setValidationErrors({});
       
       const contactInfoList = [...formData.contactInfoList];
       if (formData.contactInfo && !contactInfoList.includes(formData.contactInfo)) {
@@ -145,11 +136,16 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         sponsorEmailList.unshift(formData.sponsorEmail);
       }
       
+      // Make sure name has a default value
+      const clubName = formData.name.trim() || 'Unnamed Club';
+      
       const clubData = {
         ...formData,
+        name: clubName,
         contactInfoList,
         sponsorEmailList,
-        captain: isAdmin ? formData.captain : user.email, // Use selected captain if admin
+        // Captain could be empty now - use current user email as fallback in non-admin mode
+        captain: isAdmin ? formData.captain : (formData.captain || user.email),
         createdAt: new Date(),
         updatedAt: new Date(),
         created: true
@@ -161,7 +157,6 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         toast.success('Club information updated successfully');
       } else {
         // If creating a new club, first check if a club with that name already exists
-        const clubName = formData.name.trim();
         const clubNameLower = clubName.toLowerCase();
         const clubsRef = collection(db, 'clubs');
         
@@ -325,7 +320,7 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                 <div className="flex">
                   <div className="ml-3">
                     <p className="text-sm text-black">
-                      <strong>Important:</strong> Please make sure to provide the room number where your club meets. This information is required and helps students locate your club.
+                      <strong>Important:</strong> All fields are now optional. You can create club entries without captains, sponsors, or room numbers. Fill in what you have now, and you can complete the details later.
                     </p>
                   </div>
                 </div>
@@ -335,12 +330,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                 {isAdmin && (
                   <div>
                     <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                      Captain Email <span className="text-red-500">*</span>
+                      Captain Email <span className="text-gray-500">(Optional)</span>
                     </label>
                     <select
                       value={formData.captain}
                       onChange={(e) => setFormData({ ...formData, captain: e.target.value })}
-                      required
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     >
                       <option value="">Select a captain</option>
@@ -350,18 +344,20 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                         </option>
                       ))}
                     </select>
+                    <p className="text-xs text-black opacity-70 mt-1">
+                      You can create a club without assigning a captain
+                    </p>
                   </div>
                 )}
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Club Name
+                    Club Name <span className="text-gray-500">(Optional)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
                     placeholder="Club name"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
@@ -369,12 +365,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Category
+                    Category <span className="text-gray-500">(Optional)</span>
                   </label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    required
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   >
                     <option value="">Select a category</option>
@@ -413,12 +408,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Description
+                    Description <span className="text-gray-500">(Optional)</span>
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
                     rows={3}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
@@ -426,12 +420,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Mission Statement
+                    Mission Statement <span className="text-gray-500">(Optional)</span>
                   </label>
                   <textarea
                     value={formData.mission}
                     onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
-                    required
                     rows={3}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
@@ -439,131 +432,59 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Room Number <span className="text-red-500">*</span>
+                    Room Number <span className="text-gray-500">(Optional)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.roomNumber}
                     onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
-                    required
                     placeholder="e.g., Room 123"
                     className={`w-full rounded-lg border ${validationErrors.roomNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#38BFA1]`}
                   />
-                  {validationErrors.roomNumber ? (
-                    <p className="text-xs text-red-500 mt-1">
-                      {validationErrors.roomNumber}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-black opacity-70 mt-1">
-                      Please provide the room number where the club meets
-                    </p>
-                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Meeting Times
+                    Meeting Times <span className="text-gray-500">(Optional)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.meetingTimes}
                     onChange={(e) => setFormData({ ...formData, meetingTimes: e.target.value })}
-                    required
-                    placeholder="e.g., Every Monday 3:30 PM - 5:00 PM"
+                    placeholder="e.g., Mondays at 3:30 PM"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Primary Contact Information
+                    Contact Information <span className="text-gray-500">(Optional)</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.contactInfo}
-                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                    required
-                    placeholder="Email or other contact method"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-medium text-[#0A2540]">
-                      Additional Contact Information (Optional)
-                    </label>
-                  </div>
-                  
-                  {formData.contactInfoList.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {formData.contactInfoList.map((contact: string, index: number) => (
-                        <div key={index} className="flex items-center">
-                          <div className="flex-grow p-2 bg-gray-50 rounded-lg text-sm">
-                            {contact}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeContactInfo(index)}
-                            className="ml-2 text-red-500 hover:text-red-700"
-                          >
-                            <XMarkIcon className="h-5 w-5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="mt-2 flex">
+                  <div className="flex space-x-2">
                     <input
                       type="text"
                       value={newContactInfo}
                       onChange={(e) => setNewContactInfo(e.target.value)}
-                      placeholder="Add another contact method"
-                      className="flex-grow rounded-l-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
+                      placeholder="Social media, website, etc."
+                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     />
                     <button
                       type="button"
                       onClick={addContactInfo}
-                      className="rounded-r-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
+                      className="rounded-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2da88e] focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     >
                       Add
                     </button>
                   </div>
-                  <p className="text-xs text-black opacity-70 mt-1">
-                    Add secondary contact methods like Instagram, Discord, etc.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
-                    Primary Sponsor Email
-                  </label>
-                  <SponsorSelect
-                    value={formData.sponsorEmail}
-                    onChange={handleSponsorChange}
-                    required={true}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-medium text-[#0A2540]">
-                      Additional Sponsor Emails (Optional)
-                    </label>
-                  </div>
-                  
-                  {formData.sponsorEmailList.length > 0 && (
+                  {formData.contactInfoList.length > 0 && (
                     <div className="mt-2 space-y-2">
-                      {formData.sponsorEmailList.map((email: string, index: number) => (
-                        <div key={index} className="flex items-center">
-                          <div className="flex-grow p-2 bg-gray-50 rounded-lg text-sm">
-                            {email}
-                          </div>
+                      {formData.contactInfoList.map((info, index) => (
+                        <div key={index} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                          <span className="text-sm text-black">{info}</span>
                           <button
                             type="button"
-                            onClick={() => removeSponsorEmail(index)}
-                            className="ml-2 text-red-500 hover:text-red-700"
+                            onClick={() => removeContactInfo(index)}
+                            className="text-gray-400 hover:text-gray-600"
                           >
                             <XMarkIcon className="h-5 w-5" />
                           </button>
@@ -571,38 +492,57 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#0A2540] mb-2">
+                    Sponsor Email <span className="text-gray-500">(Optional)</span>
+                  </label>
+                  <SponsorSelect 
+                    value={formData.sponsorEmail}
+                    onChange={handleSponsorChange}
+                  />
                   
-                  <div className="mt-2">
-                    <SponsorSelect
+                  <div className="mt-2 flex space-x-2">
+                    <input
+                      type="email"
                       value={newSponsorEmail}
-                      onChange={setNewSponsorEmail}
-                      required={false}
+                      onChange={(e) => setNewSponsorEmail(e.target.value)}
+                      placeholder="sponsor@school.edu"
+                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-black placeholder-black placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     />
                     <button
                       type="button"
                       onClick={addSponsorEmail}
-                      className="mt-2 w-full rounded-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2DA891] transition-colors"
+                      className="rounded-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2da88e] focus:outline-none focus:ring-2 focus:ring-[#38BFA1]"
                     >
-                      Add Additional Sponsor
+                      Add
                     </button>
                   </div>
-                  <p className="text-xs text-black opacity-70 mt-1">
-                    Add emails for additional club sponsors
-                  </p>
+                  
+                  {formData.sponsorEmailList.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {formData.sponsorEmailList.map((email, index) => (
+                        <div key={index} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                          <span className="text-sm text-black">{email}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeSponsorEmail(index)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex justify-end gap-4 pt-6">
-                  <button
-                    type="button"
-                    onClick={onCloseAction}
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
+                <div className="pt-4">
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors disabled:opacity-50"
+                    className="w-full rounded-lg bg-[#38BFA1] px-4 py-2 text-white hover:bg-[#2da88e] focus:outline-none focus:ring-2 focus:ring-[#38BFA1] disabled:opacity-50"
                   >
                     {isSubmitting ? 'Saving...' : initialData ? 'Update Club' : 'Create Club'}
                   </button>
@@ -614,4 +554,4 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
       </Dialog>
     </Transition>
   );
-} 
+}

@@ -400,6 +400,17 @@ export default function AdminDashboard() {
     fetchAllClubs();
   };
 
+  // Add club related functions
+  const handleAddClub = () => {
+    setSelectedClub(null);
+    setShowClubModal(true);
+  };
+  
+  const handleSubmitClub = async () => {
+    await fetchAllClubs();
+    setShowClubModal(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -572,17 +583,14 @@ export default function AdminDashboard() {
         <div className="mt-12 bg-white rounded-xl p-8 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-black">Clubs</h2>
-           {/*  <div className="flex gap-2">
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setSelectedClub(null);
-                  setShowClubModal(true);
-                }}
+                onClick={handleAddClub}
                 className="px-4 py-2 bg-[#38BFA1] text-white rounded-md hover:bg-[#2A8E9E]"
               >
                 Add Club
               </button>
-            </div> */}
+            </div>
           </div>
           
           {loadingClubs ? (
@@ -751,7 +759,7 @@ export default function AdminDashboard() {
         <ClubModal
           isOpen={showClubModal}
           onCloseAction={() => setShowClubModal(false)}
-          onSubmitAction={fetchAllClubs}
+          onSubmitAction={handleSubmitClub}
           initialData={selectedClub as Partial<ClubListing> | null}
         />
       )}
