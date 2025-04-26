@@ -2,6 +2,32 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
+interface Submission {
+  name: string;
+  email: string;
+  timestamp: number;
+}
+
+// Utility function to get unique submissions by email, keeping the latest one
+const getUniqueSubmissions = (submissions: Submission[]): Submission[] => {
+  // Create a map to track the latest submission for each email
+  const emailMap = new Map<string, Submission>();
+  
+  // Iterate through all submissions
+  submissions.forEach(sub => {
+    const email = sub.email.toLowerCase();
+    const existingSubmission = emailMap.get(email);
+    
+    // If this email doesn't exist in the map yet, or if this submission is newer, update the map
+    if (!existingSubmission || sub.timestamp > existingSubmission.timestamp) {
+      emailMap.set(email, sub);
+    }
+  });
+  
+  // Convert the map values back to an array and sort by name
+  return Array.from(emailMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export async function POST(request: Request) {
   try {
     const { websiteId, name, email } = await request.json();
@@ -27,6 +53,18 @@ export async function POST(request: Request) {
     const websiteData = websiteDoc.data();
     const currentSubmissions = websiteData.interestForm?.submissions || [];
     
+    // Check if the email already exists in submissions
+    const emailExists = currentSubmissions.some((submission: Submission) => 
+      submission.email.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (emailExists) {
+      return NextResponse.json(
+        { error: 'You have already submitted an interest form with this email' },
+        { status: 409 }
+      );
+    }
+    
     // Add the new submission
     const newSubmission = {
       name,
@@ -34,8 +72,11 @@ export async function POST(request: Request) {
       timestamp: Date.now()
     };
 
-    // Combine current submissions with new submission and sort alphabetically by name
-    const updatedSubmissions = [...currentSubmissions, newSubmission].sort((a, b) => 
+    // First deduplicate existing submissions, then add the new one
+    const uniqueExistingSubmissions = getUniqueSubmissions(currentSubmissions);
+    
+    // Combine deduplicated submissions with new submission and sort alphabetically by name
+    const updatedSubmissions = [...uniqueExistingSubmissions, newSubmission].sort((a, b) => 
       a.name.localeCompare(b.name)
     );
 

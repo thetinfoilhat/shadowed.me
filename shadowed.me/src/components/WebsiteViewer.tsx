@@ -228,8 +228,15 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to submit interest form');
+        if (response.status === 409) {
+          toast.error('You have already submitted an interest form with this email');
+        } else {
+          toast.error(data.error || 'Failed to submit interest form');
+        }
+        throw new Error(data.error || 'Failed to submit interest form');
       }
 
       toast.success('Thank you for your interest!');
@@ -237,7 +244,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
       setInterestFormData({ name: '', email: '' });
     } catch (error) {
       console.error('Error submitting interest form:', error);
-      toast.error('Failed to submit interest form. Please try again.');
+      // Toast error is already shown in the if block above
     } finally {
       setIsSubmitting(false);
     }

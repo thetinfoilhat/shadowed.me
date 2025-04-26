@@ -183,24 +183,27 @@ const getCategoryColor = (category: string | undefined): { bg: string, text: str
   return CATEGORY_COLORS[category];
 };
 
+// Tab types for website editor
+type TabType = 'content' | 'media' | 'members' | 'design' | 'form';
+
 export default function WebsiteEditor({ website, onSave, isNew = false }: WebsiteEditorProps) {
   // State variables
   const { /* user */ } = useAuth(); // Unused for now but component needs auth context
-  const [activeTab, setActiveTab] = useState<'content' | 'media' | 'members' | 'design' | 'form'>('content');
   const [formData, setFormData] = useState<ClubSite>({ ...website });
+  const [activeTab, setActiveTab] = useState<TabType>('content');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [autosaveTimeout, setAutosaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingMemberPhoto, setUploadingMemberPhoto] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   // User state for dropdowns
   const [captains, setCaptains] = useState<{id: string, email: string, displayName: string}[]>([]);
   const [sponsors, setSponsors] = useState<{id: string, email: string, displayName: string}[]>([]);
   const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
   const [selectedSponsors, setSelectedSponsors] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_isLoadingUsers, setIsLoadingUsers] = useState(false); // Loading state for future use
-  
-  // Debounced autosave state
-  const [autosaveTimeout, setAutosaveTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Refs for scrolling to sections
   const sectionsRef = useRef<Record<string, HTMLElement | null>>({});
@@ -209,10 +212,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   /* Commented out as no longer used - dropdown functionality removed
   const [expandedSection, setExpandedSection] = useState<string | null>('banner');
   */
-  
-  // Media upload states
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const [uploadingMemberPhoto, setUploadingMemberPhoto] = useState<number | null>(null);
   
   // Theme customization state
   const [showThemeEditor, setShowThemeEditor] = useState(false);
@@ -1180,7 +1179,41 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     // Save all captain-related updates at once
     handleSave(updatedData);
   };
+  
+  // Cleanup function for side effects
+  useEffect(() => {
+    return () => {
+      // Clear any pending autosave timeouts when the component unmounts
+      if (autosaveTimeout) {
+        clearTimeout(autosaveTimeout);
+      }
+    };
+  }, [autosaveTimeout]);
 
+  // Utility function to get unique submissions by email, keeping the latest one
+  const getUniqueSubmissions = (submissions: { name: string; email: string; timestamp: number }[]): { name: string; email: string; timestamp: number }[] => {
+    if (!submissions || submissions.length === 0) {
+      return [];
+    }
+    
+    // Create a map to track the latest submission for each email
+    const emailMap = new Map<string, { name: string; email: string; timestamp: number }>();
+    
+    // Iterate through all submissions
+    submissions.forEach(sub => {
+      const email = sub.email.toLowerCase();
+      const existingSubmission = emailMap.get(email);
+      
+      // If this email doesn't exist in the map yet, or if this submission is newer, update the map
+      if (!existingSubmission || sub.timestamp > existingSubmission.timestamp) {
+        emailMap.set(email, sub);
+      }
+    });
+    
+    // Convert the map values back to an array and sort by name
+    return Array.from(emailMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  };
+  
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Top sticky navigation bar */}
@@ -2444,8 +2477,11 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                           // Add column headers
                           const headers = "Name\tEmail";
                           
+                          // Get unique submissions
+                          const uniqueSubmissions = getUniqueSubmissions(formData.interestForm!.submissions);
+                          
                           // Format the data for Excel (tab separated for columns)
-                          const formattedData = formData.interestForm!.submissions
+                          const formattedData = uniqueSubmissions
                             .map(submission => `${submission.name}\t${submission.email}`)
                             .join('\n');
                           
@@ -2471,8 +2507,11 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       </button>
                       <button
                         onClick={() => {
+                          // Get unique submissions
+                          const uniqueSubmissions = getUniqueSubmissions(formData.interestForm!.submissions);
+                          
                           // Extract and format just the emails as a comma-separated list
-                          const emails = formData.interestForm!.submissions
+                          const emails = uniqueSubmissions
                             .map(submission => submission.email)
                             .join(', ');
                           
@@ -2500,7 +2539,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                 <div className="space-y-4">
                   {formData.interestForm?.submissions && formData.interestForm.submissions.length > 0 ? (
                     <div className="border border-gray-200 rounded-lg divide-y">
-                      {formData.interestForm.submissions.map((submission, index) => (
+                      {getUniqueSubmissions(formData.interestForm.submissions).map((submission, index) => (
                         <div key={index} className="p-4 hover:bg-gray-50">
                           <div className="flex justify-between items-start">
                             <div>
