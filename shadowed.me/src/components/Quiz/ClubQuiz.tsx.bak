@@ -1444,7 +1444,7 @@ const ClubQuiz: React.FC = () => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [clubMatches, setClubMatches] = useState<ClubMatch[]>([]);
   const [isStarted, setIsStarted] = useState(false);
-  const [skipsRemaining, setSkipsRemaining] = useState(3); // Allow 3 skips instead of 20
+  const [skipsRemaining, setSkipsRemaining] = useState(20); // Allow 20 skips
   const [showResults, setShowResults] = useState(false);
 
   // Calculate progress percentage
@@ -1688,7 +1688,7 @@ const ClubQuiz: React.FC = () => {
       // Initialize with empty answers array to prevent undefined issues
       setAnswers([]);
       setClubMatches([]);
-      setSkipsRemaining(3);
+      setSkipsRemaining(20);
       setShowResults(false);
     } catch (error) {
       console.error("Error starting quiz:", error);
@@ -1938,7 +1938,10 @@ const ClubQuiz: React.FC = () => {
         // Ensure Yearbook is included
         const yearbook = clubs.find(club => club.name === "Yearbook");
         if (yearbook && !defaultMatches.some(match => match.club.name === "Yearbook")) {
-          // Add Yearbook with null category
+          // Get the category for Yearbook
+          const yearbookCategory = Object.entries(categoryMapping)
+            .find(([, clubNames]) => clubNames.includes("Yearbook"))?.[0] || null;
+            
           defaultMatches.push({
             club: yearbook,
             matchedAttributes: [],
@@ -1974,7 +1977,10 @@ const ClubQuiz: React.FC = () => {
         // Ensure Yearbook is included
         const yearbook = clubs.find(club => club.name === "Yearbook");
         if (yearbook && !defaultMatches.some(match => match.club.name === "Yearbook")) {
-          // Add Yearbook with null category
+          // Get the category for Yearbook
+          const yearbookCategory = Object.entries(categoryMapping)
+            .find(([, clubNames]) => clubNames.includes("Yearbook"))?.[0] || null;
+            
           defaultMatches.push({
             club: yearbook,
             matchedAttributes: [],
@@ -1988,8 +1994,8 @@ const ClubQuiz: React.FC = () => {
         
         setClubMatches(defaultMatches);
       } else {
-        // Get final matches, limited to top 30
-        let finalMatches = matches.slice(0, 30);
+        // Get final matches, limited to top 15
+        let finalMatches = matches.slice(0, 15);
         
         // Ensure Yearbook is in the top 7 results
         const yearbookMatch = matches.find(match => match.club.name === "Yearbook");
@@ -2006,16 +2012,19 @@ const ClubQuiz: React.FC = () => {
             // Add it at position 6 (index 5) - still in top 7 but not too obvious
             finalMatches.splice(5, 0, yearbookMatch);
             
-            // Ensure we don't exceed 30 results
-            if (finalMatches.length > 30) {
-              finalMatches = finalMatches.slice(0, 30);
+            // Ensure we don't exceed 15 results
+            if (finalMatches.length > 15) {
+              finalMatches = finalMatches.slice(0, 15);
             }
           }
         } else {
           // If Yearbook isn't in matches at all, find it and add it to position 6
           const yearbook = clubs.find(club => club.name === "Yearbook");
           if (yearbook) {
-            // Create Yearbook match with null category
+            // Get the category for Yearbook
+            const yearbookCategory = Object.entries(categoryMapping)
+              .find(([, clubNames]) => clubNames.includes("Yearbook"))?.[0] || null;
+              
             const newYearbookMatch: ClubMatch = {
               club: yearbook,
               matchedAttributes: ['Creative', 'Communication', 'Digital'],
@@ -2029,9 +2038,9 @@ const ClubQuiz: React.FC = () => {
             // Add at position 6
             finalMatches.splice(5, 0, newYearbookMatch);
             
-            // Ensure we don't exceed 30 results
-            if (finalMatches.length > 30) {
-              finalMatches = finalMatches.slice(0, 30);
+            // Ensure we don't exceed 15 results
+            if (finalMatches.length > 15) {
+              finalMatches = finalMatches.slice(0, 15);
             }
           }
         }
@@ -2056,7 +2065,10 @@ const ClubQuiz: React.FC = () => {
       // Ensure Yearbook is included
       const yearbook = clubs.find(club => club.name === "Yearbook");
       if (yearbook && !fallbackMatches.some(match => match.club.name === "Yearbook")) {
-        // Add Yearbook with null category
+        // Get the category for Yearbook
+        const yearbookCategory = Object.entries(categoryMapping)
+          .find(([, clubNames]) => clubNames.includes("Yearbook"))?.[0] || null;
+          
         fallbackMatches.push({
           club: yearbook,
           matchedAttributes: [],
@@ -2078,7 +2090,7 @@ const ClubQuiz: React.FC = () => {
     setCurrentQuestionIndex(null);
     setAnswers([]);
     setClubMatches([]);
-    setSkipsRemaining(3); // Reset skips to 3
+    setSkipsRemaining(20); // Reset skips to 20
     setShowResults(false);
     setIsStarted(false); // Return to intro screen
   };
