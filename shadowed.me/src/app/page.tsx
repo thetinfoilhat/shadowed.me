@@ -1,10 +1,26 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
+  const { user } = useAuth();
+  
+  // Auto-open login popup when page loads if user is not logged in
+  useEffect(() => {
+    if (!user) {
+      // Find and click the login button after the component mounts
+      setTimeout(() => {
+        const loginButton = document.querySelector<HTMLButtonElement>('button[data-login-button]');
+        if (loginButton) {
+          loginButton.click();
+        }
+      }, 500); // Short delay to ensure components are mounted
+    }
+  }, [user]);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
       {/* Hero Section */}
