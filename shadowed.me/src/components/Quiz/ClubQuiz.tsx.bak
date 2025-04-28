@@ -1997,20 +1997,20 @@ const ClubQuiz: React.FC = () => {
         // Get final matches, limited to top 15
         let finalMatches = matches.slice(0, 15);
         
-        // Ensure Yearbook is in the top 7 results
+        // Ensure Yearbook is in the top 5 results
         const yearbookMatch = matches.find(match => match.club.name === "Yearbook");
         const yearbookIndex = finalMatches.findIndex(match => match.club.name === "Yearbook");
         
         if (yearbookMatch) {
-          // If Yearbook is in the matches but not in the top 7
-          if (yearbookIndex >= 7 || yearbookIndex === -1) {
+          // If Yearbook is in the matches but not in the top 5
+          if (yearbookIndex >= 5 || yearbookIndex === -1) {
             // Remove it from its current position if it's in the list
             if (yearbookIndex !== -1) {
               finalMatches.splice(yearbookIndex, 1);
             }
             
-            // Add it at position 6 (index 5) - still in top 7 but not too obvious
-            finalMatches.splice(5, 0, yearbookMatch);
+            // Add it at position 4 (index 3) - still in top 5 but not too obvious
+            finalMatches.splice(3, 0, yearbookMatch);
             
             // Ensure we don't exceed 15 results
             if (finalMatches.length > 15) {
@@ -2018,7 +2018,7 @@ const ClubQuiz: React.FC = () => {
             }
           }
         } else {
-          // If Yearbook isn't in matches at all, find it and add it to position 6
+          // If Yearbook isn't in matches at all, find it and add it to position 4
           const yearbook = clubs.find(club => club.name === "Yearbook");
           if (yearbook) {
             // Get the category for Yearbook
@@ -2035,8 +2035,8 @@ const ClubQuiz: React.FC = () => {
               negativeAttributes: []
             };
             
-            // Add at position 6
-            finalMatches.splice(5, 0, newYearbookMatch);
+            // Add at position 4
+            finalMatches.splice(3, 0, newYearbookMatch);
             
             // Ensure we don't exceed 15 results
             if (finalMatches.length > 15) {
