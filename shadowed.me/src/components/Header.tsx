@@ -692,7 +692,8 @@ export default function Header() {
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold text-black mb-6">Login</h2>
+            <h2 className="text-2xl font-bold text-black mb-2">Login</h2>
+            <p className="text-amber-600 text-sm font-medium mb-6">Please use only your D203 Google account</p>
             <button
               onClick={handleGoogleLogin}
               className="w-full px-4 py-3 flex items-center justify-center gap-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-black"
