@@ -382,12 +382,20 @@ export default function Header() {
                         </Link>
                       ) : null}
                       {userRole === 'admin' && (
-                        <Link 
-                          href="/admin-dashboard"
-                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                        >
-                          Admin Dashboard
-                        </Link>
+                        <>
+                          <Link 
+                            href="/admin-dashboard"
+                            className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                          >
+                            Admin Dashboard
+                          </Link>
+                          <Link 
+                            href="/sponsor-dashboard"
+                            className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                          >
+                            Sponsor Dashboard
+                          </Link>
+                        </>
                       )}
                     </div>
                   </>
