@@ -57,7 +57,6 @@ export interface ClubSite {
   activityType?: string;     // Legacy single activity type
   activityTypes?: string[];  // New multi-select activity types
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
-    table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")
     room?: string;           // Room where meetings are held
     captains?: string;       // Captains information (display names as comma-separated string)
@@ -1748,31 +1747,12 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   </div>
                   
                   <div className="border-t border-gray-200 pt-6">
-                    <h4 className="font-medium text-gray-900 mb-4">Jamboree Table Information</h4>
+                    <h4 className="font-medium text-gray-900 mb-4">Jamboree Information</h4>
                     <p className="text-sm text-gray-600 mb-4">
-                      This information will be displayed on the Jamboree page to help students find your table.
+                      This information will be displayed on the Jamboree page.
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Jamboree Table
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.jamboreeMeetingInfo?.table || ''}
-                          onChange={(e) => {
-                            const updatedInfo = {
-                              ...(formData.jamboreeMeetingInfo || {}),
-                              table: e.target.value
-                            };
-                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
-                          }}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                          placeholder="e.g., TBD"
-                        />
-                      </div>
-                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Captains

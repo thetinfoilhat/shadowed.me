@@ -21,7 +21,6 @@ interface ClubSite {
   description?: string;
   meetingInfo?: string;
   jamboreeMeetingInfo?: {
-    table?: string;
     email?: string;
     captains?: string; // Legacy captains as comma-separated string
   };
@@ -56,7 +55,7 @@ export default function SponsorDashboard() {
     meetingInfo: '',
     category: '',
     activityTypes: [] as string[],
-    jamboreeTable: '',
+
     contactEmail: '',
     captains: [] as string[]
   });
@@ -322,7 +321,6 @@ export default function SponsorDashboard() {
       meetingInfo: club.meetingInfo || '',
       category: club.category || '',
       activityTypes: club.activityTypes || [],
-      jamboreeTable: club.jamboreeMeetingInfo?.table || '',
       contactEmail: club.jamboreeMeetingInfo?.email || '',
       captains: existingCaptains
     });
@@ -333,6 +331,41 @@ export default function SponsorDashboard() {
     if (!selectedClubForInfo) return;
     
     try {
+      // Get the current club data to find removed captains
+      const clubRef = doc(db, 'clubSites', selectedClubForInfo.id);
+      const clubDoc = await getDoc(clubRef);
+      let previousCaptains: string[] = [];
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        previousCaptains = clubData.captainEmails || clubData.captains || [];
+      }
+      
+      // Find captains that have been removed
+      const removedCaptains = previousCaptains.filter(email => !clubInfoForm.captains.includes(email));
+      
+      // Remove club from captainClubs array for removed captains
+      if (removedCaptains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of removedCaptains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const currentCaptainClubs = userData.captainClubs || [];
+            
+            // Remove club from captain's captainClubs array
+            const updatedCaptainClubs = currentCaptainClubs.filter((id: string) => id !== selectedClubForInfo.id);
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              captainClubs: updatedCaptainClubs
+            });
+          }
+        }
+      }
+      
       // Get captain display names for jamboreeMeetingInfo
       const captainDisplayNames = [];
       if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
@@ -343,13 +376,12 @@ export default function SponsorDashboard() {
         }
       }
       
-      const clubRef = doc(db, 'clubSites', selectedClubForInfo.id);
       await updateDoc(clubRef, {
         description: clubInfoForm.description,
         meetingInfo: clubInfoForm.meetingInfo,
         category: clubInfoForm.category,
         activityTypes: clubInfoForm.activityTypes,
-        'jamboreeMeetingInfo.table': clubInfoForm.jamboreeTable,
+
         'jamboreeMeetingInfo.email': clubInfoForm.contactEmail,
         captainEmails: clubInfoForm.captains,
         'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
@@ -986,19 +1018,6 @@ export default function SponsorDashboard() {
                     </label>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-2 text-sm">
-                  Jamboree Table
-                </label>
-                <input
-                  type="text"
-                  value={clubInfoForm.jamboreeTable}
-                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, jamboreeTable: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                  placeholder="Enter jamboree table number"
-                />
               </div>
 
               <div>

@@ -132,21 +132,6 @@ const ClubCard = ({ club, onRemove }: { club: ClubSite; onRemove: (clubId: strin
           
           {/* Club info list */}
           <div className="space-y-3.5 py-2">
-            {/* Jamboree Table - Emphasis added */}
-            {club.jamboreeMeetingInfo?.table && (
-              <div className="flex items-center bg-[#f8f9ff] p-2 rounded-md border-l-4 border-blue-400">
-                <div className="w-6 h-6 flex-shrink-0 mr-2 text-gray-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="flex items-baseline">
-                  <span className="text-gray-900 mr-2 font-medium">Jamboree Table:</span>
-                  <span className="font-bold text-blue-700">{club.jamboreeMeetingInfo.table}</span>
-                </div>
-              </div>
-            )}
-            
             {/* Meetings */}
             {club.meetingInfo && (
               <div className="flex flex-col">

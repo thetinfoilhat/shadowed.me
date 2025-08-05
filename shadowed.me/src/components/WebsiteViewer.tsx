@@ -597,13 +597,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 </div>
               )}
               
-              {/* Jamboree Table */}
-              {website.jamboreeMeetingInfo?.table && (
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Jamboree Table</h3>
-                  <p className="text-gray-800">{website.jamboreeMeetingInfo.table}</p>
-                </div>
-              )}
+
             </div>
           </div>
           

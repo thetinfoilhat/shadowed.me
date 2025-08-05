@@ -50,7 +50,7 @@ interface VisitData {
 }
 
 export default function CaptainDashboard() {
-  const { user, captainClubs } = useAuth();
+  const { user, userRole, captainClubs, refreshUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
@@ -67,9 +67,15 @@ export default function CaptainDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [websites, setWebsites] = useState<ClubSite[]>([]);
   const [websitesExpanded, setWebsitesExpanded] = useState(true);
+  const [assignedClubs, setAssignedClubs] = useState<ClubSite[]>([]);
+  const [assignedClubsExpanded, setAssignedClubsExpanded] = useState(true);
+  const [confirmRemoveCaptain, setConfirmRemoveCaptain] = useState<{
+    isOpen: boolean;
+    club: ClubSite | null;
+  }>({ isOpen: false, club: null });
   const router = useRouter();
 
-  // Fetch user role
+  // Fetch user role and refresh user data
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user?.uid) return;
@@ -85,7 +91,12 @@ export default function CaptainDashboard() {
     };
     
     fetchUserRole();
-  }, [user]);
+    
+    // Refresh user data to ensure captainClubs is up to date
+    if (user) {
+      refreshUserData();
+    }
+  }, [user, refreshUserData]);
 
   // Add function to fetch sponsor names
   const fetchSponsorNames = useCallback(async (visits: Club[]) => {
@@ -194,27 +205,41 @@ export default function CaptainDashboard() {
 
   // Fetch captain clubs
   const fetchCaptainClubs = useCallback(async () => {
-    if (!user?.email || !captainClubs.length) return;
+    if (!user?.email) return;
     
     try {
-      const clubsData = [];
+      const clubsData: ClubSite[] = [];
       
-      // Get clubs where this user is a captain
-      for (const clubId of captainClubs) {
-        const clubDoc = await getDoc(doc(db, 'clubs', clubId));
-        if (clubDoc.exists()) {
-          clubsData.push({
-            id: clubDoc.id,
-            ...clubDoc.data()
-          });
+      // Get all club sites and filter by captain assignment
+      const clubSitesRef = collection(db, 'clubSites');
+      const querySnapshot = await getDocs(clubSitesRef);
+      
+      querySnapshot.forEach(doc => {
+        const data = doc.data() as Partial<ClubSite>;
+        const siteData = {
+          ...data,
+          id: doc.id
+        } as ClubSite;
+        
+        // Check if user is a captain of this club
+        const isCaptain = 
+          (typeof siteData.captain === 'string' && siteData.captain === user.email) || 
+          (Array.isArray(siteData.captains) && siteData.captains.includes(user.email)) ||
+          (Array.isArray(siteData.captainEmails) && siteData.captainEmails.includes(user.email)) ||
+          (siteData.jamboreeMeetingInfo?.captains && 
+           typeof siteData.jamboreeMeetingInfo.captains === 'string' && 
+           siteData.jamboreeMeetingInfo.captains.includes(user.email));
+        
+        if (isCaptain) {
+          clubsData.push(siteData);
         }
-      }
+      });
       
-      // setClubs(clubsData as ClubListing[]);
+      setAssignedClubs(clubsData);
     } catch (error) {
       console.error('Error fetching captain clubs:', error);
     }
-  }, [user, captainClubs]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -224,7 +249,76 @@ export default function CaptainDashboard() {
     } else {
       setLoading(false);
     }
-  }, [user, fetchCaptainVisits, fetchCaptainWebsites, fetchCaptainClubs]);
+  }, [user, captainClubs, fetchCaptainVisits, fetchCaptainWebsites, fetchCaptainClubs]);
+  
+  // Refresh data when user role changes (e.g., when promoted to captain)
+  useEffect(() => {
+    if (user && userRole === 'captain') {
+      refreshUserData();
+    }
+  }, [user, userRole, refreshUserData]);
+  
+  // Function to remove captain from a club
+  const handleRemoveCaptain = async (club: ClubSite) => {
+    if (!user?.email) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', club.id);
+      
+      // Remove from captainEmails array
+      const updatedCaptainEmails = (club.captainEmails || []).filter(email => email !== user.email);
+      
+      // Remove from legacy captain fields
+      const updatedCaptains = (club.captains || []).filter(email => email !== user.email);
+      const updatedCaptain = club.captain === user.email ? null : club.captain;
+      
+      // Update captain display names in jamboreeMeetingInfo
+      const currentCaptains = club.jamboreeMeetingInfo?.captains || '';
+      
+      // Get user's display name
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      let userDisplayName = user.email;
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userDisplayName = userData.displayName || userData.name || user.email;
+      }
+      
+      const captainNames = currentCaptains.split(/,\s*/).filter(name => name !== userDisplayName);
+      
+      // Update the club document
+      await updateDoc(clubRef, {
+        captainEmails: updatedCaptainEmails,
+        captains: updatedCaptains,
+        captain: updatedCaptain,
+        'jamboreeMeetingInfo.captains': captainNames.join(', '),
+        updatedAt: new Date()
+      });
+      
+      // Remove club from user's captainClubs array
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const updatedCaptainClubs = (userData.captainClubs || []).filter((clubId: string) => clubId !== club.id);
+        
+        await updateDoc(userRef, {
+          captainClubs: updatedCaptainClubs
+        });
+      }
+      
+      // Refresh user data and club lists
+      await refreshUserData();
+      fetchCaptainClubs();
+      fetchCaptainWebsites();
+      
+      toast.success(`Successfully removed yourself as captain of ${club.clubName}`);
+      setConfirmRemoveCaptain({ isOpen: false, club: null });
+      
+    } catch (error) {
+      console.error('Error removing captain:', error);
+      toast.error('Failed to remove captain assignment');
+    }
+  };
 
   const saveVisit = async (data: VisitData) => {
     try {
@@ -479,6 +573,95 @@ export default function CaptainDashboard() {
                   >
                     Create a Website
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Captain Assignments Section */}
+        <div className="mb-8">
+          <button 
+            onClick={() => setAssignedClubsExpanded(!assignedClubsExpanded)}
+            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
+          >
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              Your Captain Assignments
+              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
+                {assignedClubs.length}
+              </span>
+            </h2>
+            {assignedClubsExpanded ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
+
+          {assignedClubsExpanded && (
+            <div className="space-y-4 animate-fadeIn">
+              {assignedClubs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {assignedClubs.map((club) => (
+                    <div
+                      key={club.id}
+                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+                    >
+                      <div 
+                        className="h-40 bg-cover bg-center relative" 
+                        style={{ 
+                          backgroundColor: getColorById(club.theme?.primaryColor || 'blue').value,
+                          backgroundImage: club.bannerImage ? `url(${club.bannerImage})` : undefined
+                        }}
+                      >
+                        {!club.bannerImage && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <h2 className="text-3xl font-bold text-white px-4 text-center">
+                              {club.clubName}
+                            </h2>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-black mb-2">
+                            {club.clubName}
+                          </h3>
+                          <p className="text-black mb-2 line-clamp-2">
+                            {club.slogan || club.description?.substring(0, 100) || 'No description available.'}
+                          </p>
+                          <div className="text-sm text-gray-600 mb-2">
+                            <span className="font-medium">Category:</span> {club.category || 'Not specified'}
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center mt-4">
+                          <span className="text-sm text-black">
+                            Updated {new Date(club.updatedAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/${club.slug}?edit=true`)}
+                              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-opacity"
+                              style={{ backgroundColor: getColorById(club.theme?.primaryColor || 'blue').value }}
+                            >
+                              Edit Site
+                            </button>
+                            <button
+                              onClick={() => setConfirmRemoveCaptain({ isOpen: true, club })}
+                              className="px-3 py-1.5 border border-red-500 text-red-500 rounded-md hover:bg-red-50 transition-colors"
+                            >
+                              Remove Self
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-black">You&apos;re not assigned as captain to any clubs yet.</p>
+                  <p className="text-sm text-gray-600 mt-2">Admins or sponsors can assign you as captain to clubs.</p>
                 </div>
               )}
             </div>
@@ -893,6 +1076,20 @@ export default function CaptainDashboard() {
             : "Are you sure you want to unmark this visit as completed? This will remove it from students' completed visits."
           }
           confirmText={confirmCompletion.completing ? "Mark as Completed" : "Unmark as Completed"}
+        />
+
+        {/* Remove Captain Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmRemoveCaptain.isOpen}
+          onClose={() => setConfirmRemoveCaptain({ isOpen: false, club: null })}
+          onConfirm={async () => {
+            if (confirmRemoveCaptain.club) {
+              await handleRemoveCaptain(confirmRemoveCaptain.club);
+            }
+          }}
+          title="Remove Captain Assignment"
+          message={`Are you sure you want to remove yourself as captain of "${confirmRemoveCaptain.club?.clubName}"? This action cannot be undone and you will lose access to edit this club's website.`}
+          confirmText="Remove Self"
         />
       </div>
     </div>

@@ -241,6 +241,41 @@ export default function AdminDashboard() {
 
   const handleUpdateClubAssignments = async (clubId: string, captains: string[], sponsors: string[]) => {
     try {
+      // Get the current club data to find removed captains
+      const clubRef = doc(db, 'clubSites', clubId);
+      const clubDoc = await getDoc(clubRef);
+      let previousCaptains: string[] = [];
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        previousCaptains = clubData.captainEmails || clubData.captains || [];
+      }
+      
+      // Find captains that have been removed
+      const removedCaptains = previousCaptains.filter(email => !captains.includes(email));
+      
+      // Remove club from captainClubs array for removed captains
+      if (removedCaptains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of removedCaptains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const currentCaptainClubs = userData.captainClubs || [];
+            
+            // Remove club from captain's captainClubs array
+            const updatedCaptainClubs = currentCaptainClubs.filter((id: string) => id !== clubId);
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              captainClubs: updatedCaptainClubs
+            });
+          }
+        }
+      }
+      
       // Get captain display names for jamboreeMeetingInfo
       const captainDisplayNames = [];
       if (captains.length > 0) {
@@ -260,7 +295,6 @@ export default function AdminDashboard() {
         }
       }
       
-      const clubRef = doc(db, 'clubSites', clubId);
       await updateDoc(clubRef, {
         captainEmails: captains,
         sponsorEmails: sponsors,

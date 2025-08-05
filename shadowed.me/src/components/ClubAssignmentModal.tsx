@@ -246,7 +246,7 @@ export default function ClubAssignmentModal({
       const filteredSponsors = selectedSponsors.filter(email => email.trim() !== '');
       
       // Find captains that have been removed by comparing initial and current lists
-      const initialCaptains = club.captains || (club.captain ? [club.captain] : []);
+      const initialCaptains = club.captainEmails || club.captains || (club.captain ? [club.captain] : []);
       const removedCaptains = initialCaptains.filter(email => !filteredCaptains.includes(email));
       
       // For each removed captain, update their user document to remove this club from captainClubs
