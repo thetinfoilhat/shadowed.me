@@ -3,12 +3,27 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ClubSite } from '@/types/club';
+import { ClubSite, MeetingOpportunity } from '@/types/club';
+
+// Personal Event Interface
+interface PersonalEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
 import { getColorById } from '@/utils/colors';
 import { toast } from 'react-hot-toast';
+import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Category color mapping from clubs page
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
@@ -251,6 +266,31 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [joinedClubs, setJoinedClubs] = useState<ClubSite[]>([]);
   const [isRemoving, setIsRemoving] = useState(false);
+  
+  // Calendar state
+  const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
+  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarView, setCalendarView] = useState<'month' | 'list'>('month');
+  
+  // Personal event modal state
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isDayViewOpen, setIsDayViewOpen] = useState(false);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<{
+    meetings: MeetingOpportunity[];
+    personalEvents: PersonalEvent[];
+    date: Date;
+  }>({ meetings: [], personalEvents: [], date: new Date() });
+  const [editingEvent, setEditingEvent] = useState<PersonalEvent | null>(null);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    startTime: '',
+    endTime: '',
+    location: '',
+    color: '#38BFA1'
+  });
 
   // Function to leave a club
   const handleLeaveClub = async (clubId: string) => {
@@ -312,6 +352,247 @@ export default function StudentDashboard() {
     } finally {
       setIsRemoving(false);
     }
+  };
+
+  // Calendar functions
+  const fetchMeetings = useCallback(async () => {
+    if (!user?.email) return;
+
+    try {
+      // Get all meetings from the meetings collection
+      const meetingsRef = collection(db, 'meetings');
+      const meetingsSnapshot = await getDocs(meetingsRef);
+      
+      const allMeetings: MeetingOpportunity[] = [];
+      
+      meetingsSnapshot.forEach((doc) => {
+        const meetingData = doc.data() as MeetingOpportunity;
+        const meeting = { ...meetingData, id: doc.id };
+        allMeetings.push(meeting);
+      });
+      
+      setMeetings(allMeetings);
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      toast.error('Failed to load meetings');
+    }
+  }, [user?.email]);
+
+  const handleJoinMeeting = async (meetingId: string) => {
+    if (!user?.email) return;
+
+    try {
+      const response = await fetch('/api/meetings/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          meetingId,
+          participant: {
+            name: user.displayName || user.email || '',
+            email: user.email,
+            grade: user.grade || '',
+            school: user.school || '',
+            signupDate: new Date(),
+          },
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Successfully joined meeting!');
+        fetchMeetings(); // Refresh meetings
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to join meeting');
+      }
+    } catch (error) {
+      console.error('Error joining meeting:', error);
+      toast.error('Failed to join meeting');
+    }
+  };
+
+  const handleLeaveMeeting = async (meetingId: string) => {
+    if (!user?.email) return;
+
+    try {
+      const response = await fetch('/api/meetings/signup', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          meetingId,
+          participantEmail: user.email,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Successfully left meeting');
+        fetchMeetings(); // Refresh meetings
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to leave meeting');
+      }
+    } catch (error) {
+      console.error('Error leaving meeting:', error);
+      toast.error('Failed to leave meeting');
+    }
+  };
+
+  // Personal event functions
+  const fetchPersonalEvents = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const events = userData.personalEvents || [];
+        setPersonalEvents(events);
+      }
+    } catch (error) {
+      console.error('Error fetching personal events:', error);
+    }
+  }, [user?.uid]);
+
+  const savePersonalEvent = async (eventData: Partial<PersonalEvent>) => {
+    if (!user?.uid) return;
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) return;
+      
+      const userData = userDoc.data();
+      const existingEvents = userData.personalEvents || [];
+      
+      if (editingEvent) {
+        // Update existing event
+        const updatedEvents = existingEvents.map((event: PersonalEvent) => 
+          event.id === editingEvent.id 
+            ? { ...event, ...eventData, updatedAt: new Date() }
+            : event
+        );
+        
+        await updateDoc(userRef, {
+          personalEvents: updatedEvents
+        });
+        
+        setPersonalEvents(updatedEvents);
+        toast.success('Event updated successfully');
+      } else {
+        // Create new event
+        const newEvent: PersonalEvent = {
+          id: Date.now().toString(),
+          title: eventData.title || '',
+          description: eventData.description || '',
+          date: eventData.date || '',
+          startTime: eventData.startTime || '',
+          endTime: eventData.endTime || '',
+          location: eventData.location || '',
+          color: eventData.color || '#38BFA1',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        const updatedEvents = [...existingEvents, newEvent];
+        
+        await updateDoc(userRef, {
+          personalEvents: updatedEvents
+        });
+        
+        setPersonalEvents(updatedEvents);
+        toast.success('Event created successfully');
+      }
+      
+      setIsEventModalOpen(false);
+      setEditingEvent(null);
+      setEventFormData({
+        title: '',
+        description: '',
+        startTime: '',
+        endTime: '',
+        location: '',
+        color: '#38BFA1'
+      });
+    } catch (error) {
+      console.error('Error saving personal event:', error);
+      toast.error('Failed to save event');
+    }
+  };
+
+  const deletePersonalEvent = async (eventId: string) => {
+    if (!user?.uid) return;
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) return;
+      
+      const userData = userDoc.data();
+      const existingEvents = userData.personalEvents || [];
+      const updatedEvents = existingEvents.filter((event: PersonalEvent) => event.id !== eventId);
+      
+      await updateDoc(userRef, {
+        personalEvents: updatedEvents
+      });
+      
+      setPersonalEvents(updatedEvents);
+      toast.success('Event deleted successfully');
+    } catch (error) {
+      console.error('Error deleting personal event:', error);
+      toast.error('Failed to delete event');
+    }
+  };
+
+  const openDayView = (date: Date) => {
+    const dayMeetings = meetings.filter(meeting => {
+      const meetingDate = new Date(meeting.startDate);
+      return meetingDate.toDateString() === date.toDateString();
+    });
+    const dayPersonalEvents = personalEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.toDateString() === date.toDateString();
+    });
+    
+    setSelectedDayEvents({
+      meetings: dayMeetings,
+      personalEvents: dayPersonalEvents,
+      date
+    });
+    setSelectedDate(date);
+    setIsDayViewOpen(true);
+  };
+
+  const openEventModal = (date: Date, event?: PersonalEvent) => {
+    setSelectedDate(date);
+    if (event) {
+      setEditingEvent(event);
+      setEventFormData({
+        title: event.title,
+        description: event.description || '',
+        startTime: event.startTime || '',
+        endTime: event.endTime || '',
+        location: event.location || '',
+        color: event.color || '#38BFA1'
+      });
+    } else {
+      setEditingEvent(null);
+      setEventFormData({
+        title: '',
+        description: '',
+        startTime: '',
+        endTime: '',
+        location: '',
+        color: '#38BFA1'
+      });
+    }
+    setIsEventModalOpen(true);
   };
 
   const fetchJoinedClubs = useCallback(async () => {
@@ -386,11 +667,11 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (user) {
-      fetchJoinedClubs().finally(() => setLoading(false));
+      Promise.all([fetchJoinedClubs(), fetchMeetings(), fetchPersonalEvents()]).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [user, fetchJoinedClubs]);
+  }, [user, fetchJoinedClubs, fetchMeetings, fetchPersonalEvents]);
 
   if (loading) {
     return (
@@ -490,6 +771,554 @@ export default function StudentDashboard() {
             </div>
           )}
         </div>
+        
+        {/* Calendar Section */}
+        <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
+              <CalendarIcon className="h-6 w-6 mr-2" />
+              My Calendar
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCalendarView('month')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  calendarView === 'month' 
+                    ? 'bg-[#38BFA1] text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Month View
+              </button>
+              <button
+                onClick={() => setCalendarView('list')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  calendarView === 'list' 
+                    ? 'bg-[#38BFA1] text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                List View
+              </button>
+            </div>
+          </div>
+          
+          {calendarView === 'month' ? (
+            <div className="space-y-4">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h3>
+                <button
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+                    {day}
+                  </div>
+                ))}
+                
+                {Array.from({ length: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay() }, (_, i) => (
+                  <div key={`empty-start-${i}`} className="p-2"></div>
+                ))}
+                
+                {Array.from({ length: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate() }, (_, i) => {
+                  const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1);
+                  const dayMeetings = meetings.filter(meeting => {
+                    const meetingDate = new Date(meeting.startDate);
+                    return meetingDate.toDateString() === date.toDateString();
+                  });
+                  const dayPersonalEvents = personalEvents.filter(event => {
+                    const eventDate = new Date(event.date);
+                    return eventDate.toDateString() === date.toDateString();
+                  });
+                  
+                  return (
+                    <div
+                      key={i}
+                      className={`p-2 min-h-[80px] border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer ${
+                        selectedDate?.toDateString() === date.toDateString() ? 'bg-[#38BFA1]/10 border-[#38BFA1]' : ''
+                      }`}
+                      onClick={() => openDayView(date)}
+                    >
+                      <div className="text-sm font-medium text-gray-900 mb-1 flex items-center justify-between">
+                        <span>{i + 1}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEventModal(date);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+                          title="Add personal event"
+                        >
+                          <PlusIcon className="h-3 w-3 text-gray-500" />
+                        </button>
+                      </div>
+                      
+                      {/* Club Meetings */}
+                      {dayMeetings.map((meeting, idx) => (
+                        <div
+                          key={`meeting-${idx}`}
+                          className="text-xs p-1 mb-1 rounded bg-blue-100 text-blue-800 truncate"
+                          title={meeting.title}
+                        >
+                          {meeting.title}
+                        </div>
+                      ))}
+                      
+                      {/* Personal Events */}
+                      {dayPersonalEvents.map((event, idx) => (
+                        <div
+                          key={`event-${idx}`}
+                          className="text-xs p-1 mb-1 rounded truncate"
+                          style={{ 
+                            backgroundColor: `${event.color}20`, 
+                            color: event.color,
+                            border: `1px solid ${event.color}40`
+                          }}
+                          title={event.title}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEventModal(date, event);
+                          }}
+                        >
+                          {event.title}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+                
+                {Array.from({ length: 6 - new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDay() }, (_, i) => (
+                  <div key={`empty-end-${i}`} className="p-2"></div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">All Available Meetings</h3>
+                <div className="text-sm text-gray-500">
+                  {meetings.filter(m => m.status === 'active').length} meetings available
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {meetings
+                  .filter(meeting => meeting.status === 'active')
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((meeting) => {
+                    const isJoined = meeting.participants?.some(
+                      (participant: { email: string }) => participant.email === user?.email
+                    );
+                    
+                    return (
+                      <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900">{meeting.title}</h3>
+                          {isJoined && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Joined
+                            </span>
+                          )}
+                        </div>
+                        
+                        <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
+                          <div className="flex items-center">
+                            <CalendarIcon className="h-4 w-4 mr-2" />
+                            <span>{new Date(meeting.startDate).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <ClockIcon className="h-4 w-4 mr-2" />
+                            <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <MapPinIcon className="h-4 w-4 mr-2" />
+                            <span>Room {meeting.roomNumber}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <UserGroupIcon className="h-4 w-4 mr-2" />
+                            <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium">{meeting.clubName}</span>
+                          </div>
+                          <button
+                            onClick={() => isJoined ? handleLeaveMeeting(meeting.id) : handleJoinMeeting(meeting.id)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                              isJoined
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
+                            }`}
+                          >
+                            {isJoined ? 'Leave Meeting' : 'Join Meeting'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Day View Modal */}
+        {isDayViewOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedDayEvents.date.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedDayEvents.meetings.length + selectedDayEvents.personalEvents.length} events scheduled
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsDayViewOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Club Meetings Section */}
+                {selectedDayEvents.meetings.length > 0 && (
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                      <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
+                      Club Meetings ({selectedDayEvents.meetings.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedDayEvents.meetings.map((meeting) => {
+                        const isJoined = meeting.participants?.some(
+                          (participant: { email: string }) => participant.email === user?.email
+                        );
+                        
+                        return (
+                          <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">{meeting.title}</h5>
+                              {isJoined && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Joined
+                                </span>
+                              )}
+                            </div>
+                            
+                            <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
+                              <div className="flex items-center">
+                                <ClockIcon className="h-4 w-4 mr-2" />
+                                <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <MapPinIcon className="h-4 w-4 mr-2" />
+                                <span>Room {meeting.roomNumber}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <UserGroupIcon className="h-4 w-4 mr-2" />
+                                <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="font-medium text-blue-600">{meeting.clubName}</span>
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={() => isJoined ? handleLeaveMeeting(meeting.id) : handleJoinMeeting(meeting.id)}
+                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                isJoined
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              {isJoined ? 'Leave Meeting' : 'Join Meeting'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Personal Events Section */}
+                {selectedDayEvents.personalEvents.length > 0 && (
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                      <CalendarIcon className="h-5 w-5 mr-2 text-[#38BFA1]" />
+                      Personal Events ({selectedDayEvents.personalEvents.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedDayEvents.personalEvents.map((event) => (
+                        <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-semibold text-gray-900">{event.title}</h5>
+                            <button
+                              onClick={() => {
+                                setIsDayViewOpen(false);
+                                openEventModal(selectedDayEvents.date, event);
+                              }}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          </div>
+                          
+                          {event.description && (
+                            <p className="text-gray-600 mb-3 text-sm">{event.description}</p>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                            {event.startTime && event.endTime && (
+                              <div className="flex items-center">
+                                <ClockIcon className="h-4 w-4 mr-2" />
+                                <span>{new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                              </div>
+                            )}
+                            {event.location && (
+                              <div className="flex items-center">
+                                <MapPinIcon className="h-4 w-4 mr-2" />
+                                <span>{event.location}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
+                              <span>Personal Event</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* No Events Message */}
+                {selectedDayEvents.meetings.length === 0 && selectedDayEvents.personalEvents.length === 0 && (
+                  <div className="text-center py-8">
+                    <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Events Scheduled</h4>
+                    <p className="text-gray-500 mb-4">This day is free! Add a personal event or join a club meeting.</p>
+                  </div>
+                )}
+                
+                {/* Add Personal Event Button */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setIsDayViewOpen(false);
+                      openEventModal(selectedDayEvents.date);
+                    }}
+                    className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-[#38BFA1] hover:bg-[#2DA891] transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Add Personal Event
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Personal Event Modal */}
+        {isEventModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {editingEvent ? 'Edit Event' : 'Add Personal Event'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedDate?.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsEventModalOpen(false);
+                    setEditingEvent(null);
+                    setEventFormData({
+                      title: '',
+                      description: '',
+                      startTime: '',
+                      endTime: '',
+                      location: '',
+                      color: '#38BFA1'
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                savePersonalEvent({
+                  ...eventFormData,
+                  date: selectedDate?.toISOString().split('T')[0] || ''
+                });
+              }} className="p-6 space-y-4">
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Event Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={eventFormData.title}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Study Session, Doctor Appointment"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={eventFormData.description}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Optional details about your event..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      value={eventFormData.startTime}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      value={eventFormData.endTime}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={eventFormData.location}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Library, Room 201, Home"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Color
+                  </label>
+                  <div className="flex gap-2">
+                    {['#38BFA1', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#10B981', '#F97316'].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setEventFormData(prev => ({ ...prev, color }))}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          eventFormData.color === color ? 'border-gray-400 scale-110' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4">
+                  {editingEvent && (
+                    <button
+                      type="button"
+                      onClick={() => deletePersonalEvent(editingEvent.id)}
+                      className="px-4 py-2 text-red-600 hover:text-red-700 font-medium text-sm"
+                    >
+                      Delete Event
+                    </button>
+                  )}
+                  <div className="flex gap-3 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEventModalOpen(false);
+                        setEditingEvent(null);
+                        setEventFormData({
+                          title: '',
+                          description: '',
+                          startTime: '',
+                          endTime: '',
+                          location: '',
+                          color: '#38BFA1'
+                        });
+                      }}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-700 font-medium text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#38BFA1] text-white rounded-md hover:bg-[#2DA891] transition-colors font-medium text-sm"
+                    >
+                      {editingEvent ? 'Update Event' : 'Create Event'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
