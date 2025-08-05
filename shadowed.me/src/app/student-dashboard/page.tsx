@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, updateDoc, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubSite } from '@/types/club';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
 import { getColorById } from '@/utils/colors';
+import { toast } from 'react-hot-toast';
 
 // Category color mapping from clubs page
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
@@ -263,72 +264,104 @@ const ClubCard = ({ club, onRemove }: { club: ClubSite; onRemove: (clubId: strin
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [interestedClubs, setInterestedClubs] = useState<ClubSite[]>([]);
+  const [joinedClubs, setJoinedClubs] = useState<ClubSite[]>([]);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // Function to remove interest from a club
-  const handleRemoveInterest = async (clubId: string) => {
+  // Function to leave a club
+  const handleLeaveClub = async (clubId: string) => {
     if (!user?.email || isRemoving) return;
     
     try {
       setIsRemoving(true);
       
-      // Get the club site document
-      const clubRef = doc(db, 'clubSites', clubId);
+      // Get the user document
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
       
-      // Find the current user in the submissions list
-      const clubToRemove = interestedClubs.find(club => club.id === clubId);
-      
-      if (!clubToRemove || !clubToRemove.interestForm?.submissions) {
+      if (!userDoc.exists()) {
         setIsRemoving(false);
         return;
       }
       
-      // Find the user's submission
-      const userSubmission = clubToRemove.interestForm.submissions.find(
-        submission => submission.email === user.email
-      );
+      const userData = userDoc.data();
+      const joinedClubs = userData.joinedClubs || [];
       
-      if (!userSubmission) {
-        setIsRemoving(false);
-        return;
-      }
+      // Remove the club from user's joined clubs
+      const updatedJoinedClubs = joinedClubs.filter((id: string) => id !== clubId);
       
-      // Remove the user's submission
-      await updateDoc(clubRef, {
-        'interestForm.submissions': arrayRemove(userSubmission)
+      // Update the user document
+      await updateDoc(userRef, {
+        joinedClubs: updatedJoinedClubs
       });
       
-      // Update the local state
-      setInterestedClubs(prev => prev.filter(club => club.id !== clubId));
-      
+      // Also remove from club's submissions for backward compatibility
+      try {
+        const clubRef = doc(db, 'clubSites', clubId);
+        const clubDoc = await getDoc(clubRef);
+        
+        if (clubDoc.exists()) {
+          const clubData = clubDoc.data();
+          const submissions = clubData.interestForm?.submissions || [];
+          const userSubmission = submissions.find(
+            (submission: { email: string }) => submission.email === user.email
+          );
+          
+          if (userSubmission) {
+            await updateDoc(clubRef, {
+              'interestForm.submissions': arrayRemove(userSubmission)
+            });
+          }
+        }
       } catch (error) {
-      console.error('Error removing interest:', error);
+        console.error('Error removing from club submissions:', error);
+        // Don't fail the main operation if this fails
+      }
+      
+      // Update the local state
+      setJoinedClubs(prev => prev.filter(club => club.id !== clubId));
+      
+      toast.success('Successfully left club');
+    } catch (error) {
+      console.error('Error leaving club:', error);
+      toast.error('Failed to leave club');
     } finally {
       setIsRemoving(false);
     }
   };
 
-  const fetchInterestedClubs = useCallback(async () => {
+  const fetchJoinedClubs = useCallback(async () => {
     if (!user?.email) return;
 
     try {
+      // First get the user's joined clubs from their profile
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        setJoinedClubs([]);
+        return;
+      }
+      
+      const userData = userDoc.data();
+      const joinedClubIds = userData.joinedClubs || [];
+      
+      if (joinedClubIds.length === 0) {
+        setJoinedClubs([]);
+        return;
+      }
+      
       // Get all club websites
       const clubSitesRef = collection(db, 'clubSites');
       const clubSitesSnapshot = await getDocs(clubSitesRef);
       
-      const interestedClubsList: ClubSite[] = [];
+      const joinedClubsList: ClubSite[] = [];
       
-      // Loop through each club site
+      // Loop through each club site and check if it's in the user's joined clubs
       for (const docSnapshot of clubSitesSnapshot.docs) {
         const siteData = docSnapshot.data() as ClubSite;
         
-        // Check if this user's email is in the interest form submissions
-        const hasExpressedInterest = siteData.interestForm?.submissions?.some(
-          (submission) => submission.email === user.email
-        );
-        
-        if (hasExpressedInterest) {
+        // Check if this club is in the user's joined clubs list
+        if (joinedClubIds.includes(docSnapshot.id)) {
           // Convert Firestore timestamps to JS Date objects
           let createdAt: Date;
           let updatedAt: Date;
@@ -351,7 +384,7 @@ export default function StudentDashboard() {
             updatedAt = new Date(siteData.updatedAt as string | number | Date);
           }
           
-          interestedClubsList.push({
+          joinedClubsList.push({
             ...siteData,
             id: docSnapshot.id,
             createdAt,
@@ -359,20 +392,20 @@ export default function StudentDashboard() {
           });
         }
       }
-
-      setInterestedClubs(interestedClubsList);
+      
+      setJoinedClubs(joinedClubsList);
     } catch (error) {
-      console.error('Error fetching interested clubs:', error);
+      console.error('Error fetching joined clubs:', error);
     }
   }, [user]);
 
   useEffect(() => {
     if (user) {
-      fetchInterestedClubs().finally(() => setLoading(false));
+      fetchJoinedClubs().finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [user, fetchInterestedClubs]);
+  }, [user, fetchJoinedClubs]);
 
   if (loading) {
     return (
@@ -428,28 +461,28 @@ export default function StudentDashboard() {
               Student Dashboard
             </h1>
             <p className="text-lg text-gray-600">
-              Track clubs you&apos;re interested in
+              Track clubs you&apos;ve joined
             </p>
           </div>
         </div>
         
-        {/* Interested Clubs Section */}
+        {/* Joined Clubs Section */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
           <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
-            <span>Clubs I&apos;m Interested In</span>
+            <span>Clubs I&apos;ve Joined</span>
             <span className="ml-2 px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
-              {interestedClubs.length}
+              {joinedClubs.length}
             </span>
           </h2>
           
-          {interestedClubs.length === 0 ? (
+          {joinedClubs.length === 0 ? (
             <div className="bg-gray-50 rounded-xl p-8 text-center">
               <div className="max-w-md mx-auto">
                 <h3 className="text-lg font-medium text-[#0A2540] mb-2">
                   No Clubs Yet
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Start exploring club websites and express your interest to see them here.
+                  Start exploring club websites and join clubs to see them here.
                 </p>
                 <Link 
                   href="/clubs"
@@ -462,11 +495,11 @@ export default function StudentDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {interestedClubs.map((club) => (
+              {joinedClubs.map((club) => (
                 <ClubCard 
                   key={club.id} 
                   club={club} 
-                  onRemove={handleRemoveInterest}
+                  onRemove={handleLeaveClub}
                 />
               ))}
             </div>

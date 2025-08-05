@@ -39,6 +39,21 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     email: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Function to open interest form with auto-filled user data
+  const handleOpenInterestForm = () => {
+    if (user) {
+      // Auto-fill with user's information
+      const displayName = user.displayName || '';
+      const userEmail = user.email || '';
+      
+      setInterestFormData({
+        name: displayName,
+        email: userEmail
+      });
+    }
+    setShowInterestForm(true);
+  };
   
   // Check if various sections exist
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
@@ -239,7 +254,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         throw new Error(data.error || 'Failed to submit interest form');
       }
 
-      toast.success('Thank you for your interest!');
+      toast.success('Successfully joined club!');
       setShowInterestForm(false);
       setInterestFormData({ name: '', email: '' });
     } catch (error) {
@@ -464,19 +479,19 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
         {/* Sidebar - 1/3 width */}
         <div className="space-y-6">
-           {/* Interested in joining? card */}
+           {/* Join Club card */}
            <div className="bg-white text-gray-900 rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3">Interested in joining?</h2>
-            <p className="text-sm mb-4 text-gray-600">Fill out this form to express your interest!</p>
+            <h2 className="text-xl font-bold mb-3">Join this club?</h2>
+            <p className="text-sm mb-4 text-gray-600">Join this club to stay updated and access exclusive information!</p>
             <button
-              onClick={() => setShowInterestForm(true)}
+              onClick={handleOpenInterestForm}
               className="w-full text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition"
               style={{ backgroundColor: primaryColor }}
             >
-              I&apos;m Interested!
+              Join Club
             </button>
             <p className="text-xs mt-2 text-gray-500 text-center">
-              No commitment - just let us know you&apos;re interested and we&apos;ll contact you!
+              Join to receive updates and access club information!
             </p>
           </div>
           {/* Club Information Card */}
@@ -764,7 +779,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#180D39]">Interested in {website.clubName}?</h2>
+                <h2 className="text-xl font-bold text-[#180D39]">Join {website.clubName}?</h2>
                 <button
                   onClick={() => setShowInterestForm(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -776,7 +791,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               <form onSubmit={handleInterestFormSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Name (Last, First)
+                    Your Name
                   </label>
                   <input
                     type="text"
@@ -785,7 +800,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                     value={interestFormData.name}
                     onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter your name (Last, First)"
+                    placeholder="Enter your name"
                   />
                 </div>
 
@@ -809,7 +824,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg font-medium hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Interest'}
+                  {isSubmitting ? 'Joining...' : 'Join Club'}
                 </button>
               </form>
             </motion.div>

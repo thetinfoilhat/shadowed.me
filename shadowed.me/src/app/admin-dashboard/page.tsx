@@ -2,26 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, setDoc, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, UserRole } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 import { Tab } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { 
   UsersIcon, 
   BuildingOfficeIcon, 
-  UserGroupIcon, 
-  CogIcon, 
-  ChartBarIcon,
   PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-  CheckIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 interface User {
@@ -30,6 +20,7 @@ interface User {
   displayName?: string | null;
   id?: string;
   uniqueKey?: string;
+  joinedClubs?: string[];
 }
 
 interface ClubListing {
@@ -49,7 +40,6 @@ interface ClubListing {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -58,16 +48,27 @@ export default function AdminDashboard() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showUserEditModal, setShowUserEditModal] = useState(false);
+  const [showClubEditModal, setShowClubEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
 
   // Fetch data
   const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, 'users');
       const querySnapshot = await getDocs(usersRef);
-      const usersData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as User[];
+      const usersData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email || '',
+          role: data.role || 'student',
+          displayName: data.displayName || null,
+          uniqueKey: data.uniqueKey || '',
+          joinedClubs: data.joinedClubs || [],
+        } as User;
+      });
       setUsers(usersData);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -188,6 +189,105 @@ export default function AdminDashboard() {
 
   const filteredUsers = filterItems(users, searchQuery);
   const filteredClubs = filterItems(clubs, searchQuery);
+
+  // User management functions
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setShowUserEditModal(true);
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: UserRole) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, { role: newRole });
+      toast.success('User role updated successfully');
+      fetchUsers();
+      setShowUserEditModal(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error('Failed to update user role');
+    }
+  };
+
+  const handleRemoveJoinedClub = async (userId: string, clubId: string) => {
+    try {
+      // Remove the club from user's joined clubs
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const joinedClubs = userData.joinedClubs || [];
+        const updatedJoinedClubs = joinedClubs.filter((id: string) => id !== clubId);
+        
+        await updateDoc(userRef, { joinedClubs: updatedJoinedClubs });
+        toast.success('Club removed from user');
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Error removing joined club:', error);
+      toast.error('Failed to remove club from user');
+    }
+  };
+
+  // Club management functions
+  const handleEditClub = (club: ClubListing) => {
+    setSelectedClub(club);
+    setShowClubEditModal(true);
+  };
+
+  const handleUpdateClubAssignments = async (clubId: string, captains: string[], sponsors: string[]) => {
+    try {
+      const clubRef = doc(db, 'clubSites', clubId);
+      await updateDoc(clubRef, {
+        captainEmail: captains[0] || null,
+        sponsorEmail: sponsors[0] || null,
+        captains: captains,
+        sponsorEmails: sponsors
+      });
+      toast.success('Club assignments updated successfully');
+      fetchClubs();
+      setShowClubEditModal(false);
+      setSelectedClub(null);
+    } catch (error) {
+      console.error('Error updating club assignments:', error);
+      toast.error('Failed to update club assignments');
+    }
+  };
+
+  // Delete individual user
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      // Delete user document
+      await deleteDoc(doc(db, 'users', userId));
+      toast.success('User deleted successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    }
+  };
+
+  // Delete individual club
+  const handleDeleteClub = async (clubId: string) => {
+    if (!confirm('Are you sure you want to delete this club? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      // Delete club document
+      await deleteDoc(doc(db, 'clubSites', clubId));
+      toast.success('Club deleted successfully');
+      fetchClubs();
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      toast.error('Failed to delete club');
+    }
+  };
 
   if (loading) {
     return (
@@ -343,12 +443,22 @@ export default function AdminDashboard() {
                               {user.role || 'student'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                              <button className="text-red-600 hover:text-red-900">Delete</button>
-                            </div>
-                          </td>
+                                                     <td className="px-6 py-4 text-sm font-medium">
+                             <div className="flex space-x-2">
+                               <button 
+                                 onClick={() => handleEditUser(user)}
+                                 className="text-blue-600 hover:text-blue-900"
+                               >
+                                 Edit
+                               </button>
+                               <button 
+                                 onClick={() => handleDeleteUser(user.id || '')}
+                                 className="text-red-600 hover:text-red-900"
+                               >
+                                 Delete
+                               </button>
+                             </div>
+                           </td>
                         </tr>
                       ))}
                     </tbody>
@@ -419,20 +529,30 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">{club.sponsorEmail || 'Not assigned'}</td>
                           <td className="px-6 py-4 text-sm text-gray-900">{club.captainEmail || 'Not assigned'}</td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <a
-                                href={`/${club.slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                View
-                              </a>
-                              <button className="text-gray-600 hover:text-gray-900">Edit</button>
-                              <button className="text-red-600 hover:text-red-900">Delete</button>
-                            </div>
-                          </td>
+                                                       <td className="px-6 py-4 text-sm font-medium">
+                               <div className="flex space-x-2">
+                                 <a
+                                   href={`/${club.slug}`}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="text-blue-600 hover:text-blue-900"
+                                 >
+                                   View
+                                 </a>
+                                 <button 
+                                   onClick={() => handleEditClub(club)}
+                                   className="text-gray-600 hover:text-gray-900"
+                                 >
+                                   Edit
+                                 </button>
+                                 <button 
+                                   onClick={() => handleDeleteClub(club.id)}
+                                   className="text-red-600 hover:text-red-900"
+                                 >
+                                   Delete
+                                 </button>
+                               </div>
+                             </td>
                         </tr>
                       ))}
                     </tbody>
@@ -443,6 +563,182 @@ export default function AdminDashboard() {
           </Tab.Panels>
         </Tab.Group>
       </div>
+
+      {/* User Edit Modal */}
+      {showUserEditModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Edit User</h3>
+              <button
+                onClick={() => {
+                  setShowUserEditModal(false);
+                  setSelectedUser(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <p className="text-gray-900">{selectedUser.email}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                <p className="text-gray-900">{selectedUser.displayName || 'Not set'}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Role</label>
+                <select
+                  value={selectedUser.role || 'student'}
+                  onChange={(e) => handleUpdateUserRole(selectedUser.id || '', e.target.value as UserRole)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="student">Student</option>
+                  <option value="captain">Captain</option>
+                  <option value="sponsor">Sponsor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Joined Clubs</label>
+                <div className="max-h-32 overflow-y-auto">
+                  {selectedUser.joinedClubs && selectedUser.joinedClubs.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedUser.joinedClubs.map((clubId: string) => {
+                        const club = clubs.find(c => c.id === clubId);
+                        return club ? (
+                          <div key={clubId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-sm">{club.clubName}</span>
+                            <button
+                              onClick={() => handleRemoveJoinedClub(selectedUser.id || '', clubId)}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No joined clubs</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Club Edit Modal */}
+      {showClubEditModal && selectedClub && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Edit Club: {selectedClub.clubName}</h3>
+              <button
+                onClick={() => {
+                  setShowClubEditModal(false);
+                  setSelectedClub(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Captains (up to 4)</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {users.filter(u => u.role === 'captain' || u.role === 'admin').map((user) => (
+                    <label key={user.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedClub.captains?.includes(user.email) || false}
+                        onChange={(e) => {
+                          const currentCaptains = selectedClub.captains || [];
+                          if (e.target.checked && currentCaptains.length < 4) {
+                            setSelectedClub({
+                              ...selectedClub,
+                              captains: [...currentCaptains, user.email]
+                            });
+                          } else if (!e.target.checked) {
+                            setSelectedClub({
+                              ...selectedClub,
+                              captains: currentCaptains.filter(c => c !== user.email)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{user.email}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Sponsors (up to 4)</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {users.filter(u => u.role === 'sponsor' || u.role === 'admin').map((user) => (
+                    <label key={user.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedClub.sponsorEmails?.includes(user.email) || false}
+                        onChange={(e) => {
+                          const currentSponsors = selectedClub.sponsorEmails || [];
+                          if (e.target.checked && currentSponsors.length < 4) {
+                            setSelectedClub({
+                              ...selectedClub,
+                              sponsorEmails: [...currentSponsors, user.email]
+                            });
+                          } else if (!e.target.checked) {
+                            setSelectedClub({
+                              ...selectedClub,
+                              sponsorEmails: currentSponsors.filter(s => s !== user.email)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{user.email}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowClubEditModal(false);
+                    setSelectedClub(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleUpdateClubAssignments(
+                    selectedClub.id,
+                    selectedClub.captains || [],
+                    selectedClub.sponsorEmails || []
+                  )}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

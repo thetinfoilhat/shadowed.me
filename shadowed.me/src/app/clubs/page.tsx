@@ -82,6 +82,8 @@ const capitalizeWords = (str: string): string => {
 const WebsiteCard = ({ website }: { website: ClubSite }) => {
   // Use category color instead of theme color
   const [showAllMeetings, setShowAllMeetings] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const { user, userRole } = useAuth();
   
   // Get category and activity colors
   const categoryColor = getCategoryColor(website.category);
@@ -128,6 +130,50 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
       .trim();
       
     return `${firstDay} + ${dayCount-1} more`;
+  };
+
+  // Check if user has already joined this club
+  const hasJoined = website.interestForm?.submissions?.some(
+    submission => submission.email === user?.email
+  );
+
+  // Handle join club functionality
+  const handleJoinClub = async () => {
+    if (!user?.email || isJoining) return;
+    
+    try {
+      setIsJoining(true);
+      
+      const response = await fetch('/api/submit-interest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          websiteId: website.id,
+          name: user.displayName || user.email,
+          email: user.email,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          toast.error('You have already joined this club');
+        } else {
+          toast.error('Failed to join club');
+        }
+        return;
+      }
+
+      toast.success('Successfully joined club!');
+      // Force a page reload to update the UI
+      window.location.reload();
+    } catch (error) {
+      console.error('Error joining club:', error);
+      toast.error('Failed to join club');
+    } finally {
+      setIsJoining(false);
+    }
   };
   
   return (
@@ -325,13 +371,28 @@ const WebsiteCard = ({ website }: { website: ClubSite }) => {
           <span className="text-xs text-gray-800">
             Updated {new Date(website.updatedAt).toLocaleDateString()}
           </span>
-          <a
-            href={`/${website.slug}`}
-            className="inline-flex items-center px-5 py-2 text-sm font-medium text-white rounded-lg"
-            style={{ backgroundColor: categoryColor.bg }}
-          >
-            Visit Site
-          </a>
+          <div className="flex gap-2">
+            {user && (userRole === 'student' || userRole === 'captain') && (
+              <button
+                onClick={handleJoinClub}
+                disabled={isJoining || hasJoined}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  hasJoined
+                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                    : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
+                }`}
+              >
+                {isJoining ? 'Joining...' : hasJoined ? 'Joined' : 'Join Club'}
+              </button>
+            )}
+            <a
+              href={`/${website.slug}`}
+              className="inline-flex items-center px-5 py-2 text-sm font-medium text-white rounded-lg"
+              style={{ backgroundColor: categoryColor.bg }}
+            >
+              Visit Site
+            </a>
+          </div>
         </div>
       </div>
     </motion.div>
