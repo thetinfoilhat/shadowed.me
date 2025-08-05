@@ -39,6 +39,10 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     email: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State for user data
+  const [captainUsers, setCaptainUsers] = useState<{email: string, name: string}[]>([]);
+  const [sponsorUsers, setSponsorUsers] = useState<{email: string, name: string}[]>([]);
 
   // Function to open interest form with auto-filled user data
   const handleOpenInterestForm = () => {
@@ -64,6 +68,72 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
   const textColor = getTextColorById(website.theme?.textColor || 'dark').value;
   const fontClass = getFontById(website.theme?.font || 'inter').className;
+  
+  // Fetch user data for captains and sponsors
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase');
+        
+        // Fetch captain data
+        if (website.captainEmails && website.captainEmails.length > 0) {
+          const usersRef = collection(db, 'users');
+          const captainUsersData: {email: string, name: string}[] = [];
+          
+          for (const email of website.captainEmails) {
+            const userQuery = query(usersRef, where('email', '==', email));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              const userData = userDoc.data();
+              captainUsersData.push({
+                email: email,
+                name: userData.displayName || userData.name || email
+              });
+            } else {
+              captainUsersData.push({
+                email: email,
+                name: email
+              });
+            }
+          }
+          setCaptainUsers(captainUsersData);
+        }
+        
+        // Fetch sponsor data
+        if (website.sponsorEmails && website.sponsorEmails.length > 0) {
+          const usersRef = collection(db, 'users');
+          const sponsorUsersData: {email: string, name: string}[] = [];
+          
+          for (const email of website.sponsorEmails) {
+            const userQuery = query(usersRef, where('email', '==', email));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              const userData = userDoc.data();
+              sponsorUsersData.push({
+                email: email,
+                name: userData.displayName || userData.name || email
+              });
+            } else {
+              sponsorUsersData.push({
+                email: email,
+                name: email
+              });
+            }
+          }
+          setSponsorUsers(sponsorUsersData);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, [website.captainEmails, website.sponsorEmails]);
 
   // Check if the current user is authorized to edit this club website
   useEffect(() => {
@@ -82,6 +152,12 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     if (userRole === 'captain') {
       const userEmail = user.email;
       
+      // If club has captainEmails array, check if user's email is in it
+      if (Array.isArray(website.captainEmails) && website.captainEmails.includes(userEmail!)) {
+        setCanEdit(true);
+        return;
+      }
+
       // If club has captains array, check if user's email is in it
       if (Array.isArray(website.captains) && website.captains.includes(userEmail!)) {
         setCanEdit(true);
@@ -532,8 +608,11 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
           </div>
           
           {/* Club Leadership Section */}
-          {((website.jamboreeMeetingInfo?.captains || getCaptains(website.members)) || 
-            website.jamboreeMeetingInfo?.sponsor) && (
+          {((website.captainEmails && website.captainEmails.length > 0) || 
+            (website.sponsorEmails && website.sponsorEmails.length > 0) ||
+            website.jamboreeMeetingInfo?.captains || 
+            website.jamboreeMeetingInfo?.sponsor ||
+            getCaptains(website.members)) && (
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
                 Club Leadership
@@ -541,41 +620,129 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               
               <div className="space-y-4">
                 {/* Captains */}
-                {(website.jamboreeMeetingInfo?.captains || getCaptains(website.members)) && (
+                {((website.captainEmails && website.captainEmails.length > 0) || 
+                  website.jamboreeMeetingInfo?.captains || 
+                  getCaptains(website.members)) && (
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Club Captain{website.jamboreeMeetingInfo?.captains?.includes(',') ? 's' : ''}</h3>
-                    {/* Handle multiple captains */}
-                    {website.jamboreeMeetingInfo?.captains?.includes(',') ? (
-                      <ul className="space-y-1">
-                        {website.jamboreeMeetingInfo.captains.split(/,\s*/).map((captain, idx) => (
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Club Captain{(website.captainEmails && website.captainEmails.length > 1) || 
+                        (website.jamboreeMeetingInfo?.captains?.includes(',')) ? 's' : ''}
+                    </h3>
+                    
+                    {/* Display captains from captainEmails with names and emails */}
+                    {captainUsers.length > 0 && (
+                      <ul className="space-y-2">
+                        {captainUsers.map((captain, idx) => (
                           <li key={`captain-${idx}`} className="flex items-center">
                             <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
-                            <span className="text-gray-800">{captain}</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{captain.name}</span>
+                              <span className="text-sm text-gray-500">{captain.email}</span>
+                            </div>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="text-gray-800">{website.jamboreeMeetingInfo?.captains || getCaptains(website.members)}</p>
+                    )}
+                    
+                    {/* Fallback to captainEmails if user data not loaded yet */}
+                    {captainUsers.length === 0 && website.captainEmails && website.captainEmails.length > 0 && (
+                      <ul className="space-y-2">
+                        {website.captainEmails.map((captainEmail, idx) => (
+                          <li key={`captain-${idx}`} className="flex items-center">
+                            <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{captainEmail}</span>
+                              <span className="text-sm text-gray-500">{captainEmail}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {/* Fallback to jamboreeMeetingInfo.captains */}
+                    {(!website.captainEmails || website.captainEmails.length === 0) && 
+                     website.jamboreeMeetingInfo?.captains && (
+                      <div>
+                        {website.jamboreeMeetingInfo.captains.includes(',') ? (
+                          <ul className="space-y-1">
+                            {website.jamboreeMeetingInfo.captains.split(/,\s*/).map((captain, idx) => (
+                              <li key={`captain-${idx}`} className="flex items-center">
+                                <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
+                                <span className="text-gray-800">{captain}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-800">{website.jamboreeMeetingInfo.captains}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Fallback to members array */}
+                    {(!website.captainEmails || website.captainEmails.length === 0) && 
+                     !website.jamboreeMeetingInfo?.captains && 
+                     getCaptains(website.members) && (
+                      <p className="text-gray-800">{getCaptains(website.members)}</p>
                     )}
                   </div>
                 )}
                 
                 {/* Sponsors */}
-                {website.jamboreeMeetingInfo?.sponsor && (
+                {((website.sponsorEmails && website.sponsorEmails.length > 0) || 
+                  website.jamboreeMeetingInfo?.sponsor) && (
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Faculty Sponsor{website.jamboreeMeetingInfo.sponsor.includes(',') ? 's' : ''}</h3>
-                    {/* Handle multiple sponsors */}
-                    {website.jamboreeMeetingInfo.sponsor.includes(',') ? (
-                      <ul className="space-y-1">
-                        {website.jamboreeMeetingInfo.sponsor.split(/,\s*/).map((sponsor, idx) => (
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Faculty Sponsor{(website.sponsorEmails && website.sponsorEmails.length > 1) || 
+                        (website.jamboreeMeetingInfo?.sponsor?.includes(',')) ? 's' : ''}
+                    </h3>
+                    
+                    {/* Display sponsors from sponsorEmails with names and emails */}
+                    {sponsorUsers.length > 0 && (
+                      <ul className="space-y-2">
+                        {sponsorUsers.map((sponsor, idx) => (
                           <li key={`sponsor-${idx}`} className="flex items-center">
                             <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
-                            <span className="text-gray-800">{sponsor}</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{sponsor.name}</span>
+                              <span className="text-sm text-gray-500">{sponsor.email}</span>
+                            </div>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="text-gray-800">{website.jamboreeMeetingInfo.sponsor}</p>
+                    )}
+                    
+                    {/* Fallback to sponsorEmails if user data not loaded yet */}
+                    {sponsorUsers.length === 0 && website.sponsorEmails && website.sponsorEmails.length > 0 && (
+                      <ul className="space-y-2">
+                        {website.sponsorEmails.map((sponsorEmail, idx) => (
+                          <li key={`sponsor-${idx}`} className="flex items-center">
+                            <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{sponsorEmail}</span>
+                              <span className="text-sm text-gray-500">{sponsorEmail}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {/* Fallback to jamboreeMeetingInfo.sponsor */}
+                    {(!website.sponsorEmails || website.sponsorEmails.length === 0) && 
+                     website.jamboreeMeetingInfo?.sponsor && (
+                      <div>
+                        {website.jamboreeMeetingInfo.sponsor.includes(',') ? (
+                          <ul className="space-y-1">
+                            {website.jamboreeMeetingInfo.sponsor.split(/,\s*/).map((sponsor, idx) => (
+                              <li key={`sponsor-${idx}`} className="flex items-center">
+                                <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
+                                <span className="text-gray-800">{sponsor}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-800">{website.jamboreeMeetingInfo.sponsor}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

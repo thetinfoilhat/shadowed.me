@@ -105,7 +105,8 @@ export interface ClubSite {
     startTime: string;
     endTime: string;
   }[];
-  captains?: string[];       // Email addresses of captains
+  captains?: string[];       // Email addresses of captains (legacy)
+  captainEmails?: string[];  // Email addresses of captains (new standard)
   captain?: string;          // Single captain email (legacy)
   sponsorEmails?: string[];  // Email addresses of sponsors
   sponsorEmail?: string;     // Single sponsor email (legacy)
@@ -865,15 +866,19 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
         if (formData.captainDetails && formData.captainDetails.length > 0) {
           captainEmailsToSelect = formData.captainDetails.map(captain => captain.email);
         } 
-        // PRIORITY 2: Use captains array (direct emails) 
+        // PRIORITY 2: Use captainEmails array (new standard)
+        else if (formData.captainEmails && formData.captainEmails.length > 0) {
+          captainEmailsToSelect = formData.captainEmails;
+        }
+        // PRIORITY 3: Use captains array (direct emails) 
         else if (formData.captains && formData.captains.length > 0) {
           captainEmailsToSelect = formData.captains;
         } 
-        // PRIORITY 3: Use single captain value (legacy)
+        // PRIORITY 4: Use single captain value (legacy)
         else if (formData.captain) {
           captainEmailsToSelect = [formData.captain];
         } 
-        // PRIORITY 4: Use jamboreeMeetingInfo.captains (display names only)
+        // PRIORITY 5: Use jamboreeMeetingInfo.captains (display names only)
         else if (formData.jamboreeMeetingInfo?.captains) {
           // Try to match display names to emails for existing captains
           const captainNames = formData.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
@@ -941,7 +946,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     };
     
     fetchUsers();
-  }, [formData.jamboreeMeetingInfo, formData.captainDetails, formData.sponsorDetails, formData.captains, formData.sponsorEmails, formData.captain, formData.sponsorEmail]);
+  }, [formData.jamboreeMeetingInfo, formData.captainDetails, formData.sponsorDetails, formData.captains, formData.captainEmails, formData.sponsorEmails, formData.captain, formData.sponsorEmail]);
 
   // Handle adding, removing, and updating captains
   const addCaptainSelection = () => {

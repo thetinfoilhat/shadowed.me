@@ -173,6 +173,7 @@ export default function CaptainDashboard() {
           // Check various captain fields, handle null/undefined values
           (typeof siteData.captain === 'string' && siteData.captain === userEmail) || 
           (Array.isArray(siteData.captains) && siteData.captains.includes(userEmail)) ||
+          (Array.isArray(siteData.captainEmails) && siteData.captainEmails.includes(userEmail)) ||
           (siteData.jamboreeMeetingInfo?.captains && 
            typeof siteData.jamboreeMeetingInfo.captains === 'string' && 
            siteData.jamboreeMeetingInfo.captains.includes(userEmail));

@@ -15,6 +15,7 @@ interface AuthContextType {
   setUserRole: (role: string) => void;
   captainClubs: string[];
   setCaptainClubs: (clubs: string[]) => void;
+  refreshUserData: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ export const AuthContext = createContext<AuthContextType>({
   setUserRole: () => {},
   captainClubs: [],
   setCaptainClubs: () => {},
+  refreshUserData: async () => {},
 });
 
 export function useAuth() {
@@ -82,6 +84,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUserData = async () => {
+    if (!user) return;
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role) {
+          setUserRole(userData.role);
+        }
+        setCaptainClubs(userData.captainClubs || []);
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
   const value = {
     user,
     userRole,
@@ -92,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserRole,
     captainClubs,
     setCaptainClubs,
+    refreshUserData,
   };
 
   return (

@@ -87,17 +87,22 @@ export default function ClubAssignmentModal({
           jamboreeMeetingInfo: club.jamboreeMeetingInfo
         }, null, 2));
         
-        // PRIORITY 1: Use captainDetails and sponsorDetails (most accurate with both email and display name)
-        if (club.captainDetails && club.captainDetails.length > 0) {
+        // PRIORITY 1: Use captainEmails array (new standard)
+        if (club.captainEmails && club.captainEmails.length > 0) {
+          captainEmailsToSelect = club.captainEmails;
+          console.log("Using captainEmails:", captainEmailsToSelect);
+        }
+        // PRIORITY 2: Use captainDetails and sponsorDetails (most accurate with both email and display name)
+        else if (club.captainDetails && club.captainDetails.length > 0) {
           captainEmailsToSelect = club.captainDetails.map(captain => captain.email);
           console.log("Using captainDetails:", captainEmailsToSelect);
         } 
-        // PRIORITY 2: Use captains array (direct emails) 
+        // PRIORITY 3: Use captains array (direct emails) 
         else if (club.captains && club.captains.length > 0) {
           captainEmailsToSelect = club.captains;
           console.log("Using captains array:", captainEmailsToSelect);
         } 
-        // PRIORITY 3: Use single captain value (legacy)
+        // PRIORITY 4: Use single captain value (legacy)
         else if (club.captain) {
           captainEmailsToSelect = [club.captain];
           console.log("Using single captain:", captainEmailsToSelect);
@@ -283,10 +288,37 @@ export default function ClubAssignmentModal({
           .map(captain => captain.displayName)
           .join(', ');
         
-        // Also keep backward compatibility 
+        // Use new data structure as primary
+        updateData.captainEmails = filteredCaptains;
+        updateData.captainDetails = captainDetailsArray;
+        // Keep backward compatibility 
         updateData.captain = filteredCaptains[0];
         updateData.captains = filteredCaptains;
-        updateData.captainDetails = captainDetailsArray;
+        
+        // Update captainClubs array for all assigned captains
+        if (club.id) {
+          const usersCollection = collection(db, 'users');
+          for (const captainEmail of filteredCaptains) {
+            const captainQuery = query(usersCollection, where('email', '==', captainEmail));
+            const captainSnapshot = await getDocs(captainQuery);
+            
+            if (!captainSnapshot.empty) {
+              const captainDoc = captainSnapshot.docs[0];
+              const captainData = captainDoc.data();
+              const currentCaptainClubs = captainData.captainClubs || [];
+              
+              // Add club to captain's captainClubs array if not already there
+              const updatedCaptainClubs = currentCaptainClubs.includes(club.id) 
+                ? currentCaptainClubs 
+                : [...currentCaptainClubs, club.id];
+              
+              // Update the user document
+              await updateDoc(doc(db, 'users', captainDoc.id), {
+                captainClubs: updatedCaptainClubs
+              });
+            }
+          }
+        }
         
         // Format for jamboreeMeetingInfo as comma-separated string with display names
         jamboreeMeetingInfo.captains = formattedCaptains;
@@ -311,10 +343,11 @@ export default function ClubAssignmentModal({
           .map(sponsor => sponsor.displayName)
           .join(', ');
         
-        // Also keep backward compatibility
-        updateData.sponsorEmail = filteredSponsors[0];
+        // Use new data structure as primary
         updateData.sponsorEmails = filteredSponsors;
         updateData.sponsorDetails = sponsorDetailsArray;
+        // Keep backward compatibility
+        updateData.sponsorEmail = filteredSponsors[0];
         
         // Format for jamboreeMeetingInfo as comma-separated string with display names
         jamboreeMeetingInfo.sponsor = formattedSponsors;

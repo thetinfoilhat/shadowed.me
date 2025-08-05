@@ -91,7 +91,8 @@ export interface ClubSite {
     email?: string;          // Contact email
   };
   captain?: string;          // Legacy field for captain email
-  captains?: string[];       // Array of captain emails
+  captains?: string[];       // Array of captain emails (legacy)
+  captainEmails?: string[];  // Array of captain emails (new standard)
   sponsorEmail?: string;     // Legacy field for sponsor email
   sponsorEmails?: string[];  // Array of sponsor emails
   galleryImages?: string[];  // URLs to images

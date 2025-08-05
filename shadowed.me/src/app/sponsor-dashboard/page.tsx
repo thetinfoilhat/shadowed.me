@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { Tab } from '@headlessui/react';
-import { CheckCircleIcon, XCircleIcon, PencilIcon, PlusIcon, UserIcon, LinkIcon, EyeIcon, MagnifyingGlassIcon, TableCellsIcon, ViewColumnsIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIcon, UserGroupIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -15,12 +14,16 @@ interface ClubSite {
   slug: string;
   category?: string;
   sponsorEmail?: string;
+  sponsorEmails?: string[];
   captainEmail?: string;
+  captainEmails?: string[]; // Array of captain emails (up to 4)
+  captains?: string[]; // Legacy captain array
   description?: string;
   meetingInfo?: string;
   jamboreeMeetingInfo?: {
     table?: string;
     email?: string;
+    captains?: string; // Legacy captains as comma-separated string
   };
   activityTypes?: string[];
   updatedAt: Date;
@@ -34,21 +37,31 @@ interface User {
 }
 
 export default function SponsorDashboard() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, refreshUserData } = useAuth();
   const [sponsoredClubs, setSponsoredClubs] = useState<ClubSite[]>([]);
-  const [allClubs, setAllClubs] = useState<ClubSite[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [allStudents, setAllStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedClub, setSelectedClub] = useState<ClubSite | null>(null);
-  const [selectedCaptain, setSelectedCaptain] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [selectedClubs, setSelectedClubs] = useState<Set<string>>(new Set());
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [editingClub, setEditingClub] = useState<ClubSite | null>(null);
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showDiscoverModal, setShowDiscoverModal] = useState(false);
+  const [availableClubs, setAvailableClubs] = useState<ClubSite[]>([]);
+  const [selectedClub, setSelectedClub] = useState<ClubSite | null>(null);
+  const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
+  const [showClubInfoModal, setShowClubInfoModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubSite | null>(null);
+  const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
+  const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);
+  const [clubInfoForm, setClubInfoForm] = useState({
+    description: '',
+    meetingInfo: '',
+    category: '',
+    activityTypes: [] as string[],
+    jamboreeTable: '',
+    contactEmail: '',
+    captains: [] as string[]
+  });
+  const [captainSearchQuery, setCaptainSearchQuery] = useState<string>('');
+  const [clubCaptainSearchQuery, setClubCaptainSearchQuery] = useState<string>('');
 
   const fetchSponsoredClubs = useCallback(async () => {
     if (!user?.email) return;
@@ -68,14 +81,19 @@ export default function SponsorDashboard() {
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         })) as ClubSite[];
       } else {
-        // Sponsors only see clubs where they're assigned as sponsorEmail
-        const q = query(clubsRef, where('sponsorEmail', '==', user.email));
-        const querySnapshot = await getDocs(q);
-        clubsData = querySnapshot.docs.map(doc => ({
+        // Sponsors see clubs where they're in the sponsorEmails array
+        const querySnapshot = await getDocs(clubsRef);
+        const allClubs = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         })) as ClubSite[];
+        
+        clubsData = allClubs.filter((club: ClubSite) => {
+          const sponsorEmails = club.sponsorEmails || [];
+          const legacySponsorEmail = club.sponsorEmail;
+          return sponsorEmails.includes(user.email!) || legacySponsorEmail === user.email;
+        });
       }
       
       setSponsoredClubs(clubsData);
@@ -87,872 +105,1087 @@ export default function SponsorDashboard() {
     }
   }, [user?.email, userRole]);
 
-  const fetchAllClubs = useCallback(async () => {
+  const fetchAllStudents = useCallback(async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      // Fetch both students and captains for captain assignment
+      const studentQuery = query(usersRef, where('role', '==', 'student'));
+      const captainQuery = query(usersRef, where('role', '==', 'captain'));
+      
+      const [studentSnapshot, captainSnapshot] = await Promise.all([
+        getDocs(studentQuery),
+        getDocs(captainQuery)
+      ]);
+      
+      const studentsData = studentSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+      })) as User[];
+      
+      const captainsData = captainSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+      })) as User[];
+      
+      // Combine students and captains
+      const allUsers = [...studentsData, ...captainsData];
+      setAllStudents(allUsers);
+    } catch (error) {
+      console.error('Error fetching students and captains:', error);
+    }
+  }, []);
+
+  const fetchAvailableClubs = useCallback(async () => {
     try {
       const clubsRef = collection(db, 'clubSites');
       const querySnapshot = await getDocs(clubsRef);
       
-      const clubsData = querySnapshot.docs.map(doc => ({
+      const allClubs = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as ClubSite[];
       
-      setAllClubs(clubsData);
+      const clubsData = allClubs.filter((club: ClubSite) => {
+        const sponsorEmails = club.sponsorEmails || [];
+        const legacySponsorEmail = club.sponsorEmail;
+        const totalSponsors = sponsorEmails.length + (legacySponsorEmail ? 1 : 0);
+        return totalSponsors < 4;
+      });
+      
+      setAvailableClubs(clubsData);
     } catch (error) {
-      console.error('Error fetching all clubs:', error);
-      toast.error('Failed to load clubs');
+      console.error('Error fetching available clubs:', error);
     }
   }, []);
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const usersRef = collection(db, 'users');
-      const querySnapshot = await getDocs(usersRef);
-      
-      const usersData = querySnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      })) as User[];
-      
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user?.email) {
-      fetchSponsoredClubs();
-      fetchAllClubs();
-      fetchUsers();
-    }
-  }, [user, fetchSponsoredClubs, fetchAllClubs, fetchUsers]);
 
   const handleAssignSponsor = async (clubId: string) => {
+    if (!user?.email) return;
+    
     try {
       const clubRef = doc(db, 'clubSites', clubId);
-      await updateDoc(clubRef, {
-        sponsorEmail: user?.email
-      });
-      toast.success('Successfully assigned as sponsor');
-      fetchSponsoredClubs();
-      fetchAllClubs();
+      const clubDoc = await getDoc(clubRef);
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        const currentSponsorEmails = clubData.sponsorEmails || [];
+        const legacySponsorEmail = clubData.sponsorEmail;
+        
+        // Calculate total sponsors (including legacy)
+        const totalSponsors = currentSponsorEmails.length + (legacySponsorEmail ? 1 : 0);
+        
+        if (totalSponsors >= 4) {
+          toast.error('This club already has the maximum number of sponsors (4)');
+          return;
+        }
+        
+        // Add user to sponsorEmails array if not already there
+        if (!currentSponsorEmails.includes(user.email)) {
+          const updatedSponsorEmails = [...currentSponsorEmails, user.email];
+          
+          await updateDoc(clubRef, {
+            sponsorEmails: updatedSponsorEmails,
+            updatedAt: new Date()
+          });
+          
+          toast.success('Successfully assigned as sponsor');
+          setShowDiscoverModal(false);
+          fetchSponsoredClubs();
+          fetchAvailableClubs();
+        } else {
+          toast.error('You are already a sponsor of this club');
+        }
+      }
     } catch (error) {
       console.error('Error assigning sponsor:', error);
       toast.error('Failed to assign sponsor');
     }
   };
 
-  const handleAssignCaptain = async () => {
-    if (!selectedClub || !selectedCaptain) return;
+  const handleRemoveSponsor = async (clubId: string) => {
+    if (!user?.email) return;
+    if (!confirm('Are you sure you want to stop sponsoring this club?')) return;
     
     try {
-      const clubRef = doc(db, 'clubSites', selectedClub.id);
-      await updateDoc(clubRef, {
-        captainEmail: selectedCaptain
-      });
-      toast.success('Captain assigned successfully');
-      setSelectedClub(null);
-      setSelectedCaptain('');
-      setIsAssignModalOpen(false);
-      fetchSponsoredClubs();
-      fetchAllClubs();
-    } catch (error) {
-      console.error('Error assigning captain:', error);
-      toast.error('Failed to assign captain');
-    }
-  };
-
-  const handleRemoveSponsor = async (clubId: string) => {
-    try {
       const clubRef = doc(db, 'clubSites', clubId);
-      await updateDoc(clubRef, {
-        sponsorEmail: null
-      });
-      toast.success('Removed as sponsor');
-      fetchSponsoredClubs();
-      fetchAllClubs();
+      const clubDoc = await getDoc(clubRef);
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        const currentSponsorEmails = clubData.sponsorEmails || [];
+        
+        // Remove user from sponsorEmails array
+        const updatedSponsorEmails = currentSponsorEmails.filter((email: string) => email !== user.email);
+        
+        await updateDoc(clubRef, {
+          sponsorEmails: updatedSponsorEmails,
+          updatedAt: new Date()
+        });
+        
+        toast.success('Successfully removed as sponsor');
+        fetchSponsoredClubs();
+        fetchAvailableClubs();
+      }
     } catch (error) {
       console.error('Error removing sponsor:', error);
       toast.error('Failed to remove sponsor');
     }
   };
 
-  // Bulk operations
-  const handleBulkAssignSponsor = async () => {
-    if (selectedClubs.size === 0) return;
+  const handleAssignCaptains = async () => {
+    if (!selectedClub || selectedCaptains.length === 0) return;
     
     try {
-      const promises = Array.from(selectedClubs).map(clubId => {
-        const clubRef = doc(db, 'clubSites', clubId);
-        return updateDoc(clubRef, { sponsorEmail: user?.email });
-      });
+      // Get captain display names for jamboreeMeetingInfo
+      const captainDisplayNames = [];
+      for (const captainEmail of selectedCaptains) {
+        const captain = allStudents.find(s => s.email === captainEmail);
+        const displayName = captain?.name || captainEmail;
+        captainDisplayNames.push(displayName);
+      }
       
-      await Promise.all(promises);
-      toast.success(`Assigned ${selectedClubs.size} clubs`);
-      setSelectedClubs(new Set());
-      setShowBulkActions(false);
-      fetchSponsoredClubs();
-      fetchAllClubs();
-    } catch (error) {
-      console.error('Error bulk assigning sponsor:', error);
-      toast.error('Failed to assign clubs');
-    }
-  };
-
-  const handleBulkAssignCaptain = async (captainEmail: string) => {
-    if (selectedClubs.size === 0) return;
-    
-    try {
-      const promises = Array.from(selectedClubs).map(clubId => {
-        const clubRef = doc(db, 'clubSites', clubId);
-        return updateDoc(clubRef, { captainEmail });
-      });
-      
-      await Promise.all(promises);
-      toast.success(`Assigned captain to ${selectedClubs.size} clubs`);
-      setSelectedClubs(new Set());
-      setShowBulkActions(false);
-      fetchSponsoredClubs();
-      fetchAllClubs();
-    } catch (error) {
-      console.error('Error bulk assigning captain:', error);
-      toast.error('Failed to assign captain');
-    }
-  };
-
-  const handleToggleClubSelection = (clubId: string) => {
-    const newSelected = new Set(selectedClubs);
-    if (newSelected.has(clubId)) {
-      newSelected.delete(clubId);
-    } else {
-      newSelected.add(clubId);
-    }
-    setSelectedClubs(newSelected);
-    setShowBulkActions(newSelected.size > 0);
-  };
-
-  const handleSelectAll = () => {
-    const currentClubs = viewMode === 'cards' ? filteredSponsoredClubs : filteredUnassignedClubs;
-    if (selectedClubs.size === currentClubs.length) {
-      setSelectedClubs(new Set());
-      setShowBulkActions(false);
-    } else {
-      setSelectedClubs(new Set(currentClubs.map(club => club.id)));
-      setShowBulkActions(true);
-    }
-  };
-
-  // Quick edit functionality
-  const handleQuickEdit = async (clubId: string, field: string, value: string) => {
-    try {
-      const clubRef = doc(db, 'clubSites', clubId);
-      await updateDoc(clubRef, { [field]: value });
-      toast.success('Updated successfully');
-      fetchSponsoredClubs();
-      fetchAllClubs();
-    } catch (error) {
-      console.error('Error updating club:', error);
-      toast.error('Failed to update');
-    }
-  };
-
-  const handleStartEdit = (club: ClubSite) => {
-    setEditingClub(club);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingClub) return;
-    
-    try {
-      const clubRef = doc(db, 'clubSites', editingClub.id);
+      const clubRef = doc(db, 'clubSites', selectedClub.id);
       await updateDoc(clubRef, {
-        clubName: editingClub.clubName,
-        description: editingClub.description,
-        meetingInfo: editingClub.meetingInfo,
-        category: editingClub.category
+        captainEmails: selectedCaptains,
+        'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
+        updatedAt: new Date()
       });
-      toast.success('Club updated successfully');
-      setEditingClub(null);
+      
+      // Update user roles to captain for all selected captains
+      const usersRef = collection(db, 'users');
+      const promotedUsers: string[] = [];
+      
+      for (const captainEmail of selectedCaptains) {
+        const userQuery = query(usersRef, where('email', '==', captainEmail));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          const userData = userDoc.data();
+          const currentCaptainClubs = userData.captainClubs || [];
+          
+          // Add club to captain's captainClubs array if not already there
+          const updatedCaptainClubs = currentCaptainClubs.includes(selectedClub.id) 
+            ? currentCaptainClubs 
+            : [...currentCaptainClubs, selectedClub.id];
+          
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            role: 'captain',
+            captainClubs: updatedCaptainClubs,
+            notifications: arrayUnion({
+              type: 'promotion',
+              message: `You have been promoted to captain of ${selectedClub.clubName}! You now have access to the captain dashboard and can edit your club's website.`,
+              timestamp: new Date(),
+              read: false
+            })
+          });
+          promotedUsers.push(captainEmail);
+        }
+      }
+      
+      // If the current user was promoted, refresh their data
+      if (promotedUsers.includes(user?.email || '')) {
+        await refreshUserData();
+      }
+      
+      toast.success(`Successfully assigned ${selectedCaptains.length} captain${selectedCaptains.length > 1 ? 's' : ''}. They now have full captain access!`);
+      setSelectedClub(null);
+      setSelectedCaptains([]);
       fetchSponsoredClubs();
-      fetchAllClubs();
+      fetchAllStudents();
     } catch (error) {
-      console.error('Error updating club:', error);
-      toast.error('Failed to update club');
+      console.error('Error assigning captains:', error);
+      toast.error('Failed to assign captains');
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingClub(null);
+  const handleOpenClubInfo = (club: ClubSite) => {
+    setSelectedClubForInfo(club);
+    
+    // Get existing captains from multiple possible sources
+    let existingCaptains: string[] = [];
+    if (club.captainEmails && club.captainEmails.length > 0) {
+      existingCaptains = club.captainEmails;
+    } else if (club.captainEmail) {
+      existingCaptains = [club.captainEmail];
+    } else if (club.captains && club.captains.length > 0) {
+      existingCaptains = club.captains;
+    } else if (club.jamboreeMeetingInfo?.captains) {
+      // Handle legacy captains stored as comma-separated string
+      const captainNames = club.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+      // Try to match names to emails (this is a fallback)
+      existingCaptains = captainNames;
+    }
+    
+    setClubInfoForm({
+      description: club.description || '',
+      meetingInfo: club.meetingInfo || '',
+      category: club.category || '',
+      activityTypes: club.activityTypes || [],
+      jamboreeTable: club.jamboreeMeetingInfo?.table || '',
+      contactEmail: club.jamboreeMeetingInfo?.email || '',
+      captains: existingCaptains
+    });
+    setShowClubInfoModal(true);
   };
+
+  const handleSaveClubInfo = async () => {
+    if (!selectedClubForInfo) return;
+    
+    try {
+      // Get captain display names for jamboreeMeetingInfo
+      const captainDisplayNames = [];
+      if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
+        for (const captainEmail of clubInfoForm.captains) {
+          const captain = allStudents.find(s => s.email === captainEmail);
+          const displayName = captain?.name || captainEmail;
+          captainDisplayNames.push(displayName);
+        }
+      }
+      
+      const clubRef = doc(db, 'clubSites', selectedClubForInfo.id);
+      await updateDoc(clubRef, {
+        description: clubInfoForm.description,
+        meetingInfo: clubInfoForm.meetingInfo,
+        category: clubInfoForm.category,
+        activityTypes: clubInfoForm.activityTypes,
+        'jamboreeMeetingInfo.table': clubInfoForm.jamboreeTable,
+        'jamboreeMeetingInfo.email': clubInfoForm.contactEmail,
+        captainEmails: clubInfoForm.captains,
+        'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
+        updatedAt: new Date()
+      });
+      
+      // Update user roles to captain for all assigned captains
+      const promotedUsers: string[] = [];
+      if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of clubInfoForm.captains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const currentCaptainClubs = userData.captainClubs || [];
+            
+            // Add club to captain's captainClubs array if not already there
+            const updatedCaptainClubs = currentCaptainClubs.includes(selectedClubForInfo.id) 
+              ? currentCaptainClubs 
+              : [...currentCaptainClubs, selectedClubForInfo.id];
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              role: 'captain',
+              captainClubs: updatedCaptainClubs,
+              notifications: arrayUnion({
+                type: 'promotion',
+                message: `You have been promoted to captain of ${selectedClubForInfo.clubName}! You now have access to the captain dashboard and can edit your club's website.`,
+                timestamp: new Date(),
+                read: false
+              })
+            });
+            promotedUsers.push(captainEmail);
+          }
+        }
+      }
+      
+      // If the current user was promoted, refresh their data
+      if (promotedUsers.includes(user?.email || '')) {
+        await refreshUserData();
+      }
+      
+      toast.success('Club information updated successfully');
+      setShowClubInfoModal(false);
+      setSelectedClubForInfo(null);
+      fetchSponsoredClubs();
+    } catch (error) {
+      console.error('Error updating club info:', error);
+      toast.error('Failed to update club information');
+    }
+  };
+
+  const handleOpenMembers = async (club: ClubSite) => {
+    setSelectedClubForMembers(club);
+    setShowMembersModal(true);
+    
+    try {
+      const clubRef = doc(db, 'clubSites', club.id);
+      const clubDoc = await getDoc(clubRef);
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        const submissions = clubData.interestForm?.submissions || [];
+        setClubMembers(submissions);
+      } else {
+        setClubMembers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching club members:', error);
+      toast.error('Failed to load club members');
+      setClubMembers([]);
+    }
+  };
+
+  // Helper function to get captain count from multiple possible sources
+  const getCaptainCount = (club: ClubSite): number => {
+    if (club.captainEmails && club.captainEmails.length > 0) {
+      return club.captainEmails.length;
+    } else if (club.captainEmail) {
+      return 1;
+    } else if (club.captains && club.captains.length > 0) {
+      return club.captains.length;
+    } else if (club.jamboreeMeetingInfo?.captains) {
+      const captainNames = club.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+      return captainNames.length;
+    }
+    return 0;
+  };
+
+  const handleRemoveMember = async (memberEmail: string) => {
+    if (!selectedClubForMembers) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', selectedClubForMembers.id);
+      const clubDoc = await getDoc(clubRef);
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        const submissions = clubData.interestForm?.submissions || [];
+        const updatedSubmissions = submissions.filter((sub: { email: string }) => sub.email !== memberEmail);
+        
+        await updateDoc(clubRef, {
+          'interestForm.submissions': updatedSubmissions
+        });
+        
+        // Also remove from user's joined clubs
+        const usersRef = collection(db, 'users');
+        const userQuery = query(usersRef, where('email', '==', memberEmail));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          const userData = userDoc.data();
+          const joinedClubs = userData.joinedClubs || [];
+          const updatedJoinedClubs = joinedClubs.filter((clubId: string) => clubId !== selectedClubForMembers.id);
+          
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            joinedClubs: updatedJoinedClubs
+          });
+        }
+        
+        setClubMembers(updatedSubmissions);
+        toast.success('Member removed successfully');
+      }
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error('Failed to remove member');
+    }
+  };
+
+  useEffect(() => {
+    fetchSponsoredClubs();
+    fetchAllStudents();
+    fetchAvailableClubs();
+  }, [fetchSponsoredClubs, fetchAllStudents, fetchAvailableClubs]);
+
+  const filteredClubs = sponsoredClubs.filter(club =>
+    club.clubName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredStudents = allStudents.filter(student =>
+    !selectedCaptains.includes(student.email) &&
+    (student.name?.toLowerCase().includes(captainSearchQuery.toLowerCase()) ||
+     student.email.toLowerCase().includes(captainSearchQuery.toLowerCase()))
+  );
+
+  const filteredClubStudents = allStudents.filter(student =>
+    !clubInfoForm.captains?.includes(student.email) &&
+    (student.name?.toLowerCase().includes(clubCaptainSearchQuery.toLowerCase()) ||
+     student.email.toLowerCase().includes(clubCaptainSearchQuery.toLowerCase()))
+  );
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="max-w-md w-full px-6 text-center">
-          <div className="mb-8">
-            <div className="w-20 h-20 bg-[#38BFA1]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-3xl">🔒</span>
-            </div>
-            <h1 className="text-3xl font-semibold text-[#0A2540] mb-4">
-              Please Sign In
-            </h1>
-            <p className="text-gray-600 mb-8">
-              Sign in to manage your sponsored clubs
-            </p>
-            <button
-              onClick={() => document.querySelector<HTMLButtonElement>('[data-login-button]')?.click()}
-              className="bg-[#38BFA1] text-white px-8 py-3 rounded-lg hover:bg-[#2DA891] transition-colors inline-flex items-center gap-2"
-            >
-              <span>Sign In</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if user is a sponsor or admin
-  if (userRole !== 'sponsor' && userRole !== 'admin') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="max-w-md w-full px-6 text-center">
-          <div className="mb-8">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-3xl">🚫</span>
-            </div>
-            <h1 className="text-3xl font-semibold text-[#0A2540] mb-4">
-              Access Denied
-            </h1>
-            <p className="text-gray-600 mb-8">
-              You must be a sponsor or admin to access this dashboard.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Filter clubs based on search query and filters
-  const filterClubs = (clubs: ClubSite[]) => {
-    let filtered = clubs;
-    
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(club => 
-        club.clubName.toLowerCase().includes(query)
-      );
-    }
-    
-    // Category filter
-    if (categoryFilter) {
-      filtered = filtered.filter(club => 
-        club.category === categoryFilter
-      );
-    }
-    
-    // Status filter
-    if (statusFilter) {
-      if (statusFilter === 'assigned') {
-        filtered = filtered.filter(club => club.sponsorEmail);
-      } else if (statusFilter === 'unassigned') {
-        filtered = filtered.filter(club => !club.sponsorEmail);
-      } else if (statusFilter === 'has-captain') {
-        filtered = filtered.filter(club => club.captainEmail);
-      } else if (statusFilter === 'no-captain') {
-        filtered = filtered.filter(club => !club.captainEmail);
-      }
-    }
-    
-    return filtered;
-  };
-
-  const filteredSponsoredClubs = filterClubs(sponsoredClubs);
-  const unassignedClubs = allClubs.filter(club => !club.sponsorEmail);
-  const filteredUnassignedClubs = filterClubs(unassignedClubs);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0A2540] mb-4">
-              {userRole === 'admin' ? 'Admin Club Management' : 'Sponsor Dashboard'}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              {userRole === 'admin' ? 'Admin Dashboard' : 'Sponsor Dashboard'}
             </h1>
-            <p className="text-gray-600 max-w-2xl">
-              {userRole === 'admin' 
-                ? 'Manage all clubs, assign sponsors and captains, and view club websites.'
-                : 'Manage your sponsored clubs, assign captains, and view club websites.'
-              }
+            <p className="text-lg text-gray-600">
+              Manage your sponsored clubs and guide student leaders
             </p>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
+        {/* Sponsored Clubs Section */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
+                <SparklesIcon className="h-6 w-6 mr-2 text-[#38BFA1]" />
+                Your Sponsored Clubs
+              </h2>
+              <p className="text-gray-600 mt-1">
+                {filteredClubs.length} club{filteredClubs.length !== 1 ? 's' : ''} under your guidance
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDiscoverModal(true)}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-all duration-200"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Discover More Clubs
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search clubs by name..."
+                placeholder="Search your clubs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1] sm:text-sm"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] bg-white shadow-sm"
               />
             </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('cards')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'cards' 
-                    ? 'bg-[#38BFA1] text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-                title="Card View"
-              >
-                <ViewColumnsIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'table' 
-                    ? 'bg-[#38BFA1] text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-                title="Table View"
-              >
-                <TableCellsIcon className="h-5 w-5" />
-              </button>
-            </div>
           </div>
 
-          {/* Advanced Filters */}
-          <div className="flex flex-wrap gap-4">
-            {/* Category Filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-            >
-              <option value="">All Categories</option>
-              <option value="Academic">Academic</option>
-              <option value="Music, Arts, & Performing Arts">Music, Arts, & Performing Arts</option>
-              <option value="Sports & Athletics">Sports & Athletics</option>
-              <option value="Technology & Engineering">Technology & Engineering</option>
-              <option value="Leadership & Service">Leadership & Service</option>
-              <option value="Cultural & International">Cultural & International</option>
-              <option value="Science & Math">Science & Math</option>
-              <option value="Other">Other</option>
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-            >
-              <option value="">All Status</option>
-              <option value="assigned">Assigned to Sponsor</option>
-              <option value="unassigned">Unassigned</option>
-              <option value="has-captain">Has Captain</option>
-              <option value="no-captain">No Captain</option>
-            </select>
-
-            {/* Clear Filters */}
-            {(categoryFilter || statusFilter) && (
-              <button
-                onClick={() => {
-                  setCategoryFilter('');
-                  setStatusFilter('');
-                }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-        </div>
-
-        <Tab.Group>
-          <Tab.List className="flex space-x-1 rounded-xl bg-[#F0F9F6] p-1 mb-8">
-            <Tab
-              className={({ selected }) =>
-                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                ${selected 
-                  ? 'bg-[#38BFA1] text-white shadow'
-                  : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                }`
-              }
-            >
-              {userRole === 'admin' ? 'All Clubs' : 'My Sponsored Clubs'} ({filteredSponsoredClubs.length})
-            </Tab>
-            <Tab
-              className={({ selected }) =>
-                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
-                ${selected 
-                  ? 'bg-[#38BFA1] text-white shadow'
-                  : 'text-[#0A2540] hover:bg-white/[0.12] hover:text-[#38BFA1]'
-                }`
-              }
-            >
-              {userRole === 'admin' ? 'Unassigned Clubs' : 'Available Clubs'} ({filteredUnassignedClubs.length})
-            </Tab>
-          </Tab.List>
-          
-          {/* Bulk Actions Bar */}
-          {showBulkActions && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-blue-900">
-                    {selectedClubs.size} club{selectedClubs.size !== 1 ? 's' : ''} selected
-                  </span>
-                  <button
-                    onClick={() => setSelectedClubs(new Set())}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    Clear Selection
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  {userRole === 'admin' && (
-                    <button
-                      onClick={handleBulkAssignSponsor}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Assign as Sponsor
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      const captainEmail = prompt('Enter captain email:');
-                      if (captainEmail) {
-                        handleBulkAssignCaptain(captainEmail);
-                      }
-                    }}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Assign Captain
-                  </button>
-                </div>
+          {/* Clubs Grid */}
+          {filteredClubs.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
+                <UserGroupIcon className="h-16 w-16" />
               </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No clubs found</h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                {searchQuery.trim() 
+                  ? 'Try adjusting your search terms'
+                  : userRole === 'admin' 
+                    ? 'You haven\'t been assigned to sponsor any clubs yet'
+                    : 'You haven\'t sponsored any clubs yet. Discover clubs to get started!'
+                }
+              </p>
+              <button
+                onClick={() => setShowDiscoverModal(true)}
+                className="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-[#38BFA1] hover:bg-[#2DA891] transition-all duration-200"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Discover Your First Club
+              </button>
             </div>
-          )}
-          
-          <Tab.Panels>
-            {/* My Sponsored Clubs */}
-            <Tab.Panel>
-              {filteredSponsoredClubs.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500 mb-4">
-                    {searchQuery.trim() 
-                      ? 'No clubs match your search'
-                      : userRole === 'admin' ? 'No clubs found' : 'You haven\'t sponsored any clubs yet'
-                    }
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    {searchQuery.trim()
-                      ? 'Try adjusting your search terms'
-                      : userRole === 'admin' 
-                        ? 'All clubs are currently assigned to sponsors'
-                        : 'Go to "Available Clubs" to assign yourself as a sponsor'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Select All Checkbox */}
-                  <div className="mb-4 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedClubs.size === filteredSponsoredClubs.length && filteredSponsoredClubs.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
-                    />
-                    <span className="text-sm text-gray-600">Select All</span>
-                  </div>
-
-                  {viewMode === 'cards' ? (
-                    <div className="space-y-6">
-                      {filteredSponsoredClubs.map((club) => (
-                        <div key={club.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                          <div className="p-6">
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedClubs.has(club.id)}
-                                  onChange={() => handleToggleClubSelection(club.id)}
-                                  className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
-                                />
-                                <div className="flex-1">
-                                  <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{club.clubName}</h2>
-                                  <p className="text-sm text-gray-500 mb-4">
-                                    Category: {club.category || 'Uncategorized'} • 
-                                    Updated: {club.updatedAt.toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                {userRole === 'admin' ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {club.sponsorEmail ? 'Assigned' : 'Unassigned'}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Sponsored
-                                  </span>
-                                )}
-                                {userRole !== 'admin' && (
-                                  <button
-                                    onClick={() => handleRemoveSponsor(club.id)}
-                                    className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
-                                    title="Remove as sponsor"
-                                  >
-                                    <XCircleIcon className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                        
-                                                  <div className="mt-4 space-y-3">
-                            {club.description && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-500">Description:</span>
-                                <p className="mt-1 text-gray-900">{club.description}</p>
-                              </div>
-                            )}
-                            {club.meetingInfo && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-500">Meetings:</span>
-                                <span className="ml-2 text-gray-900">{club.meetingInfo}</span>
-                              </div>
-                            )}
-                            {club.jamboreeMeetingInfo?.table && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-500">Jamboree Table:</span>
-                                <span className="ml-2 text-gray-900">{club.jamboreeMeetingInfo.table}</span>
-                              </div>
-                            )}
-                            {club.jamboreeMeetingInfo?.email && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-500">Contact:</span>
-                                <span className="ml-2 text-gray-900">{club.jamboreeMeetingInfo.email}</span>
-                              </div>
-                            )}
-                            {userRole === 'admin' && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-500">Sponsor:</span>
-                                <span className="ml-2 text-gray-900">
-                                  {club.sponsorEmail || 'Not assigned'}
-                                </span>
-                              </div>
-                            )}
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Captain:</span>
-                              <span className="ml-2 text-gray-900">
-                                {club.captainEmail || 'Not assigned'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-6 flex space-x-3">
-                            <a
-                              href={`/${club.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                              <EyeIcon className="h-4 w-4 mr-2" />
-                              View Club Site
-                            </a>
-                            <button
-                              onClick={() => {
-                                setSelectedClub(club);
-                                setSelectedCaptain(club.captainEmail || '');
-                                setIsAssignModalOpen(true);
-                              }}
-                              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                              <UserIcon className="h-4 w-4 mr-2" />
-                              Assign Captain
-                            </button>
-                            {userRole === 'admin' && !club.sponsorEmail && (
-                              <button
-                                onClick={() => handleAssignSponsor(club.id)}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                              >
-                                <CheckCircleIcon className="h-5 w-5 mr-2" />
-                                Assign Sponsor
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  /* Table View */
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <input
-                              type="checkbox"
-                              checked={selectedClubs.size === filteredSponsoredClubs.length && filteredSponsoredClubs.length > 0}
-                              onChange={handleSelectAll}
-                              className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
-                            />
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Club Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Captain</th>
-                          {userRole === 'admin' && (
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sponsor</th>
-                          )}
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredSponsoredClubs.map((club) => (
-                          <tr key={club.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4">
-                              <input
-                                type="checkbox"
-                                checked={selectedClubs.has(club.id)}
-                                onChange={() => handleToggleClubSelection(club.id)}
-                                className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
-                              />
-                            </td>
-                            <td className="px-4 py-4">
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{club.clubName}</div>
-                                <div className="text-sm text-gray-500">{club.description?.substring(0, 50)}...</div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{club.category || 'Uncategorized'}</td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                userRole === 'admin' 
-                                  ? (club.sponsorEmail ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {userRole === 'admin' ? (club.sponsorEmail ? 'Assigned' : 'Unassigned') : 'Sponsored'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-900">{club.captainEmail || 'Not assigned'}</td>
-                            {userRole === 'admin' && (
-                              <td className="px-4 py-4 text-sm text-gray-900">{club.sponsorEmail || 'Not assigned'}</td>
-                            )}
-                            <td className="px-4 py-4 text-sm font-medium">
-                              <div className="flex space-x-2">
-                                <a
-                                  href={`/${club.slug}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-900"
-                                >
-                                  View
-                                </a>
-                                <button
-                                  onClick={() => {
-                                    setSelectedClub(club);
-                                    setSelectedCaptain(club.captainEmail || '');
-                                    setIsAssignModalOpen(true);
-                                  }}
-                                  className="text-gray-600 hover:text-gray-900"
-                                >
-                                  Assign Captain
-                                </button>
-                                {userRole === 'admin' && !club.sponsorEmail && (
-                                  <button
-                                    onClick={() => handleAssignSponsor(club.id)}
-                                    className="text-green-600 hover:text-green-900"
-                                  >
-                                    Assign Sponsor
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                </>
-              )}
-            </Tab.Panel>
-            
-            {/* Available Clubs */}
-            <Tab.Panel>
-              {filteredUnassignedClubs.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">
-                    {searchQuery.trim() ? 'No unassigned clubs match your search' : 'No unassigned clubs available'}
-                  </p>
-                  {searchQuery.trim() && (
-                    <p className="text-sm text-gray-400 mt-2">Try adjusting your search terms</p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {filteredUnassignedClubs.map((club) => (
-                    <div key={club.id} className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-                      <div className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h2 className="text-xl font-semibold text-[#0A2540] mb-2">{club.clubName}</h2>
-                            <p className="text-sm text-gray-500 mb-4">
-                              Category: {club.category || 'Uncategorized'} • 
-                              Updated: {club.updatedAt.toLocaleDateString()}
-                            </p>
-                          </div>
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Unassigned
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredClubs.map((club) => (
+                <div key={club.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group">
+                  <div className="p-6">
+                    {/* Club Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-[#38BFA1] transition-colors">
+                          {club.clubName}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {club.category || 'Uncategorized'} • {club.updatedAt.toLocaleDateString()}
+                        </p>
+                        {/* Show sponsor count */}
+                        <div className="mt-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0))}/4 Sponsors
                           </span>
                         </div>
-                        
-                        <div className="mt-4 space-y-3">
-                          {club.description && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Description:</span>
-                              <p className="mt-1 text-gray-900">{club.description}</p>
-                            </div>
-                          )}
-                          {club.meetingInfo && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Meetings:</span>
-                              <span className="ml-2 text-gray-900">{club.meetingInfo}</span>
-                            </div>
-                          )}
-                          {club.jamboreeMeetingInfo?.table && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Jamboree Table:</span>
-                              <span className="ml-2 text-gray-900">{club.jamboreeMeetingInfo.table}</span>
-                            </div>
-                          )}
-                          {userRole === 'admin' && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-500">Sponsor:</span>
-                              <span className="ml-2 text-gray-900">
-                                {club.sponsorEmail || 'Not assigned'}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Captain:</span>
-                            <span className="ml-2 text-gray-900">
-                              {club.captainEmail || 'Not assigned'}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSponsor(club.id)}
+                        className="p-2 rounded-full text-red-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+                        title="Remove as sponsor"
+                      >
+                        <XCircleIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    {/* Club Info */}
+                    <div className="space-y-3 mb-6">
+                      {club.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{club.description}</p>
+                      )}
+                      {club.meetingInfo && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">Meetings:</span> {club.meetingInfo}
+                        </p>
+                      )}
+                      <div className="flex items-center text-sm">
+                        <span className="font-medium text-gray-700 mr-2">Captains:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          getCaptainCount(club) > 0
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {getCaptainCount(club) > 0 
+                            ? `${getCaptainCount(club)}/4 Captains` 
+                            : 'Not assigned'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleOpenClubInfo(club)}
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        <PencilIcon className="h-3 w-3 mr-1" />
+                        Edit Info
+                      </button>
+                      <button
+                        onClick={() => handleOpenMembers(club)}
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        <UserGroupIcon className="h-3 w-3 mr-1" />
+                        Members
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedClub(club);
+                          setSelectedCaptains(club.captainEmails || []);
+                        }}
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        <UserIcon className="h-3 w-3 mr-1" />
+                        Assign Captains
+                      </button>
+                      <a
+                        href={`/${club.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                      >
+                        <EyeIcon className="h-3 w-3 mr-1" />
+                        View Site
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Discover Clubs Modal */}
+      {showDiscoverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-8 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Discover Clubs</h2>
+                  <p className="text-gray-600 mt-1">
+                    Find clubs that need sponsorship and guidance
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDiscoverModal(false)}
+                  className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-8">
+              {availableClubs.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
+                    <SparklesIcon className="h-16 w-16" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No clubs available</h3>
+                  <p className="text-gray-500">
+                    All clubs are currently assigned to sponsors.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableClubs.map((club) => (
+                    <div key={club.id} className="border border-gray-200 rounded-lg p-6 hover:border-[#38BFA1] transition-colors">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{club.clubName}</h3>
+                          <p className="text-sm text-gray-500">{club.category || 'Uncategorized'}</p>
+                          {/* Show current sponsor count */}
+                          <div className="mt-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0))}/4 Sponsors
                             </span>
                           </div>
                         </div>
-                        
-                        <div className="mt-6 flex space-x-3">
-                          <a
-                            href={`/${club.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <EyeIcon className="h-4 w-4 mr-2" />
-                            View Club Site
-                          </a>
-                          {userRole === 'admin' ? (
-                            <button
-                              onClick={() => handleAssignSponsor(club.id)}
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              <CheckCircleIcon className="h-5 w-5 mr-2" />
-                              Assign Sponsor
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleAssignSponsor(club.id)}
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              <CheckCircleIcon className="h-5 w-5 mr-2" />
-                              Assign as Sponsor
-                            </button>
-                          )}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          ((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4 ? 'Full' : 'Needs Sponsor'}
+                        </span>
+                      </div>
+                      
+                      {club.description && (
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{club.description}</p>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-500">
+                          Captains: {getCaptainCount(club) > 0 
+                            ? `${getCaptainCount(club)}/4` 
+                            : 'Not assigned'}
                         </div>
+                        <button
+                          onClick={() => handleAssignSponsor(club.id)}
+                          disabled={((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4}
+                          className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            ((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'text-white bg-[#38BFA1] hover:bg-[#2DA891]'
+                          }`}
+                        >
+                          <PlusIcon className="h-4 w-4 mr-2" />
+                          {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4 ? 'Full' : 'Become Sponsor'}
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </Tab.Panel>
-          </Tab.Panels>
-        </Tab.Group>
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Assign Captain Modal */}
-      {isAssignModalOpen && selectedClub && (
+      {/* Assign Captains Modal */}
+      {selectedClub && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 shadow-xl">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Assign Captain</h2>
+              <h2 className="text-xl font-bold text-gray-900">Assign Captains</h2>
               <p className="text-gray-600 mt-1 text-sm">
-                Assign a captain to {selectedClub.clubName}
+                Assign up to 4 captains to {selectedClub.clubName}
               </p>
             </div>
             
             <div className="p-6">
-              <label className="block text-gray-700 font-medium mb-2 text-sm">
-                Select Captain
-              </label>
-              <select
-                value={selectedCaptain}
-                onChange={(e) => setSelectedCaptain(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">No captain assigned</option>
-                {users
-                  .filter(u => u.role === 'captain' || u.role === 'admin')
-                  .map((user) => (
-                    <option key={user.uid} value={user.email}>
-                      {user.name || user.email} ({user.role})
-                    </option>
+              {/* Search Bar */}
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search students by name or email..."
+                    value={captainSearchQuery}
+                    onChange={(e) => setCaptainSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  />
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Selected Captains */}
+              {selectedCaptains.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Selected Captains ({selectedCaptains.length}/4)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCaptains.map((email) => {
+                      const student = allStudents.find(s => s.email === email);
+                      return (
+                        <div key={email} className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                          <span>{student?.name || email}</span>
+                          <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                            student?.role === 'captain' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {student?.role || 'student'}
+                          </span>
+                          <button
+                            onClick={() => setSelectedCaptains(selectedCaptains.filter(e => e !== email))}
+                            className="ml-2 text-green-600 hover:text-green-800"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Available Students and Captains */}
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Available Students & Captains</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                  {filteredStudents.map((student) => (
+                    <button
+                      key={student.uid}
+                      onClick={() => {
+                        if (!selectedCaptains.includes(student.email)) {
+                          if (selectedCaptains.length < 4) {
+                            setSelectedCaptains([...selectedCaptains, student.email]);
+                          } else {
+                            toast.error('Maximum 4 captains allowed');
+                          }
+                        }
+                      }}
+                      disabled={selectedCaptains.includes(student.email)}
+                      className={`p-3 text-left rounded-lg border transition-all ${
+                        selectedCaptains.includes(student.email)
+                          ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-white border-gray-200 hover:border-[#38BFA1] hover:bg-[#38BFA1]/5 cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-sm">{student.name || 'No name'}</div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          student.role === 'captain' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {student.role || 'student'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">{student.email}</div>
+                    </button>
                   ))}
-              </select>
+                </div>
+              </div>
+
+              {filteredStudents.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No students or captains found matching your search.
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => {
-                  setIsAssignModalOpen(false);
                   setSelectedClub(null);
-                  setSelectedCaptain('');
+                  setSelectedCaptains([]);
+                  setCaptainSearchQuery('');
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button 
-                onClick={handleAssignCaptain}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                onClick={handleAssignCaptains}
+                disabled={selectedCaptains.length === 0}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  selectedCaptains.length === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
+                }`}
               >
-                Assign Captain
+                Assign {selectedCaptains.length} Captain{selectedCaptains.length !== 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Club Info Modal */}
+      {showClubInfoModal && selectedClubForInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Edit Club Information</h2>
+              <p className="text-gray-600 mt-1 text-sm">
+                Update information for {selectedClubForInfo.clubName}
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Description
+                </label>
+                <textarea
+                  value={clubInfoForm.description}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  rows={4}
+                  placeholder="Enter club description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Meeting Information
+                </label>
+                <textarea
+                  value={clubInfoForm.meetingInfo}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, meetingInfo: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  rows={3}
+                  placeholder="Enter meeting times and location"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Category
+                </label>
+                <select
+                  value={clubInfoForm.category}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                >
+                  <option value="">Select Category</option>
+                  <option value="STEM">STEM</option>
+                  <option value="Humanities">Humanities</option>
+                  <option value="Business">Business</option>
+                  <option value="Music, Arts, & Performing Arts">Music, Arts, & Performing Arts</option>
+                  <option value="Academic">Academic</option>
+                  <option value="Language & Culture">Language & Culture</option>
+                  <option value="Medical">Medical</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Community Service & Leadership">Community Service & Leadership</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Activity Types
+                </label>
+                <div className="space-y-2">
+                  {['Competitive', 'Leadership', 'Tryout', 'Public Speaking', 'Performance', 'Casual', 'Academic'].map((type) => (
+                    <label key={type} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={clubInfoForm.activityTypes.includes(type)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              activityTypes: [...prev.activityTypes, type] 
+                            }));
+                          } else {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              activityTypes: prev.activityTypes.filter(t => t !== type) 
+                            }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Jamboree Table
+                </label>
+                <input
+                  type="text"
+                  value={clubInfoForm.jamboreeTable}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, jamboreeTable: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  placeholder="Enter jamboree table number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Contact Email
+                </label>
+                <input
+                  type="email"
+                  value={clubInfoForm.contactEmail}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, contactEmail: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  placeholder="Enter contact email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Captains (up to 4)
+                </label>
+                
+                {/* Search for captains */}
+                <div className="mb-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search students by name or email..."
+                      value={clubCaptainSearchQuery}
+                      onChange={(e) => setClubCaptainSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-sm"
+                    />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+
+                {/* Selected Captains */}
+                {clubInfoForm.captains && clubInfoForm.captains.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {clubInfoForm.captains.map((email) => {
+                        const student = allStudents.find(s => s.email === email);
+                        return (
+                          <div key={email} className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                            <span>{student?.name || email}</span>
+                            <span className={`ml-1 inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
+                              student?.role === 'captain' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {student?.role || 'student'}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setClubInfoForm(prev => ({ 
+                                  ...prev, 
+                                  captains: prev.captains.filter(e => e !== email) 
+                                }));
+                              }}
+                              className="ml-1 text-green-600 hover:text-green-800"
+                            >
+                              <XCircleIcon className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Available Students */}
+                <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {filteredClubStudents.map((student) => (
+                    <button
+                      key={student.uid}
+                      onClick={() => {
+                        const currentCaptains = clubInfoForm.captains || [];
+                        if (!currentCaptains.includes(student.email)) {
+                          if (currentCaptains.length < 4) {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              captains: [...currentCaptains, student.email] 
+                            }));
+                          } else {
+                            toast.error('Maximum 4 captains allowed');
+                          }
+                        }
+                      }}
+                      disabled={clubInfoForm.captains?.includes(student.email)}
+                      className={`w-full p-2 text-left rounded transition-all ${
+                        clubInfoForm.captains?.includes(student.email)
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white hover:bg-[#38BFA1]/5 cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-xs">{student.name || 'No name'}</div>
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
+                          student.role === 'captain' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {student.role || 'student'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">{student.email}</div>
+                    </button>
+                  ))}
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  {(clubInfoForm.captains?.length || 0)}/4 captains selected
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowClubInfoModal(false);
+                  setSelectedClubForInfo(null);
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveClubInfo}
+                className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Members Modal */}
+      {showMembersModal && selectedClubForMembers && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Club Members</h2>
+              <p className="text-gray-600 mt-1 text-sm">
+                Manage members for {selectedClubForMembers.clubName}
+              </p>
+            </div>
+            
+            <div className="p-6">
+              {clubMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No members have joined this club yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 px-4 py-2 bg-gray-50 rounded-lg font-medium text-sm">
+                    <div>Name</div>
+                    <div>Email</div>
+                    <div>Actions</div>
+                  </div>
+                  
+                  {clubMembers.map((member, index) => (
+                    <div key={index} className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-gray-100 last:border-0">
+                      <div className="text-sm">{member.name}</div>
+                      <div className="text-sm">{member.email}</div>
+                      <div>
+                        <button
+                          onClick={() => handleRemoveMember(member.email)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowMembersModal(false);
+                  setSelectedClubForMembers(null);
+                  setClubMembers([]);
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -960,4 +1193,4 @@ export default function SponsorDashboard() {
       )}
     </div>
   );
-} 
+}

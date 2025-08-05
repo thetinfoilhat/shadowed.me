@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db, UserRole } from '@/lib/firebase';
 import { Tab } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
@@ -32,7 +32,10 @@ interface ClubListing {
   updatedAt: Date;
   category?: string;
   sponsorEmail?: string;
+  sponsorEmails?: string[];
   captainEmail?: string;
+  captainEmails?: string[];
+  captains?: string[];
   description?: string;
   meetingInfo?: string;
   status?: 'pending' | 'approved' | 'rejected';
@@ -238,13 +241,57 @@ export default function AdminDashboard() {
 
   const handleUpdateClubAssignments = async (clubId: string, captains: string[], sponsors: string[]) => {
     try {
+      // Get captain display names for jamboreeMeetingInfo
+      const captainDisplayNames = [];
+      if (captains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of captains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const displayName = userData.displayName || userData.name || captainEmail;
+            captainDisplayNames.push(displayName);
+          } else {
+            captainDisplayNames.push(captainEmail);
+          }
+        }
+      }
+      
       const clubRef = doc(db, 'clubSites', clubId);
       await updateDoc(clubRef, {
-        captainEmail: captains[0] || null,
-        sponsorEmail: sponsors[0] || null,
-        captains: captains,
-        sponsorEmails: sponsors
+        captainEmails: captains,
+        sponsorEmails: sponsors,
+        'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
+        updatedAt: new Date()
       });
+      
+      // Update captainClubs array for all assigned captains
+      if (captains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of captains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const currentCaptainClubs = userData.captainClubs || [];
+            
+            // Add club to captain's captainClubs array if not already there
+            const updatedCaptainClubs = currentCaptainClubs.includes(clubId) 
+              ? currentCaptainClubs 
+              : [...currentCaptainClubs, clubId];
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              captainClubs: updatedCaptainClubs
+            });
+          }
+        }
+      }
+      
       toast.success('Club assignments updated successfully');
       fetchClubs();
       setShowClubEditModal(false);
@@ -270,6 +317,27 @@ export default function AdminDashboard() {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');
     }
+  };
+
+  // Helper functions to get sponsor and captain information
+  const getSponsorInfo = (club: ClubListing): string => {
+    if (club.sponsorEmails && club.sponsorEmails.length > 0) {
+      return `${club.sponsorEmails.length} sponsor${club.sponsorEmails.length > 1 ? 's' : ''}`;
+    } else if (club.sponsorEmail) {
+      return '1 sponsor';
+    }
+    return 'Not assigned';
+  };
+
+  const getCaptainInfo = (club: ClubListing): string => {
+    if (club.captainEmails && club.captainEmails.length > 0) {
+      return `${club.captainEmails.length} captain${club.captainEmails.length > 1 ? 's' : ''}`;
+    } else if (club.captains && club.captains.length > 0) {
+      return `${club.captains.length} captain${club.captains.length > 1 ? 's' : ''}`;
+    } else if (club.captainEmail) {
+      return '1 captain';
+    }
+    return 'Not assigned';
   };
 
   // Delete individual club
@@ -527,8 +595,8 @@ export default function AdminDashboard() {
                               {club.status || 'pending'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{club.sponsorEmail || 'Not assigned'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{club.captainEmail || 'Not assigned'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{getSponsorInfo(club)}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{getCaptainInfo(club)}</td>
                                                        <td className="px-6 py-4 text-sm font-medium">
                                <div className="flex space-x-2">
                                  <a
