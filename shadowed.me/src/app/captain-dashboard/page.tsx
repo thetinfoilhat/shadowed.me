@@ -224,11 +224,11 @@ export default function CaptainDashboard() {
         // Check if user is a captain of this club
         const isCaptain = 
           (typeof siteData.captain === 'string' && siteData.captain === user.email) || 
-          (Array.isArray(siteData.captains) && siteData.captains.includes(user.email)) ||
-          (Array.isArray(siteData.captainEmails) && siteData.captainEmails.includes(user.email)) ||
+          (Array.isArray(siteData.captains) && siteData.captains.includes(user.email!)) ||
+          (Array.isArray(siteData.captainEmails) && siteData.captainEmails.includes(user.email!)) ||
           (siteData.jamboreeMeetingInfo?.captains && 
            typeof siteData.jamboreeMeetingInfo.captains === 'string' && 
-           siteData.jamboreeMeetingInfo.captains.includes(user.email));
+           siteData.jamboreeMeetingInfo.captains.includes(user.email!));
         
         if (isCaptain) {
           clubsData.push(siteData);
@@ -276,10 +276,10 @@ export default function CaptainDashboard() {
       const currentCaptains = club.jamboreeMeetingInfo?.captains || '';
       
       // Get user's display name
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userDocForDisplay = await getDoc(doc(db, 'users', user.uid));
       let userDisplayName = user.email;
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      if (userDocForDisplay.exists()) {
+        const userData = userDocForDisplay.data();
         userDisplayName = userData.displayName || userData.name || user.email;
       }
       
@@ -296,9 +296,9 @@ export default function CaptainDashboard() {
       
       // Remove club from user's captainClubs array
       const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      const userDocForClubs = await getDoc(userRef);
+      if (userDocForClubs.exists()) {
+        const userData = userDocForClubs.data();
         const updatedCaptainClubs = (userData.captainClubs || []).filter((clubId: string) => clubId !== club.id);
         
         await updateDoc(userRef, {
