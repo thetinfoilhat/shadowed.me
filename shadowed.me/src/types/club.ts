@@ -62,6 +62,37 @@ export interface ClubListing {
   sponsorEmails?: string[];
 }
 
+export interface MeetingOpportunity {
+  id: string;
+  clubId: string;
+  clubName: string;
+  title: string;
+  description: string;
+  roomNumber: string;
+  startTime: string;
+  endTime: string;
+  startDate: string;
+  endDate?: string; // For recurring meetings
+  isRecurring: boolean;
+  recurringPattern?: 'weekly' | 'biweekly' | 'monthly';
+  recurringDays?: string[]; // ['monday', 'wednesday', 'friday']
+  maxParticipants?: number;
+  currentParticipants: number;
+  participants: {
+    name: string;
+    email: string;
+    grade?: string;
+    school?: string;
+    signupDate: Date;
+  }[];
+  createdBy: string; // captain/sponsor/admin email
+  createdAt: Date;
+  updatedAt: Date;
+  status: 'active' | 'cancelled' | 'completed';
+  category?: string;
+  tags?: string[];
+}
+
 export interface ClubSite {
   id: string;
   slug: string;
@@ -136,4 +167,5 @@ export interface ClubSite {
       timestamp: number;
     }[];
   };
+  meetings?: MeetingOpportunity[]; // New field for club meetings/opportunities
 } 

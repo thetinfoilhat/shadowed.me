@@ -1,18 +1,20 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 // import { format } from 'date-fns';
 import VisitModal from '@/components/VisitModal';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit, ClubSite /* , ClubListing */ } from '@/types/club';
+import { Club, CompletedVisit, ClubSite, MeetingOpportunity /* , ClubListing */ } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { getColorById } from '@/utils/colors';
+import MeetingOpportunityModal from '@/components/MeetingOpportunityModal';
+import MeetingCalendar from '@/components/MeetingCalendar';
 
 interface Applicant {
   name: string;
@@ -50,7 +52,7 @@ interface VisitData {
 }
 
 export default function CaptainDashboard() {
-  const { user, userRole, captainClubs, refreshUserData } = useAuth();
+  const { user, userRole, refreshUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<Club | null>(null);
@@ -73,6 +75,17 @@ export default function CaptainDashboard() {
     isOpen: boolean;
     club: ClubSite | null;
   }>({ isOpen: false, club: null });
+  
+  // Meeting management state
+  const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<MeetingOpportunity | null>(null);
+  const [selectedClubForMeeting, setSelectedClubForMeeting] = useState<ClubSite | null>(null);
+  const [meetingsExpanded, setMeetingsExpanded] = useState(true);
+  
+  // Ref to track assigned clubs to prevent infinite loops
+  const assignedClubsRef = useRef<string[]>([]);
+  
   const router = useRouter();
 
   // Fetch user role and refresh user data
@@ -97,6 +110,115 @@ export default function CaptainDashboard() {
       refreshUserData();
     }
   }, [user, refreshUserData]);
+
+  // Fetch meetings for all assigned clubs
+  const fetchMeetings = useCallback(async () => {
+    const currentAssignedClubs = assignedClubs;
+    if (!currentAssignedClubs.length) return;
+    
+    // Check if we've already fetched meetings for these clubs
+    const currentClubIds = currentAssignedClubs.map(club => club.id).sort();
+    const previousClubIds = assignedClubsRef.current.sort();
+    
+    if (JSON.stringify(currentClubIds) === JSON.stringify(previousClubIds)) {
+      return; // Already fetched for these clubs
+    }
+    
+    try {
+      const allMeetings: MeetingOpportunity[] = [];
+      
+      for (const club of currentAssignedClubs) {
+        const response = await fetch(`/api/meetings?clubId=${club.id}&status=active`);
+        if (response.ok) {
+          const data = await response.json();
+          allMeetings.push(...data.meetings);
+        }
+      }
+      
+      setMeetings(allMeetings);
+      assignedClubsRef.current = currentClubIds;
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      toast.error('Failed to fetch meetings');
+    }
+  }, [assignedClubs]);
+
+  // Store fetchMeetings in a ref to avoid dependency issues
+  const fetchMeetingsRef = useRef(fetchMeetings);
+  fetchMeetingsRef.current = fetchMeetings;
+
+  // Meeting management functions
+  const handleCreateMeeting = async (meetingData: Partial<MeetingOpportunity>) => {
+    try {
+      const response = await fetch('/api/meetings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meetingData),
+      });
+
+      if (response.ok) {
+        toast.success('Meeting created successfully');
+        fetchMeetings();
+        setIsMeetingModalOpen(false);
+        setEditingMeeting(null);
+        setSelectedClubForMeeting(null);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to create meeting');
+      }
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+      toast.error('Failed to create meeting');
+    }
+  };
+
+  const handleUpdateMeeting = async (meetingData: Partial<MeetingOpportunity>) => {
+    if (!editingMeeting) return;
+    
+    try {
+      const response = await fetch('/api/meetings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          meetingId: editingMeeting.id,
+          ...meetingData,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Meeting updated successfully');
+        fetchMeetings();
+        setIsMeetingModalOpen(false);
+        setEditingMeeting(null);
+        setSelectedClubForMeeting(null);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update meeting');
+      }
+    } catch (error) {
+      console.error('Error updating meeting:', error);
+      toast.error('Failed to update meeting');
+    }
+  };
+
+
+
+  const openMeetingModal = (club: ClubSite, meeting?: MeetingOpportunity) => {
+    setSelectedClubForMeeting(club);
+    setEditingMeeting(meeting || null);
+    setIsMeetingModalOpen(true);
+  };
+
+  // Fetch meetings when assigned clubs change
+  useEffect(() => {
+    if (assignedClubs.length > 0) {
+      fetchMeetingsRef.current();
+    }
+  }, [assignedClubs]);
 
   // Add function to fetch sponsor names
   const fetchSponsorNames = useCallback(async (visits: Club[]) => {
@@ -249,7 +371,7 @@ export default function CaptainDashboard() {
     } else {
       setLoading(false);
     }
-  }, [user, captainClubs, fetchCaptainVisits, fetchCaptainWebsites, fetchCaptainClubs]);
+  }, [user, fetchCaptainVisits, fetchCaptainWebsites, fetchCaptainClubs]);
   
   // Refresh data when user role changes (e.g., when promoted to captain)
   useEffect(() => {
@@ -472,52 +594,114 @@ export default function CaptainDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0A2540]">Captain Dashboard</h1>
-          {/* Create Visit button commented out 
-          <div className="flex gap-4">
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-[#38BFA1] text-white px-4 py-2 rounded-lg hover:bg-[#2DA891] transition-colors"
-            >
-              Create Visit
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Captain Dashboard</h1>
+              <p className="text-gray-600 mt-2">Manage your club websites and captain assignments</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-sm text-gray-500">Welcome back</div>
+                <div className="font-medium text-gray-900">{user?.email}</div>
+              </div>
+            </div>
           </div>
-          */}
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-sm font-medium text-gray-500">Club Websites</div>
+                <div className="text-2xl font-bold text-gray-900">{websites.length}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-sm font-medium text-gray-500">Captain Assignments</div>
+                <div className="text-2xl font-bold text-gray-900">{assignedClubs.length}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-sm font-medium text-gray-500">Last Updated</div>
+                <div className="text-2xl font-bold text-gray-900">Today</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Club Websites Section */}
-        <div className="mb-8">
-          <button 
-            onClick={() => setWebsitesExpanded(!websitesExpanded)}
-            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
-          >
-            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
-              Your Club Websites
-              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
-                {websites.length}
-              </span>
-            </h2>
-            {websitesExpanded ? (
-              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Your Club Websites</h2>
+                  <p className="text-sm text-gray-500">Manage and edit your club websites</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setWebsitesExpanded(!websitesExpanded)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {websitesExpanded ? (
+                  <ChevronUpIcon className="h-5 w-5" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
 
           {websitesExpanded && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="p-6">
               {websites.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {websites.map((website) => (
                     <div
                       key={website.id}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+                      className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors group"
                     >
                       <div 
-                        className="h-40 bg-cover bg-center relative" 
+                        className="h-32 bg-cover bg-center relative" 
                         style={{ 
                           backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value,
                           backgroundImage: website.bannerImage ? `url(${website.bannerImage})` : undefined
@@ -525,36 +709,39 @@ export default function CaptainDashboard() {
                       >
                         {!website.bannerImage && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <h2 className="text-3xl font-bold text-white px-4 text-center">
+                            <h3 className="text-xl font-bold text-white px-4 text-center">
                               {website.clubName}
-                            </h2>
+                            </h3>
                           </div>
                         )}
-                      </div>
-                      <div className="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-black mb-2">
-                            {website.clubName}
-                          </h3>
-                          <p className="text-black mb-2 line-clamp-2">
-                            {website.slogan || website.description?.substring(0, 100) || 'No description available.'}
-                          </p>
+                        <div className="absolute top-2 right-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/90 text-gray-700">
+                            Website
+                          </span>
                         </div>
-                        <div className="flex justify-between items-center mt-4">
-                          <span className="text-sm text-black">
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">
+                          {website.clubName}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {website.slogan || website.description?.substring(0, 80) || 'No description available.'}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
                             Updated {new Date(website.updatedAt).toLocaleDateString()}
                           </span>
                           <div className="flex gap-2">
                             <button
                               onClick={() => router.push(`/${website.slug}?edit=true`)}
-                              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-opacity"
+                              className="px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-opacity"
                               style={{ backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value }}
                             >
-                              Edit Site
+                              Edit
                             </button>
                             <button
                               onClick={() => router.push(`/${website.slug}`)}
-                              className="px-3 py-1.5 border text-black rounded-md hover:bg-gray-50"
+                              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                             >
                               View
                             </button>
@@ -565,13 +752,19 @@ export default function CaptainDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <p className="text-black">You haven&apos;t created any websites yet.</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                                     <h3 className="text-lg font-medium text-gray-900 mb-2">No websites yet</h3>
+                   <p className="text-gray-500 mb-6">You haven&apos;t created any club websites yet.</p>
                   <button
                     onClick={() => router.push('/clubs')}
-                    className="mt-4 px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                   >
-                    Create a Website
+                    Create Website
                   </button>
                 </div>
               )}
@@ -580,35 +773,44 @@ export default function CaptainDashboard() {
         </div>
 
         {/* Captain Assignments Section */}
-        <div className="mb-8">
-          <button 
-            onClick={() => setAssignedClubsExpanded(!assignedClubsExpanded)}
-            className="w-full flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-4 hover:bg-gray-200 transition-colors"
-          >
-            <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
-              Your Captain Assignments
-              <span className="ml-2 bg-[#38BFA1] text-white text-sm px-2 py-0.5 rounded-full">
-                {assignedClubs.length}
-              </span>
-            </h2>
-            {assignedClubsExpanded ? (
-              <ChevronUpIcon className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Captain Assignments</h2>
+                  <p className="text-sm text-gray-500">Clubs where you are assigned as captain</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAssignedClubsExpanded(!assignedClubsExpanded)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {assignedClubsExpanded ? (
+                  <ChevronUpIcon className="h-5 w-5" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
 
           {assignedClubsExpanded && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="p-6">
               {assignedClubs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {assignedClubs.map((club) => (
                     <div
                       key={club.id}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+                      className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors group"
                     >
                       <div 
-                        className="h-40 bg-cover bg-center relative" 
+                        className="h-32 bg-cover bg-center relative" 
                         style={{ 
                           backgroundColor: getColorById(club.theme?.primaryColor || 'blue').value,
                           backgroundImage: club.bannerImage ? `url(${club.bannerImage})` : undefined
@@ -616,41 +818,46 @@ export default function CaptainDashboard() {
                       >
                         {!club.bannerImage && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <h2 className="text-3xl font-bold text-white px-4 text-center">
+                            <h3 className="text-xl font-bold text-white px-4 text-center">
                               {club.clubName}
-                            </h2>
+                            </h3>
                           </div>
                         )}
-                      </div>
-                      <div className="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-black mb-2">
-                            {club.clubName}
-                          </h3>
-                          <p className="text-black mb-2 line-clamp-2">
-                            {club.slogan || club.description?.substring(0, 100) || 'No description available.'}
-                          </p>
-                          <div className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">Category:</span> {club.category || 'Not specified'}
-                          </div>
+                        <div className="absolute top-2 right-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Captain
+                          </span>
                         </div>
-                        <div className="flex justify-between items-center mt-4">
-                          <span className="text-sm text-black">
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">
+                          {club.clubName}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                          {club.slogan || club.description?.substring(0, 80) || 'No description available.'}
+                        </p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {club.category || 'Club'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
                             Updated {new Date(club.updatedAt).toLocaleDateString()}
                           </span>
                           <div className="flex gap-2">
                             <button
                               onClick={() => router.push(`/${club.slug}?edit=true`)}
-                              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-opacity"
+                              className="px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-opacity"
                               style={{ backgroundColor: getColorById(club.theme?.primaryColor || 'blue').value }}
                             >
-                              Edit Site
+                              Edit
                             </button>
                             <button
                               onClick={() => setConfirmRemoveCaptain({ isOpen: true, club })}
-                              className="px-3 py-1.5 border border-red-500 text-red-500 rounded-md hover:bg-red-50 transition-colors"
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
                             >
-                              Remove Self
+                              Remove
                             </button>
                           </div>
                         </div>
@@ -659,9 +866,88 @@ export default function CaptainDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <p className="text-black">You&apos;re not assigned as captain to any clubs yet.</p>
-                  <p className="text-sm text-gray-600 mt-2">Admins or sponsors can assign you as captain to clubs.</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                                     <h3 className="text-lg font-medium text-gray-900 mb-2">No captain assignments</h3>
+                   <p className="text-gray-500 mb-6">You&apos;re not assigned as captain to any clubs yet.</p>
+                  <p className="text-sm text-gray-400">Admins or sponsors can assign you as captain to clubs.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Meetings Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <CalendarIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Club Meetings</h2>
+                  <p className="text-sm text-gray-500">Manage meetings and opportunities for your clubs</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMeetingsExpanded(!meetingsExpanded)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {meetingsExpanded ? (
+                    <ChevronUpIcon className="h-5 w-5" />
+                  ) : (
+                    <ChevronDownIcon className="h-5 w-5" />
+                  )}
+                </button>
+                {assignedClubs.length > 0 && (
+                  <button
+                    onClick={() => openMeetingModal(assignedClubs[0])}
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Create Meeting
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {meetingsExpanded && (
+            <div className="p-6">
+              {meetings.length > 0 ? (
+                <MeetingCalendar
+                  meetings={meetings}
+                  onMeetingClick={(meeting) => {
+                    const club = assignedClubs.find(c => c.id === meeting.clubId);
+                    if (club) {
+                      openMeetingModal(club, meeting);
+                    }
+                  }}
+                  userRole="captain"
+                  showSignUpButton={false}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CalendarIcon className="h-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings scheduled</h3>
+                  <p className="text-gray-500 mb-6">You haven&apos;t created any meetings for your clubs yet.</p>
+                  {assignedClubs.length > 0 && (
+                    <button
+                      onClick={() => openMeetingModal(assignedClubs[0])}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Create Your First Meeting
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1091,6 +1377,23 @@ export default function CaptainDashboard() {
           message={`Are you sure you want to remove yourself as captain of "${confirmRemoveCaptain.club?.clubName}"? This action cannot be undone and you will lose access to edit this club's website.`}
           confirmText="Remove Self"
         />
+
+        {/* Meeting Opportunity Modal */}
+        {selectedClubForMeeting && (
+          <MeetingOpportunityModal
+            isOpen={isMeetingModalOpen}
+            onClose={() => {
+              setIsMeetingModalOpen(false);
+              setEditingMeeting(null);
+              setSelectedClubForMeeting(null);
+            }}
+            onSubmit={editingMeeting ? handleUpdateMeeting : handleCreateMeeting}
+            initialData={editingMeeting}
+            clubId={selectedClubForMeeting.id}
+            clubName={selectedClubForMeeting.clubName}
+            userEmail={user?.email || ''}
+          />
+        )}
       </div>
     </div>
   );
