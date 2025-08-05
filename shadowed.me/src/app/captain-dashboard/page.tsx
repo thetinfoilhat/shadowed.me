@@ -207,8 +207,8 @@ export default function CaptainDashboard() {
 
 
 
-  const openMeetingModal = (club: ClubSite, meeting?: MeetingOpportunity) => {
-    setSelectedClubForMeeting(club);
+  const openMeetingModal = (club?: ClubSite, meeting?: MeetingOpportunity) => {
+    setSelectedClubForMeeting(club || null);
     setEditingMeeting(meeting || null);
     setIsMeetingModalOpen(true);
   };
@@ -907,7 +907,7 @@ export default function CaptainDashboard() {
                 </button>
                 {assignedClubs.length > 0 && (
                   <button
-                    onClick={() => openMeetingModal(assignedClubs[0])}
+                    onClick={() => openMeetingModal()}
                     className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700 transition-colors"
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
@@ -941,7 +941,7 @@ export default function CaptainDashboard() {
                   <p className="text-gray-500 mb-6">You haven&apos;t created any meetings for your clubs yet.</p>
                   {assignedClubs.length > 0 && (
                     <button
-                      onClick={() => openMeetingModal(assignedClubs[0])}
+                      onClick={() => openMeetingModal()}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
                     >
                       <PlusIcon className="h-4 w-4 mr-2" />
@@ -1379,21 +1379,20 @@ export default function CaptainDashboard() {
         />
 
         {/* Meeting Opportunity Modal */}
-        {selectedClubForMeeting && (
-          <MeetingOpportunityModal
-            isOpen={isMeetingModalOpen}
-            onClose={() => {
-              setIsMeetingModalOpen(false);
-              setEditingMeeting(null);
-              setSelectedClubForMeeting(null);
-            }}
-            onSubmit={editingMeeting ? handleUpdateMeeting : handleCreateMeeting}
-            initialData={editingMeeting}
-            clubId={selectedClubForMeeting.id}
-            clubName={selectedClubForMeeting.clubName}
-            userEmail={user?.email || ''}
-          />
-        )}
+        <MeetingOpportunityModal
+          isOpen={isMeetingModalOpen}
+          onClose={() => {
+            setIsMeetingModalOpen(false);
+            setEditingMeeting(null);
+            setSelectedClubForMeeting(null);
+          }}
+          onSubmit={editingMeeting ? handleUpdateMeeting : handleCreateMeeting}
+          initialData={editingMeeting}
+          clubId={selectedClubForMeeting?.id}
+          clubName={selectedClubForMeeting?.clubName}
+          userEmail={user?.email || ''}
+          availableClubs={assignedClubs.map(club => ({ id: club.id, clubName: club.clubName }))}
+        />
       </div>
     </div>
   );

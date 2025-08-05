@@ -63,6 +63,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
   const hasMembers = website.members && website.members.length > 0;
   const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
+  const hasMeetings = website.meetings && website.meetings.length > 0;
   
   // Get theme values
   const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
@@ -600,6 +601,75 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
             </div>
           </div>
+          
+          {/* Meetings Section */}
+          {hasMeetings && (
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
+                Upcoming Meetings
+              </h2>
+              
+              <div className="space-y-4">
+                {website.meetings
+                  ?.filter(meeting => meeting.status === 'active')
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((meeting, index) => (
+                    <div key={`meeting-${index}`} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900">{meeting.title}</h3>
+                        {meeting.isRecurring && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Recurring
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{new Date(meeting.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <span>Room {meeting.roomNumber}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
+                        </div>
+                      </div>
+                      
+                      {meeting.tags && meeting.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {meeting.tags.map(tag => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
           
           {/* Club Leadership Section */}
           {((website.captainEmails && website.captainEmails.length > 0) || 

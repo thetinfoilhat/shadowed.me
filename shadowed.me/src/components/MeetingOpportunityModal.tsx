@@ -11,9 +11,10 @@ interface MeetingOpportunityModalProps {
   onClose: () => void;
   onSubmit: (meeting: Partial<MeetingOpportunity>) => Promise<void>;
   initialData?: MeetingOpportunity | null;
-  clubId: string;
-  clubName: string;
+  clubId?: string;
+  clubName?: string;
   userEmail: string;
+  availableClubs?: { id: string; clubName: string }[];
 }
 
 const DAYS_OF_WEEK = [
@@ -38,8 +39,8 @@ export default function MeetingOpportunityModal({
   onSubmit,
   initialData,
   clubId,
-  clubName,
   userEmail,
+  availableClubs = [],
 }: MeetingOpportunityModalProps) {
   const [formData, setFormData] = useState({
     title: '',
@@ -53,7 +54,7 @@ export default function MeetingOpportunityModal({
     recurringPattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly',
     recurringDays: [] as string[],
     maxParticipants: 0,
-    category: '',
+    selectedClubId: clubId || '',
     tags: [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +73,7 @@ export default function MeetingOpportunityModal({
         recurringPattern: initialData.recurringPattern || 'weekly',
         recurringDays: initialData.recurringDays || [],
         maxParticipants: initialData.maxParticipants || 0,
-        category: initialData.category || '',
+        selectedClubId: initialData.clubId || clubId || '',
         tags: initialData.tags || [],
       });
     } else {
@@ -88,17 +89,17 @@ export default function MeetingOpportunityModal({
         recurringPattern: 'weekly',
         recurringDays: [],
         maxParticipants: 0,
-        category: '',
+        selectedClubId: clubId || '',
         tags: [],
       });
     }
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, clubId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title || !formData.description || !formData.roomNumber || 
-        !formData.startTime || !formData.endTime || !formData.startDate) {
+        !formData.startTime || !formData.endTime || !formData.startDate || !formData.selectedClubId) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -110,9 +111,12 @@ export default function MeetingOpportunityModal({
 
     setIsSubmitting(true);
     try {
+      // Get the selected club name
+      const selectedClub = availableClubs.find(club => club.id === formData.selectedClubId);
+      
       await onSubmit({
-        clubId,
-        clubName,
+        clubId: formData.selectedClubId,
+        clubName: selectedClub?.clubName || '',
         title: formData.title,
         description: formData.description,
         roomNumber: formData.roomNumber,
@@ -128,7 +132,6 @@ export default function MeetingOpportunityModal({
         participants: [],
         createdBy: userEmail,
         status: 'active',
-        category: formData.category || undefined,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
       });
       
@@ -184,7 +187,7 @@ export default function MeetingOpportunityModal({
                 {initialData ? 'Edit Meeting' : 'Create New Meeting'}
               </Dialog.Title>
               <p className="text-sm text-gray-500 mt-1">
-                {clubName}
+                {availableClubs.length > 0 ? 'Select a club and fill in the details below' : 'Fill in the meeting details below'}
               </p>
             </div>
             <button
@@ -195,7 +198,34 @@ export default function MeetingOpportunityModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* Club Selection */}
+            {availableClubs.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Club Selection</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Club *
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {availableClubs.map((club) => (
+                      <label key={club.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="radio"
+                          name="selectedClub"
+                          value={club.id}
+                          checked={formData.selectedClubId === club.id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, selectedClubId: e.target.value }))}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-3 text-sm text-gray-900">{club.clubName}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-gray-900">Basic Information</h3>
@@ -226,32 +256,17 @@ export default function MeetingOpportunityModal({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Room Number *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.roomNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, roomNumber: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., Room 201"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., Academic, Social, etc."
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Room Number *
+                </label>
+                <input
+                  type="text"
+                  value={formData.roomNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, roomNumber: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., Room 201"
+                />
               </div>
             </div>
 
