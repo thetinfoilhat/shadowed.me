@@ -8,6 +8,8 @@ import { uploadImage, uploadPDF, deleteFile, uploadPDFResource} from '@/utils/fi
 import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import ClubPosts from './ClubPosts';
+import ClubPostManager from './ClubPostManager';
 
 // Icon imports
 import { 
@@ -184,11 +186,11 @@ const getCategoryColor = (category: string | undefined): { bg: string, text: str
 };
 
 // Tab types for website editor
-type TabType = 'content' | 'media' | 'members' | 'design' | 'form';
+type TabType = 'content' | 'media' | 'members' | 'design' | 'form' | 'posts';
 
 export default function WebsiteEditor({ website, onSave, isNew = false }: WebsiteEditorProps) {
   // State variables
-  const { /* user */ } = useAuth(); // Unused for now but component needs auth context
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ClubSite>({ ...website });
   const [activeTab, setActiveTab] = useState<TabType>('content');
   const [isSaving, setIsSaving] = useState(false);
@@ -218,6 +220,8 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
   
   // Handle rich text editor state without ReactQuill
   const [editorContent, setEditorContent] = useState(formData.description || '');
+  // Posts manager modal
+  const [showPostManager, setShowPostManager] = useState(false);
   
   // Create a ref to store the handleSave function
   const handleSaveRef = useRef<(partialData?: Partial<ClubSite>) => Promise<void>>((async () => {}));
@@ -1347,6 +1351,18 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   <DocumentIcon className="h-5 w-5 mr-2" />
                   Interest Form
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('posts')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center mb-1 ${
+                    activeTab === 'posts' 
+                      ? 'bg-blue-50 text-blue-700 font-medium' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <DocumentTextIcon className="h-5 w-5 mr-2" />
+                  Posts & Calendar
+                </button>
                 
                 {/* 
                 <button
@@ -2350,6 +2366,61 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               </>
             )}
 
+            {/* Posts Tab - unified calendar management */}
+            {activeTab === 'posts' && (
+              <section className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-[#180D39]">Posts & Calendar</h3>
+                  <a
+                    href={`/${formData.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                    title="View live site"
+                  >
+                    View live calendar
+                  </a>
+                </div>
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowPostManager(true)}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Create or Manage Posts
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">Create, edit, and delete posts and events for this club. Students can join from the site and dashboard.</p>
+                {/* Reuse the unified calendar for editing/creating posts */}
+                {/* We'll open the same manager used in dashboards for consistency */}
+                <div className="rounded-lg border border-gray-200">
+                  {/* Lightweight inline manager trigger */}
+                  <iframe
+                    src={`/captain-dashboard`} 
+                    className="hidden"
+                    title="preload"
+                  />
+                </div>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">Use the Posts manager launched below to add events. Changes are saved instantly and reflected across dashboards and this page.</p>
+                </div>
+                {/* Inline calendar for preview + join state */}
+                <div className="mt-6">
+                  {/* Read-only preview for editors to see how it looks to students */}
+                  {/* Editors can still join/leave for test accounts */}
+                  {/* We use the same ClubPosts component for a faithful preview */}
+                  <div className="rounded-xl border border-gray-200 p-4">
+                    <h4 className="text-md font-semibold text-[#180D39] mb-3">Calendar Preview</h4>
+                    <ClubPosts
+                      clubId={formData.id}
+                      clubName={formData.clubName}
+                      userEmail={user?.email || ''}
+                      userName={user?.displayName || user?.email || formData.clubName}
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Media Gallery Tab */}
             {activeTab === 'media' && (
               <section className="bg-white rounded-xl p-6 shadow-sm">
@@ -2598,6 +2669,15 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
             )}
           </div>
         </div>
+        {showPostManager && (
+          <ClubPostManager
+            clubId={formData.id}
+            clubName={formData.clubName}
+            userEmail={user?.email || ''}
+            isOpen={showPostManager}
+            onClose={() => setShowPostManager(false)}
+          />
+        )}
       </div>
     </div>
   );

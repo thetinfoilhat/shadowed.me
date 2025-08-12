@@ -9,6 +9,7 @@ import { getColorById, getTextColorById } from '@/utils/colors';
 import { getFontById } from '@/utils/fonts';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
+import ClubPosts from './ClubPosts';
 
 // Format date for display (used for image metadata)
 const formatUploadDate = (date: Date | string): string => {
@@ -63,7 +64,8 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
   const hasMembers = website.members && website.members.length > 0;
   const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
-  const hasMeetings = website.meetings && website.meetings.length > 0;
+  // Deprecated: legacy meetings list (use unified ClubPosts calendar instead)
+  const hasMeetings = false;
   
   // Get theme values
   const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
@@ -135,6 +137,11 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     
     fetchUserData();
   }, [website.captainEmails, website.sponsorEmails]);
+
+  // Debug club ID for posts
+  useEffect(() => {
+    console.log('WebsiteViewer: clubId for posts:', website.id, 'clubName:', website.clubName);
+  }, [website.id, website.clubName]);
 
   // Check if the current user is authorized to edit this club website
   useEffect(() => {
@@ -415,6 +422,21 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Full-width unified club calendar */}
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-10">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h2 className="text-2xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
+            Club Posts & Events
+          </h2>
+          <ClubPosts
+            clubId={website.id}
+            clubName={website.clubName}
+            userEmail={user?.email || ''}
+            userName={user?.displayName || user?.email || ''}
+          />
         </div>
       </div>
 
@@ -830,6 +852,19 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               </div>
             </div>
           )}
+
+          {/* Club Posts Section */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
+              Club Posts & Events
+            </h2>
+            <ClubPosts
+              clubId={website.id}
+              clubName={website.clubName}
+              userEmail={user?.email || ''}
+              userName={user?.displayName || user?.email || ''}
+            />
+          </div>
 
           {/* Resources Section */}
           {website.resources && website.resources.length > 0 && (

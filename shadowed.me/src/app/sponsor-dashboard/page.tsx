@@ -8,6 +8,7 @@ import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIc
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ClubEventManager from '@/components/ClubEventManager';
+import ClubPostManager from '@/components/ClubPostManager';
 
 interface ClubSite {
   id: string;
@@ -52,6 +53,10 @@ export default function SponsorDashboard() {
   const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubSite | null>(null);
   const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
   const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
+  
+  // Post management state
+  const [showPostManager, setShowPostManager] = useState(false);
+  const [selectedClubForPosts, setSelectedClubForPosts] = useState<ClubSite | null>(null);
   const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);
   const [clubInfoForm, setClubInfoForm] = useState({
     description: '',
@@ -752,6 +757,17 @@ export default function SponsorDashboard() {
                         <CalendarIcon className="h-3 w-3 mr-1" />
                         Manage Events
                       </button>
+                      <button
+                        onClick={() => {
+                          console.log('Sponsor Dashboard: Opening post manager for club:', { id: club.id, name: club.clubName });
+                          setSelectedClubForPosts(club);
+                          setShowPostManager(true);
+                        }}
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
+                      >
+                        <CalendarIcon className="h-3 w-3 mr-1" />
+                        Manage Posts
+                      </button>
                       <a
                         href={`/${club.slug}`}
                         target="_blank"
@@ -1280,6 +1296,20 @@ export default function SponsorDashboard() {
           onClose={() => {
             setShowEventManager(false);
             setSelectedClubForEvents(null);
+          }}
+        />
+      )}
+
+      {/* Club Post Manager */}
+      {showPostManager && selectedClubForPosts && (
+        <ClubPostManager
+          clubId={selectedClubForPosts.id}
+          clubName={selectedClubForPosts.clubName}
+          userEmail={user?.email || ''}
+          isOpen={showPostManager}
+          onClose={() => {
+            setShowPostManager(false);
+            setSelectedClubForPosts(null);
           }}
         />
       )}

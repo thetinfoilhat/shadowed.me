@@ -191,10 +191,10 @@ export default function ClubWebsitePage() {
   useEffect(() => {
     // Set edit mode based on URL parameter and user permission
     console.log('Edit mode check:', { isEditMode, isEditor, editMode });
-    if (isEditMode && isEditor) {
+    if (isEditMode && isEditor && !editMode) {
       setEditMode(true);
     }
-  }, [isEditMode, isEditor]);
+  }, [isEditMode, isEditor, editMode]);
 
   // Save website data
   const saveWebsite = async (data: Partial<ClubSite>) => {

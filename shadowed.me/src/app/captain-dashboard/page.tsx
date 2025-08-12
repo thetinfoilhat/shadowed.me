@@ -7,20 +7,16 @@ import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { CaptainOnly } from '@/components/RoleBasedAccess';
 import { 
-  CalendarIcon, 
-  PlusIcon,
   ChevronUpIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import MeetingOpportunityModal from '@/components/MeetingOpportunityModal';
-import MeetingCalendar from '@/components/MeetingCalendar';
-import { Club, CompletedVisit, ClubSite, MeetingOpportunity } from '@/types/club';
+import { Club, CompletedVisit, ClubSite } from '@/types/club';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
 import VisitModal from '@/components/VisitModal';
 import { getColorById } from '@/utils/colors';
-import ClubEventManager from '@/components/ClubEventManager';
+import ClubPostManager from '@/components/ClubPostManager';
 
 interface Applicant {
   name: string;
@@ -82,16 +78,11 @@ export default function CaptainDashboard() {
     club: ClubSite | null;
   }>({ isOpen: false, club: null });
   
-  // Meeting management state
-  const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
-  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
-  const [editingMeeting, setEditingMeeting] = useState<MeetingOpportunity | null>(null);
-  const [selectedClubForMeeting, setSelectedClubForMeeting] = useState<ClubSite | null>(null);
-  const [meetingsExpanded, setMeetingsExpanded] = useState(true);
+  // Meeting management state removed
   
-  // Event management state
-  const [showEventManager, setShowEventManager] = useState(false);
-  const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
+  // Post management state
+  const [showPostManager, setShowPostManager] = useState(false);
+  const [selectedClubForPosts, setSelectedClubForPosts] = useState<ClubSite | null>(null);
   
   // Ref to track assigned clubs to prevent infinite loops
   const assignedClubsRef = useRef<string[]>([]);
@@ -135,7 +126,7 @@ export default function CaptainDashboard() {
     }
     
     try {
-      const allMeetings: MeetingOpportunity[] = [];
+      const allMeetings: unknown[] = [];
       
       for (const club of currentAssignedClubs) {
         const response = await fetch(`/api/meetings?clubId=${club.id}&status=active`);
@@ -145,7 +136,7 @@ export default function CaptainDashboard() {
         }
       }
       
-      setMeetings(allMeetings);
+      // no-op: meetings UI removed
       assignedClubsRef.current = currentClubIds;
     } catch (error) {
       console.error('Error fetching meetings:', error);
@@ -158,7 +149,8 @@ export default function CaptainDashboard() {
   fetchMeetingsRef.current = fetchMeetings;
 
   // Meeting management functions
-  const handleCreateMeeting = async (meetingData: Partial<MeetingOpportunity>) => {
+  /*
+  const handleCreateMeeting = async (meetingData: Partial<unknown>) => {
     try {
       const response = await fetch('/api/meetings', {
         method: 'POST',
@@ -184,7 +176,7 @@ export default function CaptainDashboard() {
     }
   };
 
-  const handleUpdateMeeting = async (meetingData: Partial<MeetingOpportunity>) => {
+  const handleUpdateMeeting = async (meetingData: Partial<unknown>) => {
     if (!editingMeeting) return;
     
     try {
@@ -214,14 +206,15 @@ export default function CaptainDashboard() {
       toast.error('Failed to update meeting');
     }
   };
+  */
 
 
 
-  const openMeetingModal = (club?: ClubSite, meeting?: MeetingOpportunity) => {
-    setSelectedClubForMeeting(club || null);
-    setEditingMeeting(meeting || null);
-    setIsMeetingModalOpen(true);
-  };
+  // const openMeetingModal = (club?: ClubSite, meeting?: MeetingOpportunity) => {
+  //   setSelectedClubForMeeting(club || null);
+  //   setEditingMeeting(meeting || null);
+  //   setIsMeetingModalOpen(true);
+  // };
 
   // Fetch meetings when assigned clubs change
   useEffect(() => {
@@ -884,8 +877,9 @@ export default function CaptainDashboard() {
                             </button>
                             <button
                               onClick={() => {
-                                setSelectedClubForEvents(club);
-                                setShowEventManager(true);
+                                // Use unified posts manager as the single calendar editor
+                                setSelectedClubForPosts(club);
+                                setShowPostManager(true);
                               }}
                               className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 border border-purple-200 rounded-md hover:bg-purple-200 transition-colors"
                             >
@@ -919,78 +913,7 @@ export default function CaptainDashboard() {
           )}
         </div>
 
-        {/* Meetings Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <CalendarIcon className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Club Meetings</h2>
-                  <p className="text-sm text-gray-500">Manage meetings and opportunities for your clubs</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setMeetingsExpanded(!meetingsExpanded)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {meetingsExpanded ? (
-                    <ChevronUpIcon className="h-5 w-5" />
-                  ) : (
-                    <ChevronDownIcon className="h-5 w-5" />
-                  )}
-                </button>
-                {assignedClubs.length > 0 && (
-                  <button
-                    onClick={() => openMeetingModal()}
-                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Create Meeting
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {meetingsExpanded && (
-            <div className="p-6">
-              {meetings.length > 0 ? (
-                <MeetingCalendar
-                  meetings={meetings}
-                  onMeetingClick={(meeting) => {
-                    const club = assignedClubs.find(c => c.id === meeting.clubId);
-                    if (club) {
-                      openMeetingModal(club, meeting);
-                    }
-                  }}
-                  userRole="captain"
-                  showSignUpButton={false}
-                />
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CalendarIcon className="h-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings scheduled</h3>
-                  <p className="text-gray-500 mb-6">You haven&apos;t created any meetings for your clubs yet.</p>
-                  {assignedClubs.length > 0 && (
-                    <button
-                      onClick={() => openMeetingModal()}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
-                    >
-                      <PlusIcon className="h-4 w-4 mr-2" />
-                      Create Your First Meeting
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Meetings Section removed per request */}
 
         {/* Club Assignments Section - commented out
         <div>
@@ -1416,32 +1339,20 @@ export default function CaptainDashboard() {
           confirmText="Remove Self"
         />
 
-        {/* Meeting Opportunity Modal */}
-        <MeetingOpportunityModal
-          isOpen={isMeetingModalOpen}
-          onClose={() => {
-            setIsMeetingModalOpen(false);
-            setEditingMeeting(null);
-            setSelectedClubForMeeting(null);
-          }}
-          onSubmit={editingMeeting ? handleUpdateMeeting : handleCreateMeeting}
-          initialData={editingMeeting}
-          clubId={selectedClubForMeeting?.id}
-          clubName={selectedClubForMeeting?.clubName}
-          userEmail={user?.email || ''}
-          availableClubs={assignedClubs.map(club => ({ id: club.id, clubName: club.clubName }))}
-        />
+        {/* Meeting Opportunity Modal - retained for potential future use */}
 
-        {/* Club Event Manager */}
-        {showEventManager && selectedClubForEvents && (
-          <ClubEventManager
-            clubId={selectedClubForEvents.id}
-            clubName={selectedClubForEvents.clubName}
+        {/* Unified Post Manager (includes events) */}
+
+        {/* Club Post Manager */}
+        {showPostManager && selectedClubForPosts && (
+          <ClubPostManager
+            clubId={selectedClubForPosts.id}
+            clubName={selectedClubForPosts.clubName}
             userEmail={user?.email || ''}
-            isOpen={showEventManager}
+            isOpen={showPostManager}
             onClose={() => {
-              setShowEventManager(false);
-              setSelectedClubForEvents(null);
+              setShowPostManager(false);
+              setSelectedClubForPosts(null);
             }}
           />
         )}

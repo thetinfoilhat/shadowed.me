@@ -8,6 +8,7 @@ import { Tab } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { AdminOnly } from '@/components/RoleBasedAccess';
+import ClubPostManager from '@/components/ClubPostManager';
 import { 
   UsersIcon, 
   BuildingOfficeIcon, 
@@ -57,6 +58,10 @@ export default function AdminDashboard() {
   const [showClubEditModal, setShowClubEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedClub, setSelectedClub] = useState<ClubListing | null>(null);
+  
+  // Post management state
+  const [showPostManager, setShowPostManager] = useState(false);
+  const [selectedClubForPosts, setSelectedClubForPosts] = useState<ClubListing | null>(null);
 
   // Fetch data
   const fetchUsers = useCallback(async () => {
@@ -643,6 +648,16 @@ export default function AdminDashboard() {
                                   Edit
                                 </button>
                                 <button 
+                                  onClick={() => {
+                                    console.log('Admin Dashboard: Opening post manager for club:', { id: club.id, name: club.clubName });
+                                    setSelectedClubForPosts(club);
+                                    setShowPostManager(true);
+                                  }}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  Posts
+                                </button>
+                                <button 
                                   onClick={() => handleDeleteClub(club.id)}
                                   className="text-red-600 hover:text-red-900"
                                 >
@@ -786,6 +801,20 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Club Post Manager */}
+        {showPostManager && selectedClubForPosts && (
+          <ClubPostManager
+            clubId={selectedClubForPosts.id}
+            clubName={selectedClubForPosts.clubName}
+            userEmail="admin"
+            isOpen={showPostManager}
+            onClose={() => {
+              setShowPostManager(false);
+              setSelectedClubForPosts(null);
+            }}
+          />
         )}
       </div>
     </AdminOnly>
