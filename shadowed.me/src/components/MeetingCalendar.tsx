@@ -61,7 +61,7 @@ export default function MeetingCalendar({
       return;
     }
 
-    if (meeting.maxParticipants && meeting.currentParticipants >= meeting.maxParticipants) {
+    if (meeting.maxParticipants !== undefined && meeting.currentParticipants >= meeting.maxParticipants) {
       toast.error('This meeting is full');
       return;
     }
@@ -317,7 +317,10 @@ export default function MeetingCalendar({
                               e.stopPropagation();
                               handleSignUp(meeting);
                             }}
-                            disabled={meeting.maxParticipants && meeting.currentParticipants >= meeting.maxParticipants}
+                            disabled={
+                              meeting.maxParticipants !== undefined &&
+                              meeting.currentParticipants >= meeting.maxParticipants
+                            }
                             className="px-3 py-1 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             Join

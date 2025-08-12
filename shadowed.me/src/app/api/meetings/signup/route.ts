@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, doc, getDocs, updateDoc, query, where, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { MeetingOpportunity } from '@/types/club';
 
 interface MeetingData {
   id: string;
@@ -66,8 +67,8 @@ export async function POST(request: NextRequest) {
       
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
-        const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: MeetingData) => {
+        const existingMeetings: MeetingOpportunity[] = clubData.meetings || [];
+        const updatedMeetings = existingMeetings.map((m: MeetingOpportunity) => {
           if (m.id === meetingId) {
             return {
               ...m,
@@ -140,8 +141,8 @@ export async function DELETE(request: NextRequest) {
       
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
-        const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: MeetingData) => {
+        const existingMeetings: MeetingOpportunity[] = clubData.meetings || [];
+        const updatedMeetings = existingMeetings.map((m: MeetingOpportunity) => {
           if (m.id === meetingId) {
             return {
               ...m,
