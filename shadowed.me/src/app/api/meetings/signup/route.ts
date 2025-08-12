@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
     }
 
-    const meeting = meetingDoc.docs[0].data();
+    const meeting = meetingDoc.docs[0].data() as MeetingData;
     
     // Check if user is already signed up
     const isAlreadySignedUp = meeting.participants?.some((p: { email: string }) => p.email === participant.email);
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if meeting is full
-    if (meeting.maxParticipants && meeting.currentParticipants >= meeting.maxParticipants) {
+    if (meeting.maxParticipants !== undefined && (meeting.currentParticipants || 0) >= meeting.maxParticipants) {
       return NextResponse.json({ error: 'This meeting is full' }, { status: 400 });
     }
 
@@ -117,7 +117,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
     }
 
-    const meeting = meetingDoc.docs[0].data();
+    const meeting = meetingDoc.docs[0].data() as MeetingData;
     
     // Check if user is signed up
     const participant = meeting.participants?.find((p: { email: string }) => p.email === participantEmail);
