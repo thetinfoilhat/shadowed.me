@@ -38,13 +38,13 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     contactInfo: initialData?.contactInfo || '',
     category: initialData?.category || '',
     sponsorEmail: initialData?.sponsorEmail || '',
-    sponsorEmails: initialData?.sponsorEmails || [],
+    sponsorEmails: initialData?.sponsorEmail ? [initialData.sponsorEmail] : [],
     roomNumber: initialData?.roomNumber || '',
     attributes: initialData?.attributes || [] as string[],
     captain: initialData?.captain || user?.email || '',
-    captainEmails: initialData?.captainEmails || [],
-    contactInfoList: initialData?.contactInfoList || [],
-    sponsorEmailList: initialData?.sponsorEmailList || [],
+    captainEmails: initialData?.captains || [],
+    contactInfoList: initialData?.contactInfo ? [initialData.contactInfo] : [],
+    sponsorEmailList: initialData?.sponsorEmail ? [initialData.sponsorEmail] : [],
   });
   
   const [newContactInfo, setNewContactInfo] = useState('');
@@ -110,10 +110,10 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
       }));
     }
     
-    if (initialData && !initialData.sponsorEmailList && initialData.sponsorEmail) {
+    if (initialData && initialData.sponsorEmail) {
       setFormData(prev => ({
         ...prev,
-        sponsorEmailList: initialData.sponsorEmail ? [initialData.sponsorEmail] : []
+        sponsorEmailList: [initialData.sponsorEmail!]
       }));
     }
   }, [initialData]);
