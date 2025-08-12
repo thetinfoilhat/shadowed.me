@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   }, []);
 
   // Check admin status
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error checking admin status:', error);
     }
-  };
+  }, [user]);
 
   // Initialize data
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
     if (user) {
       initialize();
     }
-  }, [user, isAdmin, fetchUsers, fetchClubs]);
+  }, [user, isAdmin, fetchUsers, fetchClubs, checkAdminStatus]);
 
   // Filter functions
   const filteredUsers = users.filter(user =>
