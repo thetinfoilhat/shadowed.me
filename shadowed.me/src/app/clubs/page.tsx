@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageTransition from '@/components/PageTransition';
 import { toast } from 'react-hot-toast';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ClubSite } from '@/types/club';
 
@@ -396,6 +396,10 @@ export default function Jamboree() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedActivityType, setSelectedActivityType] = useState<string | null>(null);
+  // Default to grid; removing view toggles
+  const [viewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'recent' | 'az'>('recent');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   // Get unique categories and activity types from websites
   const categories = clubWebsites.reduce((acc: string[], website) => {
@@ -425,33 +429,38 @@ export default function Jamboree() {
     return acc;
   }, []).sort();
 
-  // Filter websites based on search query, selected category, and activity type
-  const filteredWebsites = clubWebsites.filter(website => {
-    // Filter by search query
-    const matchesSearch = 
-      website.clubName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (website.slogan ? website.slogan.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
-      (website.description ? website.description.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
-      (website.members ? website.members.some(member => 
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.role.toLowerCase().includes(searchQuery.toLowerCase())
-      ) : false);
-    
-    // Filter by selected category
-    const matchesCategory = !selectedCategory || website.category === selectedCategory;
-    
-    // Filter by selected activity type (case insensitive)
-    const matchesActivityType = !selectedActivityType || 
-      // Check in the new activityTypes array (case insensitive comparison)
-      (Array.isArray(website.activityTypes) && website.activityTypes.some(type => 
-        type.toLowerCase() === selectedActivityType.toLowerCase()
-      )) ||
-      // Fall back to the legacy field (case insensitive comparison)
-      (website.activityType !== undefined && typeof website.activityType === 'string' && 
-       website.activityType.toLowerCase() === selectedActivityType.toLowerCase());
-    
-    return matchesSearch && matchesCategory && matchesActivityType;
-  });
+  // Filter and sort websites
+  const filteredWebsites = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = clubWebsites.filter(website => {
+      const matchesSearch =
+        q.length === 0 ||
+        website.clubName.toLowerCase().includes(q) ||
+        (website.slogan ? website.slogan.toLowerCase().includes(q) : false) ||
+        (website.description ? website.description.toLowerCase().includes(q) : false) ||
+        (website.members ? website.members.some(member =>
+          member.name.toLowerCase().includes(q) ||
+          member.role.toLowerCase().includes(q)
+        ) : false);
+
+      const matchesCategory = !selectedCategory || website.category === selectedCategory;
+
+      const matchesActivityType = !selectedActivityType ||
+        (Array.isArray(website.activityTypes) && website.activityTypes.some(type =>
+          type.toLowerCase() === selectedActivityType.toLowerCase()
+        )) ||
+        (website.activityType !== undefined && typeof website.activityType === 'string' &&
+         website.activityType.toLowerCase() === selectedActivityType.toLowerCase());
+
+      return matchesSearch && matchesCategory && matchesActivityType;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'az') return a.clubName.localeCompare(b.clubName);
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+    return sorted;
+  }, [clubWebsites, searchQuery, selectedCategory, selectedActivityType, sortBy]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -587,31 +596,19 @@ export default function Jamboree() {
     <PageTransition>
       <div className="min-h-screen pt-24 pb-16 px-4 bg-gray-50">
 
-        {/* Hero Section */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-          <div className="text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-6xl font-bold text-[#180D39] text-center mb-6"
-            >
-              Club Showcase
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-[#180D39] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
-            >
-              Explore club websites or create your own to showcase your club&apos;s activities,
-              members, and resources.
-            </motion.p>
+        {/* Small page header */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-[#180D39]">Club Listings</h1>
+          </div>
+        </div>
 
-            <div className="relative max-w-2xl mx-auto mt-8">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-[#180D39]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        {/* Condensed header: search + filters + create */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="relative col-span-2">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-[#180D39]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -619,189 +616,111 @@ export default function Jamboree() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Find your next club..."
-                className="w-full pl-12 pr-4 py-3 text-[#180D39] placeholder-[#180D39]/60 bg-white rounded-xl border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
+                placeholder="Search clubs, slogans, members..."
+                className="w-full pl-9 pr-3 py-2 text-[#180D39] placeholder-[#180D39]/60 bg-white rounded-lg border border-[#38BFA1]/20 focus:outline-none focus:border-[#38BFA1] focus:ring-1 focus:ring-[#38BFA1]"
               />
             </div>
-
             {(userRole === 'admin' || userRole === 'captain' || userRole === 'sponsor') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-6"
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[#38BFA1] to-[#2DA891] hover:from-[#2DA891] hover:to-[#38BFA1]"
               >
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-[#38BFA1] to-[#2DA891] hover:from-[#2DA891] hover:to-[#38BFA1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transform hover:scale-105 transition-all"
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Create New Website
-                </button>
-              </motion.div>
+                <PlusIcon className="h-5 w-5 mr-2" /> Create New Website
+              </button>
             )}
-            
-            {/* Filters Section */}
-            {(categories.length > 0 || activityTypes.length > 0) && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-8"
-              >
-                <div className="max-w-4xl mx-auto px-6 py-4 bg-white rounded-xl shadow-sm">
-                  <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-                    {/* Category Filter - With custom styling */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-base font-medium text-gray-600">Category:</span>
-                      <div className="relative">
-                        <select
-                          value={selectedCategory || ''}
-                          onChange={(e) => setSelectedCategory(e.target.value || null)}
-                          className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
-                          style={{
-                            borderColor: selectedCategory ? getCategoryColor(selectedCategory).bg : '#d1d5db',
-                            boxShadow: selectedCategory ? `0 0 0 1px ${getCategoryColor(selectedCategory).bg}` : 'none'
-                          }}
-                        >
-                          <option value="">All</option>
-                          {categories.map((category) => (
-                            <option 
-                              key={category} 
-                              value={category}
-                              style={{
-                                backgroundColor: CATEGORY_COLORS[category]?.lighter || '#f9fafb',
-                                color: CATEGORY_COLORS[category]?.bg || '#000000'
-                              }}
-                            >
-                              {category} ({clubWebsites.filter(w => w.category === category).length})
-                            </option>
-                          ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 101.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Activity Type Filter - With custom styling */}
-                    {activityTypes.length > 0 && (
-                      <div className="flex items-center gap-3">
-                        <span className="text-base font-medium text-gray-600">Activity:</span>
-                        <div className="relative">
-                          <select
-                            value={selectedActivityType || ''}
-                            onChange={(e) => setSelectedActivityType(e.target.value || null)}
-                            className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
-                            style={{
-                              borderColor: selectedActivityType ? getActivityColor(selectedActivityType).bg : '#d1d5db',
-                              boxShadow: selectedActivityType ? `0 0 0 1px ${getActivityColor(selectedActivityType).bg}` : 'none'
-                            }}
-                          >
-                            <option value="">All</option>
-                            {activityTypes.map((type) => {
-                              // Get capitalized activity type for display
-                              const displayType = capitalizeWords(type);
-                              // Get count of websites with this activity type
-                              const count = getActivityTypeCount(type, clubWebsites);
-                              
-                              return (
-                                <option 
-                                  key={type} 
-                                  value={type}
-                                  style={{
-                                    backgroundColor: ACTIVITY_COLORS[displayType]?.lighter || '#f9fafb',
-                                    color: ACTIVITY_COLORS[displayType]?.bg || '#000000'
-                                  }}
-                                >
-                                  {displayType} ({count})
-                                </option>
-                              );
-                            })}
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 101.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Active filters display with category and activity colors */}
-                  {(selectedCategory || selectedActivityType) && (
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-center">
-                      <div className="text-base text-gray-600 mr-3">Active filters:</div>
-                      <div className="flex gap-3">
-                        {selectedCategory && (
-                          <span 
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm" 
-                            style={{ 
-                              backgroundColor: getCategoryColor(selectedCategory).lighter,
-                              color: getCategoryColor(selectedCategory).bg 
-                            }}
-                          >
-                            {selectedCategory}
-                            <button 
-                              onClick={() => setSelectedCategory(null)}
-                              className="ml-2 hover:opacity-80"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                          </span>
-                        )}
-                        {selectedActivityType && (
-                          <span 
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm" 
-                            style={{ 
-                              backgroundColor: getActivityColor(selectedActivityType).lighter,
-                              color: getActivityColor(selectedActivityType).bg 
-                            }}
-                          >
-                            {capitalizeWords(selectedActivityType)}
-                            <button 
-                              onClick={() => setSelectedActivityType(null)}
-                              className="ml-2 hover:opacity-80"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                          </span>
-                        )}
-                        {(selectedCategory || selectedActivityType) && (
-                          <button 
-                            onClick={() => {
-                              setSelectedCategory(null);
-                              setSelectedActivityType(null);
-                            }}
-                            className="text-sm text-gray-500 hover:text-gray-700 underline"
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          </div>
+
+          <div className="mt-3 bg-white border border-gray-200 rounded-lg p-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-base font-medium text-gray-600">Category:</span>
+                <div className="relative">
+                  <select
+                    value={selectedCategory || ''}
+                    onChange={(e) => setSelectedCategory(e.target.value || null)}
+                    className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
+                    style={{
+                      borderColor: selectedCategory ? getCategoryColor(selectedCategory).bg : '#d1d5db',
+                      boxShadow: selectedCategory ? `0 0 0 1px ${getCategoryColor(selectedCategory).bg}` : 'none'
+                    }}
+                  >
+                    <option value="">All</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category} ({clubWebsites.filter(w => w.category === category).length})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </motion.div>
+              </div>
+              {activityTypes.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-base font-medium text-gray-600">Activity:</span>
+                  <div className="relative">
+                    <select
+                      value={selectedActivityType || ''}
+                      onChange={(e) => setSelectedActivityType(e.target.value || null)}
+                      className="appearance-none block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none sm:text-sm rounded-md"
+                    >
+                      <option value="">All</option>
+                      {activityTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {capitalizeWords(type)} ({getActivityTypeCount(type, clubWebsites)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+            {(selectedCategory || selectedActivityType) && (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center">
+                <div className="text-base text-gray-600 mr-3">Active filters:</div>
+                <div className="flex gap-3">
+                  {selectedCategory && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                      {selectedCategory}
+                      <button onClick={() => setSelectedCategory(null)} className="ml-2 hover:opacity-80">✕</button>
+                    </span>
+                  )}
+                  {selectedActivityType && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                      {capitalizeWords(selectedActivityType)}
+                      <button onClick={() => setSelectedActivityType(null)} className="ml-2 hover:opacity-80">✕</button>
+                    </span>
+                  )}
+                  <button onClick={() => { setSelectedCategory(null); setSelectedActivityType(null); }} className="text-sm text-gray-500 hover:text-gray-700 underline">Clear all</button>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Website Grid */}
+        {/* Website Grid + Controls */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
             <div className="flex justify-center py-16">
               <LoadingSpinner size="lg" />
             </div>
           ) : filteredWebsites.length > 0 ? (
-            <div className="space-y-12">
+            <div className="space-y-6">
+              {/* Top controls: sort */}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {filteredWebsites.length} club{filteredWebsites.length !== 1 ? 's' : ''}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'recent' | 'az')}
+                    className="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-sm"
+                    title="Sort by"
+                  >
+                    <option value="recent">Recently updated</option>
+                    <option value="az">A → Z</option>
+                  </select>
+                </div>
+              </div>
               {/* If filters are applied or searching, show filtered results */}
               {(selectedCategory || selectedActivityType || searchQuery) ? (
                 <div>
@@ -819,11 +738,33 @@ export default function Jamboree() {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredWebsites.map((website) => (
-                      <WebsiteCard key={website.id} website={website} />
-                    ))}
-                  </div>
+                  {viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredWebsites.map((website) => (
+                        <WebsiteCard key={website.id} website={website} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="divide-y divide-gray-200">
+                        {filteredWebsites.map(site => (
+                          <div key={site.id} className="flex flex-col md:flex-row md:items-center gap-3 p-3 hover:bg-gray-50">
+                            <div className="md:w-2/5">
+                              <div className="font-medium text-gray-900">{site.clubName}</div>
+                              <div className="text-sm text-gray-500 line-clamp-1">{site.slogan || site.description || '—'}</div>
+                            </div>
+                            <div className="md:w-1/5 text-sm">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: getCategoryColor(site.category).lighter, color: getCategoryColor(site.category).bg }}>{site.category || 'Uncategorized'}</span>
+                            </div>
+                            <div className="md:w-1/5 hidden md:block text-sm text-gray-600">{site.meetingInfo ? site.meetingInfo.split('|')[0].replace(/\s*\(?(weekly|biweekly|bi-weekly|bi weekly|monthly)\)?/i, '').trim() : 'TBD'}</div>
+                            <div className="md:w-1/5 ml-auto flex items-center gap-2">
+                              <a href={`/${site.slug}`} className="px-3 py-1.5 text-xs font-medium text-white rounded-md" style={{ backgroundColor: getCategoryColor(site.category).bg }}>Visit</a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Otherwise, group by category */
@@ -833,18 +774,30 @@ export default function Jamboree() {
                     if (categoryWebsites.length === 0) return null;
                     
                     return (
-                      <div key={category} className="space-y-4">
-                        <div className="flex items-center mb-2">
-                          <h2 className="text-3xl font-bold text-gray-900">{category}</h2>
-                          <span className="ml-3 bg-gray-100 text-gray-500 text-sm px-3 py-1 rounded-full">
-                            {categoryWebsites.length} club{categoryWebsites.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {categoryWebsites.map((website) => (
-                            <WebsiteCard key={website.id} website={website} />
-                          ))}
-                        </div>
+                      <div key={category} className="space-y-3">
+                        <button
+                          onClick={() => setCollapsedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
+                          className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-300"
+                        >
+                          <div className="flex items-center gap-2">
+                            {collapsedCategories[category] ? (
+                              <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+                            ) : (
+                              <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                            )}
+                            <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
+                            <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                              {categoryWebsites.length} club{categoryWebsites.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </button>
+                        {!collapsedCategories[category] && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {categoryWebsites.map((website) => (
+                              <WebsiteCard key={website.id} website={website} />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

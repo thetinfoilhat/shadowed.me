@@ -75,8 +75,8 @@ export default function SponsorDashboard() {
         // Admins see all clubs
         const querySnapshot = await getDocs(clubsRef);
         clubsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
+        id: doc.id,
+        ...doc.data(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         })) as ClubSite[];
       } else {
@@ -544,11 +544,11 @@ export default function SponsorDashboard() {
     return <LoadingSpinner />;
   }
 
-  return (
+    return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+          <div className="mb-8">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
               {userRole === 'admin' ? 'Admin Dashboard' : 'Sponsor Dashboard'}
@@ -591,8 +591,8 @@ export default function SponsorDashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] bg-white shadow-sm"
               />
-            </div>
-          </div>
+        </div>
+      </div>
 
           {/* Clubs Grid */}
           {filteredClubs.length === 0 ? (
@@ -616,12 +616,12 @@ export default function SponsorDashboard() {
                 <PlusIcon className="h-5 w-5 mr-2" />
                 Discover Your First Club
               </button>
-            </div>
-          ) : (
+          </div>
+        ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredClubs.map((club) => (
                 <div key={club.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group">
-                  <div className="p-6">
+                <div className="p-6">
                     {/* Club Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -636,7 +636,7 @@ export default function SponsorDashboard() {
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0))}/4 Sponsors
                           </span>
-                        </div>
+                    </div>
                       </div>
                       <button
                         onClick={() => handleRemoveSponsor(club.id)}
@@ -667,19 +667,19 @@ export default function SponsorDashboard() {
                           {getCaptainCount(club) > 0 
                             ? `${getCaptainCount(club)}/4 Captains` 
                             : 'Not assigned'}
-                        </span>
+                      </span>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      <button
+                        <button
                         onClick={() => handleOpenClubInfo(club)}
                         className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                      >
+                        >
                         <PencilIcon className="h-3 w-3 mr-1" />
                         Edit Info
-                      </button>
+                        </button>
                       <button
                         onClick={() => handleOpenMembers(club)}
                         className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -711,37 +711,37 @@ export default function SponsorDashboard() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
-
+                      )}
+                    </div>
+                  </div>
+                  
       {/* Discover Clubs Modal */}
       {showDiscoverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="bg-white rounded-xl max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-8 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <div>
+                    <div>
                   <h2 className="text-2xl font-bold text-gray-900">Discover Clubs</h2>
                   <p className="text-gray-600 mt-1">
                     Find clubs that need sponsorship and guidance
                   </p>
-                </div>
+                    </div>
                 <button
                   onClick={() => setShowDiscoverModal(false)}
                   className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                   <XCircleIcon className="h-6 w-6" />
                 </button>
-              </div>
-            </div>
+                    </div>
+                    </div>
             
             <div className="p-8">
               {availableClubs.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
                     <SparklesIcon className="h-16 w-16" />
-                  </div>
+                    </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No clubs available</h3>
                   <p className="text-gray-500">
                     All clubs are currently assigned to sponsors.
@@ -769,8 +769,8 @@ export default function SponsorDashboard() {
                         }`}>
                           {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4 ? 'Full' : 'Needs Sponsor'}
                         </span>
-                      </div>
-                      
+                  </div>
+                  
                       {club.description && (
                         <p className="text-sm text-gray-600 mb-4 line-clamp-2">{club.description}</p>
                       )}
@@ -781,7 +781,7 @@ export default function SponsorDashboard() {
                             ? `${getCaptainCount(club)}/4` 
                             : 'Not assigned'}
                         </div>
-                        <button
+                    <button
                           onClick={() => handleAssignSponsor(club.id)}
                           disabled={((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4}
                           className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
@@ -792,12 +792,12 @@ export default function SponsorDashboard() {
                         >
                           <PlusIcon className="h-4 w-4 mr-2" />
                           {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0)) >= 4 ? 'Full' : 'Become Sponsor'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    </button>
                 </div>
-              )}
+              </div>
+            ))}
+          </div>
+        )}
             </div>
           </div>
         </div>
@@ -811,9 +811,9 @@ export default function SponsorDashboard() {
               <h2 className="text-xl font-bold text-gray-900">Assign Captains</h2>
               <p className="text-gray-600 mt-1 text-sm">
                 Assign up to 4 captains to {selectedClub.clubName}
-              </p>
-            </div>
-            
+            </p>
+          </div>
+          
             <div className="p-6">
               {/* Search Bar */}
               <div className="mb-4">
@@ -846,13 +846,13 @@ export default function SponsorDashboard() {
                           }`}>
                             {student?.role || 'student'}
                           </span>
-                          <button
+          <button
                             onClick={() => setSelectedCaptains(selectedCaptains.filter(e => e !== email))}
                             className="ml-2 text-green-600 hover:text-green-800"
                           >
                             <XCircleIcon className="h-4 w-4" />
-                          </button>
-                        </div>
+          </button>
+        </div>
                       );
                     })}
                   </div>
@@ -941,10 +941,10 @@ export default function SponsorDashboard() {
               <p className="text-gray-600 mt-1 text-sm">
                 Update information for {selectedClubForInfo.clubName}
               </p>
-            </div>
+                </div>
             
             <div className="p-6 space-y-4">
-              <div>
+                          <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
                   Description
                 </label>
@@ -955,7 +955,7 @@ export default function SponsorDashboard() {
                   rows={4}
                   placeholder="Enter club description"
                 />
-              </div>
+                          </div>
 
               <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
@@ -968,9 +968,9 @@ export default function SponsorDashboard() {
                   rows={3}
                   placeholder="Enter meeting times and location"
                 />
-              </div>
-
-              <div>
+                        </div>
+                        
+                          <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
                   Category
                 </label>
@@ -991,9 +991,9 @@ export default function SponsorDashboard() {
                   <option value="Community Service & Leadership">Community Service & Leadership</option>
                   <option value="Miscellaneous">Miscellaneous</option>
                 </select>
-              </div>
+                          </div>
 
-              <div>
+                          <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
                   Activity Types
                 </label>
@@ -1021,10 +1021,10 @@ export default function SponsorDashboard() {
                       <span className="ml-2 text-sm text-gray-700">{type}</span>
                     </label>
                   ))}
-                </div>
+                          </div>
               </div>
 
-              <div>
+                          <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
                   Contact Email
                 </label>
@@ -1035,9 +1035,9 @@ export default function SponsorDashboard() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
                   placeholder="Enter contact email"
                 />
-              </div>
+                          </div>
 
-              <div>
+                          <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
                   Captains (up to 4)
                 </label>
@@ -1053,9 +1053,9 @@ export default function SponsorDashboard() {
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-sm"
                     />
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-
+                          </div>
+                        </div>
+                        
                 {/* Selected Captains */}
                 {clubInfoForm.captains && clubInfoForm.captains.length > 0 && (
                   <div className="mb-3">
@@ -1072,7 +1072,7 @@ export default function SponsorDashboard() {
                             }`}>
                               {student?.role || 'student'}
                             </span>
-                            <button
+                          <button
                               onClick={() => {
                                 setClubInfoForm(prev => ({ 
                                   ...prev, 
@@ -1082,13 +1082,13 @@ export default function SponsorDashboard() {
                               className="ml-1 text-green-600 hover:text-green-800"
                             >
                               <XCircleIcon className="h-3 w-3" />
-                            </button>
-                          </div>
+                          </button>
+                        </div>
                         );
                       })}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                </div>
+              )}
 
                 {/* Available Students */}
                 <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
@@ -1124,7 +1124,7 @@ export default function SponsorDashboard() {
                         }`}>
                           {student.role || 'student'}
                         </span>
-                      </div>
+                </div>
                       <div className="text-xs text-gray-500">{student.email}</div>
                     </button>
                   ))}
@@ -1132,10 +1132,10 @@ export default function SponsorDashboard() {
                 
                 <p className="text-xs text-gray-500 mt-1">
                   {(clubInfoForm.captains?.length || 0)}/4 captains selected
-                </p>
-              </div>
-            </div>
-
+                            </p>
+                          </div>
+                        </div>
+                        
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => {
@@ -1152,9 +1152,9 @@ export default function SponsorDashboard() {
               >
                 Save Changes
               </button>
-            </div>
-          </div>
-        </div>
+                          </div>
+                          </div>
+                          </div>
       )}
 
       {/* Members Modal */}
@@ -1166,7 +1166,7 @@ export default function SponsorDashboard() {
               <p className="text-gray-600 mt-1 text-sm">
                 Manage members for {selectedClubForMembers.clubName}
               </p>
-            </div>
+                          </div>
             
             <div className="p-6">
               {clubMembers.length === 0 ? (
@@ -1179,25 +1179,25 @@ export default function SponsorDashboard() {
                     <div>Name</div>
                     <div>Email</div>
                     <div>Actions</div>
-                  </div>
-                  
+                        </div>
+                        
                   {clubMembers.map((member, index) => (
                     <div key={index} className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-gray-100 last:border-0">
                       <div className="text-sm">{member.name}</div>
                       <div className="text-sm">{member.email}</div>
                       <div>
-                        <button
+                          <button
                           onClick={() => handleRemoveMember(member.email)}
                           className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
+                          >
                           Remove
-                        </button>
+                          </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+      </div>
 
             <div className="p-6 border-t border-gray-200 flex justify-end">
               <button
@@ -1216,4 +1216,4 @@ export default function SponsorDashboard() {
       )}
     </div>
   );
-}
+} 
