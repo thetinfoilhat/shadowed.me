@@ -358,7 +358,7 @@ export default function Header() {
                   >
                     Dashboard
                   </Link>
-                ) : (userRole === 'admin' || userRole === 'captain') ? (
+                ) : userRole === 'captain' ? (
                   <>
                     <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
                       <span className="text-black">Dashboard</span>
@@ -373,22 +373,12 @@ export default function Header() {
                       >
                         Student View
                       </Link>
-                      {userRole === 'captain' || userRole === 'admin' ? (
-                        <Link 
-                          href="/captain-dashboard"
-                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                        >
-                          Captain Dashboard
-                        </Link>
-                      ) : null}
-                      {userRole === 'admin' && (
-                        <Link 
-                          href="/admin-dashboard"
-                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
-                        >
-                          Admin Dashboard
-                        </Link>
-                      )}
+                      <Link 
+                        href="/captain-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Captain Dashboard
+                      </Link>
                     </div>
                   </>
                 ) : userRole === 'sponsor' ? (
@@ -411,6 +401,41 @@ export default function Header() {
                         className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
                       >
                         Sponsor Dashboard
+                      </Link>
+                    </div>
+                  </>
+                ) : userRole === 'admin' ? (
+                  <>
+                    <div className="flex items-center gap-1 cursor-pointer text-black hover:text-[#38BFA1] font-medium transition-colors">
+                      <span className="text-black">Dashboard</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <Link 
+                        href="/student-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Student View
+                      </Link>
+                      <Link 
+                        href="/captain-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Captain Dashboard
+                      </Link>
+                      <Link 
+                        href="/sponsor-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Sponsor Dashboard
+                      </Link>
+                      <Link 
+                        href="/admin-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#38BFA1]/10 hover:text-[#38BFA1] transition-colors"
+                      >
+                        Admin Dashboard
                       </Link>
                     </div>
                   </>

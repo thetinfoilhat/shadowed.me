@@ -40,15 +40,101 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // State for user data
+  const [captainUsers, setCaptainUsers] = useState<{email: string, name: string}[]>([]);
+  const [sponsorUsers, setSponsorUsers] = useState<{email: string, name: string}[]>([]);
+
+  // Function to open interest form with auto-filled user data
+  const handleOpenInterestForm = () => {
+    if (user) {
+      // Auto-fill with user's information
+      const displayName = user.displayName || '';
+      const userEmail = user.email || '';
+      
+      setInterestFormData({
+        name: displayName,
+        email: userEmail
+      });
+    }
+    setShowInterestForm(true);
+  };
+  
   // Check if various sections exist
   const hasGallery = website.galleryImages && website.galleryImages.length > 0;
   const hasMembers = website.members && website.members.length > 0;
   const hasContactLinks = website.contactLinks && website.contactLinks.length > 0;
+  const hasMeetings = website.meetings && website.meetings.length > 0;
   
   // Get theme values
   const primaryColor = getColorById(website.theme?.primaryColor || 'teal').value;
   const textColor = getTextColorById(website.theme?.textColor || 'dark').value;
   const fontClass = getFontById(website.theme?.font || 'inter').className;
+  
+  // Fetch user data for captains and sponsors
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase');
+        
+        // Fetch captain data
+        if (website.captainEmails && website.captainEmails.length > 0) {
+          const usersRef = collection(db, 'users');
+          const captainUsersData: {email: string, name: string}[] = [];
+          
+          for (const email of website.captainEmails) {
+            const userQuery = query(usersRef, where('email', '==', email));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              const userData = userDoc.data();
+              captainUsersData.push({
+                email: email,
+                name: userData.displayName || userData.name || email
+              });
+            } else {
+              captainUsersData.push({
+                email: email,
+                name: email
+              });
+            }
+          }
+          setCaptainUsers(captainUsersData);
+        }
+        
+        // Fetch sponsor data
+        if (website.sponsorEmails && website.sponsorEmails.length > 0) {
+          const usersRef = collection(db, 'users');
+          const sponsorUsersData: {email: string, name: string}[] = [];
+          
+          for (const email of website.sponsorEmails) {
+            const userQuery = query(usersRef, where('email', '==', email));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              const userData = userDoc.data();
+              sponsorUsersData.push({
+                email: email,
+                name: userData.displayName || userData.name || email
+              });
+            } else {
+              sponsorUsersData.push({
+                email: email,
+                name: email
+              });
+            }
+          }
+          setSponsorUsers(sponsorUsersData);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, [website.captainEmails, website.sponsorEmails]);
 
   // Check if the current user is authorized to edit this club website
   useEffect(() => {
@@ -67,6 +153,12 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
     if (userRole === 'captain') {
       const userEmail = user.email;
       
+      // If club has captainEmails array, check if user's email is in it
+      if (Array.isArray(website.captainEmails) && website.captainEmails.includes(userEmail!)) {
+        setCanEdit(true);
+        return;
+      }
+
       // If club has captains array, check if user's email is in it
       if (Array.isArray(website.captains) && website.captains.includes(userEmail!)) {
         setCanEdit(true);
@@ -239,7 +331,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         throw new Error(data.error || 'Failed to submit interest form');
       }
 
-      toast.success('Thank you for your interest!');
+      toast.success('Successfully joined club!');
       setShowInterestForm(false);
       setInterestFormData({ name: '', email: '' });
     } catch (error) {
@@ -464,19 +556,19 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
 
         {/* Sidebar - 1/3 width */}
         <div className="space-y-6">
-           {/* Interested in joining? card */}
+           {/* Join Club card */}
            <div className="bg-white text-gray-900 rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3">Interested in joining?</h2>
-            <p className="text-sm mb-4 text-gray-600">Fill out this form to express your interest!</p>
+            <h2 className="text-xl font-bold mb-3">Join this club?</h2>
+            <p className="text-sm mb-4 text-gray-600">Join this club to stay updated and access exclusive information!</p>
             <button
-              onClick={() => setShowInterestForm(true)}
+              onClick={handleOpenInterestForm}
               className="w-full text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition"
               style={{ backgroundColor: primaryColor }}
             >
-              I&apos;m Interested!
+              Join Club
             </button>
             <p className="text-xs mt-2 text-gray-500 text-center">
-              No commitment - just let us know you&apos;re interested and we&apos;ll contact you!
+              Join to receive updates and access club information!
             </p>
           </div>
           {/* Club Information Card */}
@@ -506,19 +598,85 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 </div>
               )}
               
-              {/* Jamboree Table */}
-              {website.jamboreeMeetingInfo?.table && (
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Jamboree Table</h3>
-                  <p className="text-gray-800">{website.jamboreeMeetingInfo.table}</p>
-                </div>
-              )}
+
             </div>
           </div>
           
+          {/* Meetings Section */}
+          {hasMeetings && (
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
+                Upcoming Meetings
+              </h2>
+              
+              <div className="space-y-4">
+                {website.meetings
+                  ?.filter(meeting => meeting.status === 'active')
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((meeting, index) => (
+                    <div key={`meeting-${index}`} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900">{meeting.title}</h3>
+                        {meeting.isRecurring && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Recurring
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{new Date(meeting.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <span>Room {meeting.roomNumber}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
+                        </div>
+                      </div>
+                      
+                      {meeting.tags && meeting.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {meeting.tags.map(tag => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+          
           {/* Club Leadership Section */}
-          {((website.jamboreeMeetingInfo?.captains || getCaptains(website.members)) || 
-            website.jamboreeMeetingInfo?.sponsor) && (
+          {((website.captainEmails && website.captainEmails.length > 0) || 
+            (website.sponsorEmails && website.sponsorEmails.length > 0) ||
+            website.jamboreeMeetingInfo?.captains || 
+            website.jamboreeMeetingInfo?.sponsor ||
+            getCaptains(website.members)) && (
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
                 Club Leadership
@@ -526,41 +684,129 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               
               <div className="space-y-4">
                 {/* Captains */}
-                {(website.jamboreeMeetingInfo?.captains || getCaptains(website.members)) && (
+                {((website.captainEmails && website.captainEmails.length > 0) || 
+                  website.jamboreeMeetingInfo?.captains || 
+                  getCaptains(website.members)) && (
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Club Captain{website.jamboreeMeetingInfo?.captains?.includes(',') ? 's' : ''}</h3>
-                    {/* Handle multiple captains */}
-                    {website.jamboreeMeetingInfo?.captains?.includes(',') ? (
-                      <ul className="space-y-1">
-                        {website.jamboreeMeetingInfo.captains.split(/,\s*/).map((captain, idx) => (
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Club Captain{(website.captainEmails && website.captainEmails.length > 1) || 
+                        (website.jamboreeMeetingInfo?.captains?.includes(',')) ? 's' : ''}
+                    </h3>
+                    
+                    {/* Display captains from captainEmails with names and emails */}
+                    {captainUsers.length > 0 && (
+                      <ul className="space-y-2">
+                        {captainUsers.map((captain, idx) => (
                           <li key={`captain-${idx}`} className="flex items-center">
                             <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
-                            <span className="text-gray-800">{captain}</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{captain.name}</span>
+                              <span className="text-sm text-gray-500">{captain.email}</span>
+                            </div>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="text-gray-800">{website.jamboreeMeetingInfo?.captains || getCaptains(website.members)}</p>
+                    )}
+                    
+                    {/* Fallback to captainEmails if user data not loaded yet */}
+                    {captainUsers.length === 0 && website.captainEmails && website.captainEmails.length > 0 && (
+                      <ul className="space-y-2">
+                        {website.captainEmails.map((captainEmail, idx) => (
+                          <li key={`captain-${idx}`} className="flex items-center">
+                            <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{captainEmail}</span>
+                              <span className="text-sm text-gray-500">{captainEmail}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {/* Fallback to jamboreeMeetingInfo.captains */}
+                    {(!website.captainEmails || website.captainEmails.length === 0) && 
+                     website.jamboreeMeetingInfo?.captains && (
+                      <div>
+                        {website.jamboreeMeetingInfo.captains.includes(',') ? (
+                          <ul className="space-y-1">
+                            {website.jamboreeMeetingInfo.captains.split(/,\s*/).map((captain, idx) => (
+                              <li key={`captain-${idx}`} className="flex items-center">
+                                <span className="text-xl mr-2 text-blue-500" style={{ color: primaryColor }}>•</span>
+                                <span className="text-gray-800">{captain}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-800">{website.jamboreeMeetingInfo.captains}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Fallback to members array */}
+                    {(!website.captainEmails || website.captainEmails.length === 0) && 
+                     !website.jamboreeMeetingInfo?.captains && 
+                     getCaptains(website.members) && (
+                      <p className="text-gray-800">{getCaptains(website.members)}</p>
                     )}
                   </div>
                 )}
                 
                 {/* Sponsors */}
-                {website.jamboreeMeetingInfo?.sponsor && (
+                {((website.sponsorEmails && website.sponsorEmails.length > 0) || 
+                  website.jamboreeMeetingInfo?.sponsor) && (
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Faculty Sponsor{website.jamboreeMeetingInfo.sponsor.includes(',') ? 's' : ''}</h3>
-                    {/* Handle multiple sponsors */}
-                    {website.jamboreeMeetingInfo.sponsor.includes(',') ? (
-                      <ul className="space-y-1">
-                        {website.jamboreeMeetingInfo.sponsor.split(/,\s*/).map((sponsor, idx) => (
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Faculty Sponsor{(website.sponsorEmails && website.sponsorEmails.length > 1) || 
+                        (website.jamboreeMeetingInfo?.sponsor?.includes(',')) ? 's' : ''}
+                    </h3>
+                    
+                    {/* Display sponsors from sponsorEmails with names and emails */}
+                    {sponsorUsers.length > 0 && (
+                      <ul className="space-y-2">
+                        {sponsorUsers.map((sponsor, idx) => (
                           <li key={`sponsor-${idx}`} className="flex items-center">
                             <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
-                            <span className="text-gray-800">{sponsor}</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{sponsor.name}</span>
+                              <span className="text-sm text-gray-500">{sponsor.email}</span>
+                            </div>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="text-gray-800">{website.jamboreeMeetingInfo.sponsor}</p>
+                    )}
+                    
+                    {/* Fallback to sponsorEmails if user data not loaded yet */}
+                    {sponsorUsers.length === 0 && website.sponsorEmails && website.sponsorEmails.length > 0 && (
+                      <ul className="space-y-2">
+                        {website.sponsorEmails.map((sponsorEmail, idx) => (
+                          <li key={`sponsor-${idx}`} className="flex items-center">
+                            <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-800 font-medium">{sponsorEmail}</span>
+                              <span className="text-sm text-gray-500">{sponsorEmail}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {/* Fallback to jamboreeMeetingInfo.sponsor */}
+                    {(!website.sponsorEmails || website.sponsorEmails.length === 0) && 
+                     website.jamboreeMeetingInfo?.sponsor && (
+                      <div>
+                        {website.jamboreeMeetingInfo.sponsor.includes(',') ? (
+                          <ul className="space-y-1">
+                            {website.jamboreeMeetingInfo.sponsor.split(/,\s*/).map((sponsor, idx) => (
+                              <li key={`sponsor-${idx}`} className="flex items-center">
+                                <span className="text-xl mr-2" style={{ color: primaryColor }}>•</span>
+                                <span className="text-gray-800">{sponsor}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-800">{website.jamboreeMeetingInfo.sponsor}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -764,7 +1010,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#180D39]">Interested in {website.clubName}?</h2>
+                <h2 className="text-xl font-bold text-[#180D39]">Join {website.clubName}?</h2>
                 <button
                   onClick={() => setShowInterestForm(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -776,7 +1022,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
               <form onSubmit={handleInterestFormSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Name (Last, First)
+                    Your Name
                   </label>
                   <input
                     type="text"
@@ -785,7 +1031,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                     value={interestFormData.name}
                     onChange={(e) => setInterestFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
-                    placeholder="Enter your name (Last, First)"
+                    placeholder="Enter your name"
                   />
                 </div>
 
@@ -809,7 +1055,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                   disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg font-medium hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Interest'}
+                  {isSubmitting ? 'Joining...' : 'Join Club'}
                 </button>
               </form>
             </motion.div>

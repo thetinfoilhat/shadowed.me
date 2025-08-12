@@ -38,9 +38,11 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
     contactInfo: initialData?.contactInfo || '',
     category: initialData?.category || '',
     sponsorEmail: initialData?.sponsorEmail || '',
+    sponsorEmails: initialData?.sponsorEmails || [],
     roomNumber: initialData?.roomNumber || '',
     attributes: initialData?.attributes || [] as string[],
     captain: initialData?.captain || user?.email || '',
+    captainEmails: initialData?.captainEmails || [],
     contactInfoList: initialData?.contactInfoList || [],
     sponsorEmailList: initialData?.sponsorEmailList || [],
   });
@@ -144,8 +146,12 @@ export default function ClubModal({ isOpen, onCloseAction, onSubmitAction, initi
         name: clubName,
         contactInfoList,
         sponsorEmailList,
-        // Captain could be empty now - use current user email as fallback in non-admin mode
+        // Use new data structure for captains and sponsors
+        captainEmails: isAdmin ? (formData.captain ? [formData.captain] : []) : [user.email],
+        sponsorEmails: formData.sponsorEmail ? [formData.sponsorEmail] : [],
+        // Keep legacy fields for backward compatibility
         captain: isAdmin ? formData.captain : (formData.captain || user.email),
+        sponsorEmail: formData.sponsorEmail,
         createdAt: new Date(),
         updatedAt: new Date(),
         created: true

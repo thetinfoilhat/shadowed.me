@@ -62,6 +62,37 @@ export interface ClubListing {
   sponsorEmails?: string[];
 }
 
+export interface MeetingOpportunity {
+  id: string;
+  clubId: string;
+  clubName: string;
+  title: string;
+  description: string;
+  roomNumber: string;
+  startTime: string;
+  endTime: string;
+  startDate: string;
+  endDate?: string; // For recurring meetings
+  isRecurring: boolean;
+  recurringPattern?: 'weekly' | 'biweekly' | 'monthly';
+  recurringDays?: string[]; // ['monday', 'wednesday', 'friday']
+  maxParticipants?: number;
+  currentParticipants: number;
+  participants: {
+    name: string;
+    email: string;
+    grade?: string;
+    school?: string;
+    signupDate: Date;
+  }[];
+  createdBy: string; // captain/sponsor/admin email
+  createdAt: Date;
+  updatedAt: Date;
+  status: 'active' | 'cancelled' | 'completed';
+  category?: string;
+  tags?: string[];
+}
+
 export interface ClubSite {
   id: string;
   slug: string;
@@ -83,7 +114,6 @@ export interface ClubSite {
   activityType?: string;     // Competitive, Leaders, Tryout, Public Speaking, Performance, etc.
   activityTypes?: string[];  // Multiple activity types: competitive, performance, public speaking, volunteering, team-based, sport
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
-    table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")
     room?: string;           // Room where meetings are held
     captains?: string;       // Captains information
@@ -91,7 +121,8 @@ export interface ClubSite {
     email?: string;          // Contact email
   };
   captain?: string;          // Legacy field for captain email
-  captains?: string[];       // Array of captain emails
+  captains?: string[];       // Array of captain emails (legacy)
+  captainEmails?: string[];  // Array of captain emails (new standard)
   sponsorEmail?: string;     // Legacy field for sponsor email
   sponsorEmails?: string[];  // Array of sponsor emails
   galleryImages?: string[];  // URLs to images
@@ -136,4 +167,5 @@ export interface ClubSite {
       timestamp: number;
     }[];
   };
+  meetings?: MeetingOpportunity[]; // New field for club meetings/opportunities
 } 

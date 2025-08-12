@@ -57,7 +57,6 @@ export interface ClubSite {
   activityType?: string;     // Legacy single activity type
   activityTypes?: string[];  // New multi-select activity types
   jamboreeMeetingInfo?: {    // Used to display on the Jamboree page
-    table?: string;          // Jamboree table number or identifier
     time?: string;           // Meeting time (e.g. "Weekly on TBD")
     room?: string;           // Room where meetings are held
     captains?: string;       // Captains information (display names as comma-separated string)
@@ -105,7 +104,8 @@ export interface ClubSite {
     startTime: string;
     endTime: string;
   }[];
-  captains?: string[];       // Email addresses of captains
+  captains?: string[];       // Email addresses of captains (legacy)
+  captainEmails?: string[];  // Email addresses of captains (new standard)
   captain?: string;          // Single captain email (legacy)
   sponsorEmails?: string[];  // Email addresses of sponsors
   sponsorEmail?: string;     // Single sponsor email (legacy)
@@ -865,15 +865,19 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
         if (formData.captainDetails && formData.captainDetails.length > 0) {
           captainEmailsToSelect = formData.captainDetails.map(captain => captain.email);
         } 
-        // PRIORITY 2: Use captains array (direct emails) 
+        // PRIORITY 2: Use captainEmails array (new standard)
+        else if (formData.captainEmails && formData.captainEmails.length > 0) {
+          captainEmailsToSelect = formData.captainEmails;
+        }
+        // PRIORITY 3: Use captains array (direct emails) 
         else if (formData.captains && formData.captains.length > 0) {
           captainEmailsToSelect = formData.captains;
         } 
-        // PRIORITY 3: Use single captain value (legacy)
+        // PRIORITY 4: Use single captain value (legacy)
         else if (formData.captain) {
           captainEmailsToSelect = [formData.captain];
         } 
-        // PRIORITY 4: Use jamboreeMeetingInfo.captains (display names only)
+        // PRIORITY 5: Use jamboreeMeetingInfo.captains (display names only)
         else if (formData.jamboreeMeetingInfo?.captains) {
           // Try to match display names to emails for existing captains
           const captainNames = formData.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
@@ -941,7 +945,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     };
     
     fetchUsers();
-  }, [formData.jamboreeMeetingInfo, formData.captainDetails, formData.sponsorDetails, formData.captains, formData.sponsorEmails, formData.captain, formData.sponsorEmail]);
+  }, [formData.jamboreeMeetingInfo, formData.captainDetails, formData.sponsorDetails, formData.captains, formData.captainEmails, formData.sponsorEmails, formData.captain, formData.sponsorEmail]);
 
   // Handle adding, removing, and updating captains
   const addCaptainSelection = () => {
@@ -1743,31 +1747,12 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   </div>
                   
                   <div className="border-t border-gray-200 pt-6">
-                    <h4 className="font-medium text-gray-900 mb-4">Jamboree Table Information</h4>
+                    <h4 className="font-medium text-gray-900 mb-4">Jamboree Information</h4>
                     <p className="text-sm text-gray-600 mb-4">
-                      This information will be displayed on the Jamboree page to help students find your table.
+                      This information will be displayed on the Jamboree page.
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Jamboree Table
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.jamboreeMeetingInfo?.table || ''}
-                          onChange={(e) => {
-                            const updatedInfo = {
-                              ...(formData.jamboreeMeetingInfo || {}),
-                              table: e.target.value
-                            };
-                            handleInputChange('jamboreeMeetingInfo', updatedInfo);
-                          }}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-black"
-                          placeholder="e.g., TBD"
-                        />
-                      </div>
-                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Captains

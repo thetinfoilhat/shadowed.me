@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface Submission {
   name: string;
@@ -80,10 +80,34 @@ export async function POST(request: Request) {
       a.name.localeCompare(b.name)
     );
 
-    // Update the document with the sorted submissions
+    // Update the club document with the sorted submissions
     await updateDoc(websiteRef, {
       'interestForm.submissions': updatedSubmissions
     });
+
+    // Also update the user's joined clubs list
+    try {
+      // Find user by email
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const userSnapshot = await getDocs(q);
+      
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        const userData = userDoc.data();
+        const joinedClubs = userData.joinedClubs || [];
+        
+        // Add this club to user's joined clubs if not already there
+        if (!joinedClubs.includes(websiteId)) {
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            joinedClubs: [...joinedClubs, websiteId]
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating user joined clubs:', error);
+      // Don't fail the main operation if user update fails
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
