@@ -521,8 +521,34 @@ interface EventFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: {
+    title: string;
+    description: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+    maxParticipants: string;
+    category: string;
+    tags: string[];
+    isRecurring: boolean;
+    recurringPattern: 'weekly' | 'biweekly' | 'monthly';
+    recurringDays: string[];
+  };
+  setFormData: (data: {
+    title: string;
+    description: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+    maxParticipants: string;
+    category: string;
+    tags: string[];
+    isRecurring: boolean;
+    recurringPattern: 'weekly' | 'biweekly' | 'monthly';
+    recurringDays: string[];
+  }) => void;
   mode: 'create' | 'edit';
 }
 
