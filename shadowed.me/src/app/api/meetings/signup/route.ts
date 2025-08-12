@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, doc, getDocs, updateDoc, query, where, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, query, where, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+interface MeetingData {
+  id: string;
+  participants?: Array<{ email: string; name: string; grade?: string; school?: string; signupDate?: Date }>;
+  currentParticipants?: number;
+  maxParticipants?: number;
+  clubId?: string;
+  updatedAt?: Date;
+}
 
 // POST - Sign up for a meeting
 export async function POST(request: NextRequest) {
@@ -58,7 +67,7 @@ export async function POST(request: NextRequest) {
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
         const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: any) => {
+        const updatedMeetings = existingMeetings.map((m: MeetingData) => {
           if (m.id === meetingId) {
             return {
               ...m,
@@ -132,7 +141,7 @@ export async function DELETE(request: NextRequest) {
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
         const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: any) => {
+        const updatedMeetings = existingMeetings.map((m: MeetingData) => {
           if (m.id === meetingId) {
             return {
               ...m,
