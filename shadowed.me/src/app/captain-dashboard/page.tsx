@@ -20,6 +20,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import ApplicantsDialog from '@/components/ApplicantsDialog';
 import VisitModal from '@/components/VisitModal';
 import { getColorById } from '@/utils/colors';
+import ClubEventManager from '@/components/ClubEventManager';
 
 interface Applicant {
   name: string;
@@ -87,6 +88,10 @@ export default function CaptainDashboard() {
   const [editingMeeting, setEditingMeeting] = useState<MeetingOpportunity | null>(null);
   const [selectedClubForMeeting, setSelectedClubForMeeting] = useState<ClubSite | null>(null);
   const [meetingsExpanded, setMeetingsExpanded] = useState(true);
+  
+  // Event management state
+  const [showEventManager, setShowEventManager] = useState(false);
+  const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
   
   // Ref to track assigned clubs to prevent infinite loops
   const assignedClubsRef = useRef<string[]>([]);
@@ -860,6 +865,15 @@ export default function CaptainDashboard() {
                               Edit
                             </button>
                             <button
+                              onClick={() => {
+                                setSelectedClubForEvents(club);
+                                setShowEventManager(true);
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 border border-purple-200 rounded-md hover:bg-purple-200 transition-colors"
+                            >
+                              Events
+                            </button>
+                            <button
                               onClick={() => setConfirmRemoveCaptain({ isOpen: true, club })}
                               className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
                             >
@@ -1399,6 +1413,20 @@ export default function CaptainDashboard() {
           userEmail={user?.email || ''}
           availableClubs={assignedClubs.map(club => ({ id: club.id, clubName: club.clubName }))}
         />
+
+        {/* Club Event Manager */}
+        {showEventManager && selectedClubForEvents && (
+          <ClubEventManager
+            clubId={selectedClubForEvents.id}
+            clubName={selectedClubForEvents.clubName}
+            userEmail={user?.email || ''}
+            isOpen={showEventManager}
+            onClose={() => {
+              setShowEventManager(false);
+              setSelectedClubForEvents(null);
+            }}
+          />
+        )}
         </div>
       </div>
     </CaptainOnly>

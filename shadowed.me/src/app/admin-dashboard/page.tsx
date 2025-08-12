@@ -19,7 +19,7 @@ interface User {
   id: string;
   email: string;
   role?: UserRole;
-  displayName?: string | null;
+  displayName: string;
   uniqueKey?: string;
   joinedClubs?: string[];
 }
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           id: doc.id,
           email: data.email || '',
           role: data.role || 'student',
-          displayName: data.displayName || null,
+          displayName: data.displayName || data.name || data.email || 'No name',
           uniqueKey: data.uniqueKey || '',
           joinedClubs: data.joinedClubs || [],
         } as User;
@@ -512,7 +512,7 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4">
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{user.email}</div>
-                                <div className="text-sm text-gray-500">{user.displayName || 'No name'}</div>
+                                <div className="text-sm text-gray-500">{user.displayName}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -671,7 +671,7 @@ export default function AdminDashboard() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                  <p className="text-gray-900">{selectedUser.displayName || 'Not set'}</p>
+                  <p className="text-gray-900">{selectedUser.displayName}</p>
                 </div>
                 
                 <div>

@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIcon, UserGroupIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIcon, UserGroupIcon, SparklesIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ClubEventManager from '@/components/ClubEventManager';
 
 interface ClubSite {
   id: string;
@@ -31,7 +32,7 @@ interface ClubSite {
 interface User {
   uid: string;
   email: string;
-  name?: string;
+  name: string;
   role?: string;
 }
 
@@ -47,8 +48,10 @@ export default function SponsorDashboard() {
   const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
   const [showClubInfoModal, setShowClubInfoModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showEventManager, setShowEventManager] = useState(false);
   const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubSite | null>(null);
   const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
+  const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
   const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);
   const [clubInfoForm, setClubInfoForm] = useState({
     description: '',
@@ -116,15 +119,25 @@ export default function SponsorDashboard() {
         getDocs(captainQuery)
       ]);
       
-      const studentsData = studentSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      })) as User[];
+      const studentsData = studentSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          email: data.email || '',
+          name: data.displayName || data.name || data.email || 'No name',
+          role: data.role || 'student',
+        } as User;
+      });
       
-      const captainsData = captainSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      })) as User[];
+      const captainsData = captainSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          email: data.email || '',
+          name: data.displayName || data.name || data.email || 'No name',
+          role: data.role || 'captain',
+        } as User;
+      });
       
       // Combine students and captains
       const allUsers = [...studentsData, ...captainsData];
@@ -697,6 +710,16 @@ export default function SponsorDashboard() {
                         <UserIcon className="h-3 w-3 mr-1" />
                         Assign Captains
                       </button>
+                      <button
+                        onClick={() => {
+                          setSelectedClubForEvents(club);
+                          setShowEventManager(true);
+                        }}
+                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors"
+                      >
+                        <CalendarIcon className="h-3 w-3 mr-1" />
+                        Manage Events
+                      </button>
                       <a
                         href={`/${club.slug}`}
                         target="_blank"
@@ -1213,6 +1236,20 @@ export default function SponsorDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Club Event Manager */}
+      {showEventManager && selectedClubForEvents && (
+        <ClubEventManager
+          clubId={selectedClubForEvents.id}
+          clubName={selectedClubForEvents.clubName}
+          userEmail={user?.email || ''}
+          isOpen={showEventManager}
+          onClose={() => {
+            setShowEventManager(false);
+            setSelectedClubForEvents(null);
+          }}
+        />
       )}
     </div>
   );
