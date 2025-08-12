@@ -30,6 +30,7 @@ interface WebsiteViewerProps {
 export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteViewerProps) {
   const { user, userRole, captainClubs } = useAuth();
   const [canEdit, setCanEdit] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(true);
   
   // State for lightbox and gallery viewing
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -425,20 +426,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
         </div>
       </div>
 
-      {/* Full-width unified club calendar */}
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-10">
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
-            Club Posts & Events
-          </h2>
-          <ClubPosts
-            clubId={website.id}
-            clubName={website.clubName}
-            userEmail={user?.email || ''}
-            userName={user?.displayName || user?.email || ''}
-          />
-        </div>
-      </div>
+      {/* Calendar toggle moved to bottom (collapsible) */}
 
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content Section - 2/3 width */}
@@ -853,18 +841,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             </div>
           )}
 
-          {/* Club Posts Section */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-[#180D39] mb-4 border-b-2 pb-2" style={{ borderColor: primaryColor }}>
-              Club Posts & Events
-            </h2>
-            <ClubPosts
-              clubId={website.id}
-              clubName={website.clubName}
-              userEmail={user?.email || ''}
-              userName={user?.displayName || user?.email || ''}
-            />
-          </div>
+          {/* Club Posts Section (removed from sidebar as requested) */}
 
           {/* Resources Section */}
           {website.resources && website.resources.length > 0 && (
@@ -1100,6 +1077,42 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Collapsible Club Posts & Events at very bottom */}
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-10">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-[#180D39]" style={{ borderColor: primaryColor }}>
+              Club Posts & Events
+            </h2>
+            <button
+              onClick={() => setShowCalendar((prev) => !prev)}
+              className="px-4 py-2 rounded-lg text-white font-medium"
+              style={{ backgroundColor: primaryColor }}
+            >
+              {showCalendar ? 'Hide Calendar' : 'Open Calendar'}
+            </button>
+          </div>
+          <AnimatePresence initial={false}>
+            {showCalendar && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden mt-4"
+              >
+                <ClubPosts
+                  clubId={website.id}
+                  clubName={website.clubName}
+                  userEmail={user?.email || ''}
+                  userName={user?.displayName || user?.email || ''}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 } 
