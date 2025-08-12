@@ -682,7 +682,12 @@ function EventFormModal({ isOpen, onClose, onSubmit, formData, setFormData, mode
                 <label className="block text-sm font-medium text-gray-700 mb-1">Recurring Pattern</label>
                 <select
                   value={formData.recurringPattern}
-                  onChange={(e) => setFormData({ ...formData, recurringPattern: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      recurringPattern: e.target.value as 'weekly' | 'biweekly' | 'monthly',
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="weekly">Weekly</option>
