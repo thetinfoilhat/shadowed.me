@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove participant from meeting
-    const updatedParticipants = meeting.participants.filter((p: { email: string }) => p.email !== participantEmail);
+    const updatedParticipants = (meeting.participants || []).filter((p: { email: string }) => p.email !== participantEmail);
     
     await updateDoc(meetingRef, {
       participants: updatedParticipants,
@@ -145,7 +145,7 @@ export async function DELETE(request: NextRequest) {
           if (m.id === meetingId) {
             return {
               ...m,
-              participants: m.participants.filter((p: { email: string }) => p.email !== participantEmail),
+              participants: (m.participants || []).filter((p: { email: string }) => p.email !== participantEmail),
               currentParticipants: Math.max(0, (m.currentParticipants || 0) - 1),
               updatedAt: new Date()
             };
