@@ -391,8 +391,23 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Control Panel</h1>
-            <p className="text-gray-600 mt-2">Manage users, clubs, and system settings</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Admin Control Panel</h1>
+                <p className="text-gray-600 mt-2">Manage users, clubs, and system settings</p>
+              </div>
+              <button
+                onClick={async () => {
+                  await fetchUsers();
+                  await fetchClubs();
+                  toast.success('Data refreshed!');
+                }}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title="Refresh all data"
+              >
+                Refresh Data
+              </button>
+            </div>
           </div>
 
           {/* Search and Filters */}

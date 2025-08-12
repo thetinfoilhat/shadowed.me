@@ -297,7 +297,22 @@ export default function SponsorDashboard() {
       
       // If the current user was promoted, refresh their data
       if (promotedUsers.includes(user?.email || '')) {
-        await refreshUserData();
+        // Add a small delay to ensure the API route has finished updating the user document
+        setTimeout(async () => {
+          await refreshUserData();
+        }, 1000);
+        
+        // Also poll for updates to ensure we get the latest data
+        let attempts = 0;
+        const maxAttempts = 5;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          await refreshUserData();
+          
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+          }
+        }, 2000);
       }
       
       toast.success(`Successfully assigned ${selectedCaptains.length} captain${selectedCaptains.length > 1 ? 's' : ''}. They now have full captain access!`);
@@ -584,13 +599,30 @@ export default function SponsorDashboard() {
                 {filteredClubs.length} club{filteredClubs.length !== 1 ? 's' : ''} under your guidance
               </p>
             </div>
-            <button
-              onClick={() => setShowDiscoverModal(true)}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-all duration-200"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Discover More Clubs
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  await refreshUserData();
+                  fetchSponsoredClubs();
+                  fetchAllStudents();
+                  toast.success('Data refreshed!');
+                }}
+                className="inline-flex items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-all duration-200"
+                title="Refresh your data and club assignments"
+              >
+                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Data
+              </button>
+              <button
+                onClick={() => setShowDiscoverModal(true)}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#38BFA1] hover:bg-[#2DA891] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#38BFA1] transition-all duration-200"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Discover More Clubs
+              </button>
+            </div>
           </div>
 
           {/* Search Bar */}

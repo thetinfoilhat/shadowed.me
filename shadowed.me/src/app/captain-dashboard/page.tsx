@@ -619,6 +619,18 @@ export default function CaptainDashboard() {
                   <div className="text-sm text-gray-500">Welcome back</div>
                   <div className="font-medium text-gray-900">{user?.email}</div>
                 </div>
+                <button
+                  onClick={async () => {
+                    await refreshUserData();
+                    fetchCaptainClubs();
+                    fetchCaptainWebsites();
+                    toast.success('Data refreshed!');
+                  }}
+                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  title="Refresh your data and club assignments"
+                >
+                  Refresh Data
+                </button>
               </div>
             </div>
           </div>
@@ -744,7 +756,10 @@ export default function CaptainDashboard() {
                           </span>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => router.push(`/${website.slug}?edit=true`)}
+                              onClick={() => {
+                                console.log('Navigating to edit page:', `/${website.slug}?edit=true`);
+                                router.push(`/${website.slug}?edit=true`);
+                              }}
                               className="px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-opacity"
                               style={{ backgroundColor: getColorById(website.theme?.primaryColor || 'blue').value }}
                             >
@@ -858,7 +873,10 @@ export default function CaptainDashboard() {
                           </span>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => router.push(`/${club.slug}?edit=true`)}
+                              onClick={() => {
+                                console.log('Navigating to assigned club edit page:', `/${club.slug}?edit=true`);
+                                router.push(`/${club.slug}?edit=true`);
+                              }}
                               className="px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-opacity"
                               style={{ backgroundColor: getColorById(club.theme?.primaryColor || 'blue').value }}
                             >

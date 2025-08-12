@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const refreshUserData = async () => {
+  const refreshUserData = async (retryCount = 0) => {
     if (!user) return;
     
     try {
@@ -95,9 +95,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUserRole(userData.role);
         }
         setCaptainClubs(userData.captainClubs || []);
+        
+        // Debug logging
+        console.log('User data refreshed:', {
+          role: userData.role,
+          captainClubs: userData.captainClubs || [],
+          email: userData.email
+        });
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);
+      
+      // Retry up to 3 times with exponential backoff
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        setTimeout(() => {
+          refreshUserData(retryCount + 1);
+        }, delay);
+      }
     }
   };
 

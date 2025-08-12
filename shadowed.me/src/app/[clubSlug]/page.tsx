@@ -70,17 +70,7 @@ export default function ClubWebsitePage() {
       }
 
       try {
-        // If user is admin, they can edit any club
-        if (userRole === 'admin') {
-          setIsEditor(true);
-        } else if (userRole === 'captain') {
-          // Check if user is a captain of this specific club
-          if (captainClubs.includes(clubSlug as string)) {
-            setIsEditor(true);
-          }
-        }
-        
-        // Fetch the website data if it exists
+        // Fetch the website data first to check permissions
         const websiteRef = doc(db, 'clubSites', clubSlug as string);
         const websiteDoc = await getDoc(websiteRef);
         
@@ -95,34 +85,68 @@ export default function ClubWebsitePage() {
           
           setWebsite(websiteData);
           
-          // Additional check for captains and sponsors in the website data
-          if (user && userRole === 'captain' && !isEditor) {
-            // Check if user's email is in the captains array
-            const captainsArray = websiteData.captains || [];
-            if (captainsArray.includes(user.email as string)) {
+          // Check permissions for editing
+          if (user) {
+            // Admins can edit any club
+            if (userRole === 'admin') {
               setIsEditor(true);
-            }
-            
-            // Check jamboreeMeetingInfo.captains string if it exists
-            if (websiteData.jamboreeMeetingInfo?.captains) {
-              const captainsString = websiteData.jamboreeMeetingInfo.captains;
-              // Check if email is mentioned in the captains string
-              if (user.email && captainsString.includes(user.email)) {
+            } 
+            // Captains can edit clubs they're assigned to
+            else if (userRole === 'captain') {
+              const userEmail = user.email;
+              
+              // Check multiple ways a captain might be assigned to this club
+              const isCaptain = 
+                // Check if club is in user's captainClubs array (captainClubs contains IDs, not slugs)
+                (captainClubs && captainClubs.includes(websiteData.id)) ||
+                // Check if user's email is in the captainEmails array
+                (Array.isArray(websiteData.captainEmails) && websiteData.captainEmails.includes(userEmail!)) ||
+                // Check if user's email is in the captains array (legacy)
+                (Array.isArray(websiteData.captains) && websiteData.captains.includes(userEmail!)) ||
+                // Check if user's email matches the single captain field (legacy)
+                (websiteData.captain === userEmail) ||
+                // Check if user's email is mentioned in jamboreeMeetingInfo.captains string
+                (websiteData.jamboreeMeetingInfo?.captains && 
+                 typeof websiteData.jamboreeMeetingInfo.captains === 'string' && 
+                 websiteData.jamboreeMeetingInfo.captains.includes(userEmail!)) ||
+                // Check if user created this website
+                (websiteData.createdBy === user.uid);
+              
+              // Debug logging for captain permissions
+              console.log('Captain permission check:', {
+                userEmail,
+                userRole,
+                clubSlug,
+                websiteId: websiteData.id,
+                captainClubs,
+                captainEmails: websiteData.captainEmails,
+                captains: websiteData.captains,
+                captain: websiteData.captain,
+                jamboreeCaptains: websiteData.jamboreeMeetingInfo?.captains,
+                createdBy: websiteData.createdBy,
+                userUid: user.uid,
+                isCaptain
+              });
+              
+              if (isCaptain) {
                 setIsEditor(true);
               }
             }
-          } else if (user && userRole === 'sponsor' && !isEditor) {
-            // Check if user's email is in the sponsorEmails array
-            const sponsorsArray = websiteData.sponsorEmails || [];
-            if (sponsorsArray.includes(user.email as string)) {
-              setIsEditor(true);
-            }
-            
-            // Check jamboreeMeetingInfo.sponsor string if it exists
-            if (websiteData.jamboreeMeetingInfo?.sponsor) {
-              const sponsorsString = websiteData.jamboreeMeetingInfo.sponsor;
-              // Check if email is mentioned in the sponsors string
-              if (user.email && sponsorsString.includes(user.email)) {
+            // Sponsors can edit clubs assigned to them
+            else if (userRole === 'sponsor') {
+              const userEmail = user.email;
+              
+              const isSponsor = 
+                // Check if user's email is in the sponsorEmails array
+                (Array.isArray(websiteData.sponsorEmails) && websiteData.sponsorEmails.includes(userEmail!)) ||
+                // Check if user's email matches the single sponsorEmail field (legacy)
+                (websiteData.sponsorEmail === userEmail) ||
+                // Check if user's email is mentioned in jamboreeMeetingInfo.sponsor string
+                (websiteData.jamboreeMeetingInfo?.sponsor && 
+                 typeof websiteData.jamboreeMeetingInfo.sponsor === 'string' && 
+                 websiteData.jamboreeMeetingInfo.sponsor.includes(userEmail!));
+              
+              if (isSponsor) {
                 setIsEditor(true);
               }
             }
@@ -166,6 +190,7 @@ export default function ClubWebsitePage() {
 
   useEffect(() => {
     // Set edit mode based on URL parameter and user permission
+    console.log('Edit mode check:', { isEditMode, isEditor, editMode });
     if (isEditMode && isEditor) {
       setEditMode(true);
     }
