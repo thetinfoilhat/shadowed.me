@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, doc, getDocs, updateDoc, query, where, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, query, where, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { MeetingOpportunity } from '@/types/club';
 
 // POST - Sign up for a meeting
 export async function POST(request: NextRequest) {
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
       
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
-        const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: any) => {
+        const existingMeetings: MeetingOpportunity[] = clubData.meetings || [];
+        const updatedMeetings = existingMeetings.map((m: MeetingOpportunity) => {
           if (m.id === meetingId) {
             return {
               ...m,
@@ -131,8 +132,8 @@ export async function DELETE(request: NextRequest) {
       
       if (!clubDoc.empty) {
         const clubData = clubDoc.docs[0].data();
-        const existingMeetings = clubData.meetings || [];
-        const updatedMeetings = existingMeetings.map((m: any) => {
+        const existingMeetings: MeetingOpportunity[] = clubData.meetings || [];
+        const updatedMeetings = existingMeetings.map((m: MeetingOpportunity) => {
           if (m.id === meetingId) {
             return {
               ...m,
