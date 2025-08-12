@@ -392,8 +392,8 @@ export default function StudentDashboard() {
           participant: {
             name: user.displayName || user.email || '',
             email: user.email,
-            grade: user.grade || '',
-            school: user.school || '',
+            grade: '', // Will be filled from user profile
+            school: '', // Will be filled from user profile
             signupDate: new Date(),
           },
         }),

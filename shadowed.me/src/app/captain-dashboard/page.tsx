@@ -1,20 +1,25 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, where, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-// import { format } from 'date-fns';
-import VisitModal from '@/components/VisitModal';
-import ApplicantsDialog from '@/components/ApplicantsDialog';
-import { Club, CompletedVisit, ClubSite, MeetingOpportunity /* , ClubListing */ } from '@/types/club';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { ChevronDownIcon, ChevronUpIcon, PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { CaptainOnly } from '@/components/RoleBasedAccess';
+import { 
+  CalendarIcon, 
+  PlusIcon,
+  ChevronUpIcon,
+  ChevronDownIcon
+} from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import { getColorById } from '@/utils/colors';
 import MeetingOpportunityModal from '@/components/MeetingOpportunityModal';
 import MeetingCalendar from '@/components/MeetingCalendar';
+import { Club, CompletedVisit, ClubSite, MeetingOpportunity } from '@/types/club';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import ApplicantsDialog from '@/components/ApplicantsDialog';
+import VisitModal from '@/components/VisitModal';
+import { getColorById } from '@/utils/colors';
 
 interface Applicant {
   name: string;
@@ -216,9 +221,9 @@ export default function CaptainDashboard() {
   // Fetch meetings when assigned clubs change
   useEffect(() => {
     if (assignedClubs.length > 0) {
-      fetchMeetingsRef.current();
+      fetchMeetings();
     }
-  }, [assignedClubs]);
+  }, [assignedClubs, fetchMeetings]);
 
   // Add function to fetch sponsor names
   const fetchSponsorNames = useCallback(async (visits: Club[]) => {
@@ -594,102 +599,103 @@ export default function CaptainDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Captain Dashboard</h1>
-              <p className="text-gray-600 mt-2">Manage your club websites and captain assignments</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Welcome back</div>
-                <div className="font-medium text-gray-900">{user?.email}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Club Websites</div>
-                <div className="text-2xl font-bold text-gray-900">{websites.length}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Captain Assignments</div>
-                <div className="text-2xl font-bold text-gray-900">{assignedClubs.length}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">Last Updated</div>
-                <div className="text-2xl font-bold text-gray-900">Today</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Club Websites Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+    <CaptainOnly>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
             <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Captain Dashboard</h1>
+                <p className="text-gray-600 mt-2">Manage your club websites and captain assignments</p>
+              </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Your Club Websites</h2>
-                  <p className="text-sm text-gray-500">Manage and edit your club websites</p>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Welcome back</div>
+                  <div className="font-medium text-gray-900">{user?.email}</div>
                 </div>
               </div>
-              <button 
-                onClick={() => setWebsitesExpanded(!websitesExpanded)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {websitesExpanded ? (
-                  <ChevronUpIcon className="h-5 w-5" />
-                ) : (
-                  <ChevronDownIcon className="h-5 w-5" />
-                )}
-              </button>
             </div>
           </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-sm font-medium text-gray-500">Club Websites</div>
+                  <div className="text-2xl font-bold text-gray-900">{websites.length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-sm font-medium text-gray-500">Captain Assignments</div>
+                  <div className="text-2xl font-bold text-gray-900">{assignedClubs.length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-sm font-medium text-gray-500">Last Updated</div>
+                  <div className="text-2xl font-bold text-gray-900">Today</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Club Websites Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Your Club Websites</h2>
+                    <p className="text-sm text-gray-500">Manage and edit your club websites</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setWebsitesExpanded(!websitesExpanded)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {websitesExpanded ? (
+                    <ChevronUpIcon className="h-5 w-5" />
+                  ) : (
+                    <ChevronDownIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
 
           {websitesExpanded && (
             <div className="p-6">
@@ -758,8 +764,8 @@ export default function CaptainDashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                   </div>
-                                     <h3 className="text-lg font-medium text-gray-900 mb-2">No websites yet</h3>
-                   <p className="text-gray-500 mb-6">You haven&apos;t created any club websites yet.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No websites yet</h3>
+                  <p className="text-gray-500 mb-6">You haven&apos;t created any club websites yet.</p>
                   <button
                     onClick={() => router.push('/clubs')}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
@@ -1393,7 +1399,8 @@ export default function CaptainDashboard() {
           userEmail={user?.email || ''}
           availableClubs={assignedClubs.map(club => ({ id: club.id, clubName: club.clubName }))}
         />
+        </div>
       </div>
-    </div>
+    </CaptainOnly>
   );
 } 

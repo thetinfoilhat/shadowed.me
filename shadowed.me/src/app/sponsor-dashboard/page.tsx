@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIcon, UserGroupIcon, SparklesIcon } from '@heroicons/react/24/outline';
@@ -250,35 +250,35 @@ export default function SponsorDashboard() {
         updatedAt: new Date()
       });
       
-      // Update user roles to captain for all selected captains
-      const usersRef = collection(db, 'users');
+      // Update user roles to captain for all selected captains using the new API
       const promotedUsers: string[] = [];
       
       for (const captainEmail of selectedCaptains) {
-        const userQuery = query(usersRef, where('email', '==', captainEmail));
+        const userQuery = query(collection(db, 'users'), where('email', '==', captainEmail));
         const userSnapshot = await getDocs(userQuery);
         
         if (!userSnapshot.empty) {
           const userDoc = userSnapshot.docs[0];
-          const userData = userDoc.data();
-          const currentCaptainClubs = userData.captainClubs || [];
           
-          // Add club to captain's captainClubs array if not already there
-          const updatedCaptainClubs = currentCaptainClubs.includes(selectedClub.id) 
-            ? currentCaptainClubs 
-            : [...currentCaptainClubs, selectedClub.id];
-          
-          await updateDoc(doc(db, 'users', userDoc.id), {
-            role: 'captain',
-            captainClubs: updatedCaptainClubs,
-            notifications: arrayUnion({
-              type: 'promotion',
-              message: `You have been promoted to captain of ${selectedClub.clubName}! You now have access to the captain dashboard and can edit your club's website.`,
-              timestamp: new Date(),
-              read: false
-            })
+          // Use the new API route to update user role and ensure continuity
+          const response = await fetch('/api/user-role', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: userDoc.id,
+              newRole: 'captain',
+              clubId: selectedClub.id,
+              action: 'add'
+            }),
           });
-          promotedUsers.push(captainEmail);
+
+          if (response.ok) {
+            promotedUsers.push(captainEmail);
+          } else {
+            console.error(`Failed to promote ${captainEmail} to captain`);
+          }
         }
       }
       
@@ -344,7 +344,7 @@ export default function SponsorDashboard() {
       // Find captains that have been removed
       const removedCaptains = previousCaptains.filter(email => !clubInfoForm.captains.includes(email));
       
-      // Remove club from captainClubs array for removed captains
+      // Remove club from captainClubs array for removed captains using the new API
       if (removedCaptains.length > 0) {
         const usersRef = collection(db, 'users');
         for (const captainEmail of removedCaptains) {
@@ -353,14 +353,19 @@ export default function SponsorDashboard() {
           
           if (!userSnapshot.empty) {
             const userDoc = userSnapshot.docs[0];
-            const userData = userDoc.data();
-            const currentCaptainClubs = userData.captainClubs || [];
             
-            // Remove club from captain's captainClubs array
-            const updatedCaptainClubs = currentCaptainClubs.filter((id: string) => id !== selectedClubForInfo.id);
-            
-            await updateDoc(doc(db, 'users', userDoc.id), {
-              captainClubs: updatedCaptainClubs
+            // Use the new API route to remove captain role
+            await fetch('/api/user-role', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: userDoc.id,
+                newRole: 'student',
+                clubId: selectedClubForInfo.id,
+                action: 'remove'
+              }),
             });
           }
         }
@@ -388,7 +393,7 @@ export default function SponsorDashboard() {
         updatedAt: new Date()
       });
       
-      // Update user roles to captain for all assigned captains
+      // Update user roles to captain for all assigned captains using the new API
       const promotedUsers: string[] = [];
       if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
         const usersRef = collection(db, 'users');
@@ -398,25 +403,24 @@ export default function SponsorDashboard() {
           
           if (!userSnapshot.empty) {
             const userDoc = userSnapshot.docs[0];
-            const userData = userDoc.data();
-            const currentCaptainClubs = userData.captainClubs || [];
             
-            // Add club to captain's captainClubs array if not already there
-            const updatedCaptainClubs = currentCaptainClubs.includes(selectedClubForInfo.id) 
-              ? currentCaptainClubs 
-              : [...currentCaptainClubs, selectedClubForInfo.id];
-            
-            await updateDoc(doc(db, 'users', userDoc.id), {
-              role: 'captain',
-              captainClubs: updatedCaptainClubs,
-              notifications: arrayUnion({
-                type: 'promotion',
-                message: `You have been promoted to captain of ${selectedClubForInfo.clubName}! You now have access to the captain dashboard and can edit your club's website.`,
-                timestamp: new Date(),
-                read: false
-              })
+            // Use the new API route to update user role and ensure continuity
+            const response = await fetch('/api/user-role', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: userDoc.id,
+                newRole: 'captain',
+                clubId: selectedClubForInfo.id,
+                action: 'add'
+              }),
             });
-            promotedUsers.push(captainEmail);
+
+            if (response.ok) {
+              promotedUsers.push(captainEmail);
+            }
           }
         }
       }
