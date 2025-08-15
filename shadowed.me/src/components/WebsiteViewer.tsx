@@ -1102,12 +1102,13 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden mt-4"
               >
-                <ClubPosts
-                  clubId={website.id}
-                  clubName={website.clubName}
-                  userEmail={user?.email || ''}
-                  userName={user?.displayName || user?.email || ''}
-                />
+                          <ClubPosts
+            clubId={website.id}
+            clubName={website.clubName}
+            userEmail={user?.email || ''}
+            userName={user?.displayName || user?.email || ''}
+            isEditor={false}
+          />
               </motion.div>
             )}
           </AnimatePresence>

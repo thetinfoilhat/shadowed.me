@@ -47,9 +47,10 @@ interface ClubPostsProps {
   clubName: string;
   userEmail: string;
   userName: string;
+  isEditor?: boolean; // New prop to distinguish between editor and viewer modes
 }
 
-export default function ClubPosts({ clubId, clubName, userEmail, userName }: ClubPostsProps) {
+export default function ClubPosts({ clubId, clubName, userEmail, userName, isEditor = false }: ClubPostsProps) {
   const [posts, setPosts] = useState<ClubPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar');
@@ -316,6 +317,7 @@ export default function ClubPosts({ clubId, clubName, userEmail, userName }: Clu
           onLeavePost={() => handleLeavePost(selectedPost)}
           formatTime={formatTime}
           getPostTypeColor={getPostTypeColor}
+          isEditor={isEditor}
         />
       )}
     </div>
@@ -547,7 +549,8 @@ function PostDetailsModal({
   onJoinPost,
   onLeavePost,
   formatTime,
-  getPostTypeColor
+  getPostTypeColor,
+  isEditor
 }: {
   post: ClubPost;
   isOpen: boolean;
@@ -557,6 +560,7 @@ function PostDetailsModal({
   onLeavePost: () => void;
   formatTime: (time: string) => string;
   getPostTypeColor: (type: string) => string;
+  isEditor: boolean;
 }) {
   if (!isOpen) return null;
 
@@ -646,20 +650,33 @@ function PostDetailsModal({
           {/* Participants List */}
           {post.participants && post.participants.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Current Participants</h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {post.participants.map((participant, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div>
-                      <div className="font-medium text-gray-900">{participant.name}</div>
-                      <div className="text-sm text-gray-500">{participant.email}</div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">
+                {isEditor ? 'Current Participants' : 'Participants'}
+              </h4>
+              {isEditor ? (
+                // Show full participant details in editor mode
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {post.participants.map((participant, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <div className="font-medium text-gray-900">{participant.name}</div>
+                        <div className="text-sm text-gray-500">{participant.email}</div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Joined {participant.joinDate.toLocaleDateString()}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      Joined {participant.joinDate.toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                // Show only participant count in viewer mode
+                <div className="p-3 bg-gray-50 rounded">
+                  <p className="text-gray-900">
+                    {post.currentParticipants} participant{post.currentParticipants !== 1 ? 's' : ''}
+                    {post.maxParticipants && ` of ${post.maxParticipants} max`}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

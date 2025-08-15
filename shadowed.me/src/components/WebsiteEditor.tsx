@@ -2415,6 +2415,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                       clubName={formData.clubName}
                       userEmail={user?.email || ''}
                       userName={user?.displayName || user?.email || formData.clubName}
+                      isEditor={true}
                     />
                   </div>
                 </div>

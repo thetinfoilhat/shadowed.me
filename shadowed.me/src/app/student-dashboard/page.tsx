@@ -553,17 +553,19 @@ export default function StudentDashboard() {
   };
 
   const openDayView = (date: Date) => {
-    const dayMeetings = meetings.filter(meeting => {
+    // Get all available meetings for this day (including unjoined ones)
+    const dayAllMeetings = meetings.filter(meeting => {
       const meetingDate = new Date(meeting.startDate);
-      return meetingDate.toDateString() === date.toDateString();
+      return meetingDate.toDateString() === date.toDateString() && meeting.status === 'active';
     });
+    
     const dayPersonalEvents = personalEvents.filter(event => {
       const eventDate = new Date(event.date);
       return eventDate.toDateString() === date.toDateString();
     });
     
     setSelectedDayEvents({
-      meetings: dayMeetings,
+      meetings: dayAllMeetings,
       personalEvents: dayPersonalEvents,
       date
     });
@@ -729,16 +731,79 @@ export default function StudentDashboard() {
               Student Dashboard
             </h1>
             <p className="text-lg text-gray-600">
-              Track clubs you&apos;ve joined
+              Track clubs you&apos;ve joined and manage your schedule
             </p>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => openEventModal(new Date())}
+              className="inline-flex items-center px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors font-medium"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Event
+            </button>
+            <Link
+              href="/clubs"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Find Clubs
+            </Link>
+          </div>
+        </div>
+        
+        {/* Dashboard Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{joinedClubs.length}</h3>
+            <p className="text-sm text-gray-600">Clubs Joined</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CalendarIcon className="w-6 h-6 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{meetings.filter(m => m.status === 'active').length}</h3>
+            <p className="text-sm text-gray-600">Available Opportunities</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{personalEvents.length}</h3>
+            <p className="text-sm text-gray-600">Personal Events</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-center">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{meetings.filter(m => m.participants?.some(p => p.email === user?.email)).length}</h3>
+            <p className="text-sm text-gray-600">Events Joined</p>
           </div>
         </div>
         
         {/* Joined Clubs Section */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
           <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
+            <svg className="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
             <span>Clubs I&apos;ve Joined</span>
-            <span className="ml-2 px-2 py-1 bg-[#38BFA1]/10 text-[#38BFA1] text-sm rounded-full">
+            <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium">
               {joinedClubs.length}
             </span>
           </h2>
@@ -778,7 +843,9 @@ export default function StudentDashboard() {
         {joinedClubs.length > 0 && (
           <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
             <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
-              <CalendarIcon className="h-6 w-6 mr-2" />
+              <svg className="w-6 h-6 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
               <span>Club Events</span>
             </h2>
             
@@ -802,7 +869,9 @@ export default function StudentDashboard() {
         {joinedClubs.length > 0 && (
           <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
             <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
-              <CalendarIcon className="h-6 w-6 mr-2" />
+              <svg className="w-6 h-6 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+              </svg>
               <span>Club Posts & Announcements</span>
             </h2>
             
@@ -822,35 +891,62 @@ export default function StudentDashboard() {
           </div>
         )}
         
-        {/* Calendar Section */}
+        {/* Comprehensive Calendar Section */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
               <CalendarIcon className="h-6 w-6 mr-2" />
-              My Calendar
+              My Calendar & Opportunities
             </h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCalendarView('month')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  calendarView === 'month' 
-                    ? 'bg-[#38BFA1] text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Month View
-              </button>
-              <button
-                onClick={() => setCalendarView('list')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  calendarView === 'list' 
-                    ? 'bg-[#38BFA1] text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                List View
-              </button>
+            <div className="text-sm text-gray-600">
+              {meetings.filter(m => m.status === 'active').length} opportunities available
             </div>
+          </div>
+          
+          {/* Quick Help */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">How to use your calendar:</h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Calendar View:</strong> See your joined events and personal events (click to edit)</li>
+                    <li><strong>List View:</strong> Browse all available opportunities from your clubs and join them</li>
+                    <li><strong>Click any date</strong> to see detailed events for that day</li>
+                    <li><strong>Add personal events</strong> by clicking the + button on any date</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Calendar Tabs */}
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
+            <button
+              onClick={() => setCalendarView('month')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                calendarView === 'month'
+                  ? 'bg-white text-[#0A2540] shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Calendar View
+            </button>
+            <button
+              onClick={() => setCalendarView('list')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                calendarView === 'list'
+                  ? 'bg-white text-[#0A2540] shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              All Opportunities
+            </button>
           </div>
           
           {calendarView === 'month' ? (
@@ -888,10 +984,15 @@ export default function StudentDashboard() {
                 
                 {Array.from({ length: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate() }, (_, i) => {
                   const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1);
-                  const dayMeetings = meetings.filter(meeting => {
+                  
+                  // Get joined meetings for this day
+                  const dayJoinedMeetings = meetings.filter(meeting => {
                     const meetingDate = new Date(meeting.startDate);
-                    return meetingDate.toDateString() === date.toDateString();
+                    return meetingDate.toDateString() === date.toDateString() && 
+                           meeting.participants?.some(p => p.email === user?.email);
                   });
+                  
+                  // Get personal events for this day
                   const dayPersonalEvents = personalEvents.filter(event => {
                     const eventDate = new Date(event.date);
                     return eventDate.toDateString() === date.toDateString();
@@ -919,12 +1020,12 @@ export default function StudentDashboard() {
                         </button>
                       </div>
                       
-                      {/* Club Meetings */}
-                      {dayMeetings.map((meeting, idx) => (
+                      {/* Joined Club Meetings */}
+                      {dayJoinedMeetings.map((meeting, idx) => (
                         <div
-                          key={`meeting-${idx}`}
-                          className="text-xs p-1 mb-1 rounded bg-blue-100 text-blue-800 truncate"
-                          title={meeting.title}
+                          key={`joined-${idx}`}
+                          className="text-xs p-1 mb-1 rounded bg-green-100 text-green-800 truncate"
+                          title={`${meeting.title} - ${meeting.clubName} (Joined)`}
                         >
                           {meeting.title}
                         </div>
@@ -957,75 +1058,48 @@ export default function StudentDashboard() {
                   <div key={`empty-end-${i}`} className="p-2"></div>
                 ))}
               </div>
+              
+              {/* Calendar Legend */}
+              <div className="flex items-center justify-center space-x-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+                  <span className="text-sm text-gray-700 font-medium">Joined Events</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded border-2 border-gray-300 bg-gray-50"></div>
+                  <span className="text-sm text-gray-700 font-medium">Personal Events</span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">All Available Meetings</h3>
+                <h3 className="text-lg font-semibold text-gray-900">All Available Opportunities</h3>
                 <div className="text-sm text-gray-500">
-                  {meetings.filter(m => m.status === 'active').length} meetings available
+                  Browse and join events from all your clubs
                 </div>
               </div>
               
-              <div className="space-y-3">
-                {meetings
-                  .filter(meeting => meeting.status === 'active')
-                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-                  .map((meeting) => {
-                    const isJoined = meeting.participants?.some(
-                      (participant: { email: string }) => participant.email === user?.email
-                    );
-                    
-                    return (
-                      <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900">{meeting.title}</h3>
-                          {isJoined && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Joined
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
-                          <div className="flex items-center">
-                            <CalendarIcon className="h-4 w-4 mr-2" />
-                            <span>{new Date(meeting.startDate).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <ClockIcon className="h-4 w-4 mr-2" />
-                            <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <MapPinIcon className="h-4 w-4 mr-2" />
-                            <span>Room {meeting.roomNumber}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <UserGroupIcon className="h-4 w-4 mr-2" />
-                            <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-500">
-                            <span className="font-medium">{meeting.clubName}</span>
-                          </div>
-                          <button
-                            onClick={() => isJoined ? handleLeaveMeeting(meeting.id) : handleJoinMeeting(meeting.id)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                              isJoined
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-[#38BFA1] text-white hover:bg-[#2DA891]'
-                            }`}
-                          >
-                            {isJoined ? 'Leave Meeting' : 'Join Meeting'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Show all available opportunities from all clubs */}
+              <div className="space-y-4">
+                {joinedClubs.map((club) => (
+                  <div key={club.id} className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">{club.clubName} Opportunities</h4>
+                    <ClubPosts
+                      clubId={club.id}
+                      clubName={club.clubName}
+                      userEmail={user?.email || ''}
+                      userName={user?.displayName || user?.email || ''}
+                      isEditor={false}
+                    />
+                  </div>
+                ))}
+                
+                {joinedClubs.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Join some clubs to see available opportunities!</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1046,7 +1120,7 @@ export default function StudentDashboard() {
                     })}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {selectedDayEvents.meetings.length + selectedDayEvents.personalEvents.length} events scheduled
+                    {selectedDayEvents.meetings.length} opportunities available • {selectedDayEvents.personalEvents.length} personal events
                   </p>
                 </div>
                 <button
@@ -1063,7 +1137,7 @@ export default function StudentDashboard() {
                   <div>
                     <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
                       <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
-                      Club Meetings ({selectedDayEvents.meetings.length})
+                      Available Opportunities ({selectedDayEvents.meetings.length})
                     </h4>
                     <div className="space-y-3">
                       {selectedDayEvents.meetings.map((meeting) => {
@@ -1176,8 +1250,8 @@ export default function StudentDashboard() {
                 {selectedDayEvents.meetings.length === 0 && selectedDayEvents.personalEvents.length === 0 && (
                   <div className="text-center py-8">
                     <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Events Scheduled</h4>
-                    <p className="text-gray-500 mb-4">This day is free! Add a personal event or join a club meeting.</p>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Events or Opportunities</h4>
+                    <p className="text-gray-500 mb-4">This day is free! Add a personal event or check other days for club opportunities.</p>
                   </div>
                 )}
                 
