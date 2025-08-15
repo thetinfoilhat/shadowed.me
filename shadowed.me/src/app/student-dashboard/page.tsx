@@ -18,14 +18,48 @@ interface PersonalEvent {
   createdAt: Date;
   updatedAt: Date;
 }
+
+interface ClubPost {
+  id?: string;
+  clubId: string;
+  clubName: string;
+  title: string;
+  content: string;
+  postType: 'event' | 'announcement' | 'meeting' | 'general';
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  maxParticipants?: number;
+  currentParticipants: number;
+  participants: Array<{
+    name: string;
+    email: string;
+    grade?: string;
+    school?: string;
+    joinDate: Date;
+  }>;
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: Date;
+  updatedAt: Date;
+  status: 'active' | 'cancelled' | 'completed';
+  tags?: string[];
+  isRecurring?: boolean;
+  recurringPattern?: 'daily' | 'weekly' | 'monthly';
+  recurringDays?: string[];
+}
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
 import { getColorById } from '@/utils/colors';
 import { toast } from 'react-hot-toast';
 import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import ClubEvents from '@/components/ClubEvents';
-import ClubPosts from '@/components/ClubPosts';
+
+// Helper function to get the number of days in a month
+const getDaysInMonth = (date: Date): number => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+};
 
 // Category color mapping from clubs page
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
@@ -272,6 +306,7 @@ export default function StudentDashboard() {
   // Calendar state
   const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
+  const [allClubOpportunities, setAllClubOpportunities] = useState<ClubPost[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarView, setCalendarView] = useState<'month' | 'list'>('month');
@@ -280,7 +315,7 @@ export default function StudentDashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isDayViewOpen, setIsDayViewOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{
-    meetings: MeetingOpportunity[];
+    meetings: (MeetingOpportunity | ClubPost)[];
     personalEvents: PersonalEvent[];
     date: Date;
   }>({ meetings: [], personalEvents: [], date: new Date() });
@@ -379,6 +414,44 @@ export default function StudentDashboard() {
       toast.error('Failed to load meetings');
     }
   }, [user?.email]);
+
+  // Fetch all opportunities from all joined clubs
+  const fetchAllClubOpportunities = useCallback(async () => {
+    if (!user?.email || joinedClubs.length === 0) return;
+
+    try {
+      const allOpportunities: ClubPost[] = [];
+      
+      // Fetch opportunities from each joined club
+      for (const club of joinedClubs) {
+        try {
+          const response = await fetch(`/api/club-posts?clubId=${club.id}&status=active`);
+          if (response.ok) {
+            const data = await response.json();
+            const clubPosts = data.posts || [];
+            
+            // Add club name to each post for display
+            const postsWithClubName = clubPosts.map((post: ClubPost) => ({
+              ...post,
+              clubName: club.clubName
+            }));
+            
+            allOpportunities.push(...postsWithClubName);
+          }
+        } catch (error) {
+          console.error(`Error fetching opportunities for club ${club.clubName}:`, error);
+        }
+      }
+      
+      // Sort by date
+      allOpportunities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      setAllClubOpportunities(allOpportunities);
+    } catch (error) {
+      console.error('Error fetching all club opportunities:', error);
+      toast.error('Failed to load club opportunities');
+    }
+  }, [user?.email, joinedClubs]);
 
   const handleJoinMeeting = async (meetingId: string) => {
     if (!user?.email) return;
@@ -559,13 +632,22 @@ export default function StudentDashboard() {
       return meetingDate.toDateString() === date.toDateString() && meeting.status === 'active';
     });
     
+    // Get all available club opportunities for this day
+    const dayClubOpportunities = allClubOpportunities.filter(opportunity => {
+      const opportunityDate = new Date(opportunity.date);
+      return opportunityDate.toDateString() === date.toDateString();
+    });
+    
+    // Combine both types of opportunities
+    const allOpportunities = [...dayAllMeetings, ...dayClubOpportunities];
+    
     const dayPersonalEvents = personalEvents.filter(event => {
       const eventDate = new Date(event.date);
       return eventDate.toDateString() === date.toDateString();
     });
     
     setSelectedDayEvents({
-      meetings: dayAllMeetings,
+      meetings: allOpportunities,
       personalEvents: dayPersonalEvents,
       date
     });
@@ -599,83 +681,175 @@ export default function StudentDashboard() {
     setIsEventModalOpen(true);
   };
 
-  const fetchJoinedClubs = useCallback(async () => {
-    if (!user?.email) return;
+  // Fetch joined clubs
+  useEffect(() => {
+    const fetchJoinedClubs = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const joinedClubIds = userData.joinedClubs || [];
+          
+          if (joinedClubIds.length > 0) {
+            const clubsData: ClubSite[] = [];
+            
+            for (const clubId of joinedClubIds) {
+              try {
+                const clubRef = doc(db, 'clubSites', clubId);
+                const clubDoc = await getDoc(clubRef);
+                
+                if (clubDoc.exists()) {
+                  const clubData = clubDoc.data() as ClubSite;
+                  clubsData.push({ ...clubData, id: clubId });
+                }
+              } catch (error) {
+                console.error(`Error fetching club ${clubId}:`, error);
+              }
+            }
+            
+            setJoinedClubs(clubsData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching joined clubs:', error);
+        toast.error('Failed to load joined clubs');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJoinedClubs();
+  }, [user?.uid]);
+
+  // Fetch all club opportunities when joined clubs change
+  useEffect(() => {
+    fetchAllClubOpportunities();
+  }, [fetchAllClubOpportunities]);
+
+  // Handle joining a club post/event
+  const handleJoinClubPost = async (postId: string) => {
+    if (!user?.email || !user?.uid) return;
 
     try {
-      // First get the user's joined clubs from their profile
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        setJoinedClubs([]);
-        return;
-      }
-      
-      const userData = userDoc.data();
-      const joinedClubIds = userData.joinedClubs || [];
-      
-      if (joinedClubIds.length === 0) {
-        setJoinedClubs([]);
-        return;
-      }
-      
-      // Get all club websites
-      const clubSitesRef = collection(db, 'clubSites');
-      const clubSitesSnapshot = await getDocs(clubSitesRef);
-      
-      const joinedClubsList: ClubSite[] = [];
-      
-      // Loop through each club site and check if it's in the user's joined clubs
-      for (const docSnapshot of clubSitesSnapshot.docs) {
-        const siteData = docSnapshot.data() as ClubSite;
+      const response = await fetch('/api/club-posts/join', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId,
+          participant: {
+            name: user.displayName || user.email || '',
+            email: user.email,
+            grade: '', // Will be filled from user profile
+            school: '', // Will be filled from user profile
+            joinDate: new Date(),
+          },
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Successfully joined event!');
         
-        // Check if this club is in the user's joined clubs list
-        if (joinedClubIds.includes(docSnapshot.id)) {
-          // Convert Firestore timestamps to JS Date objects
-          let createdAt: Date;
-          let updatedAt: Date;
-          
-          if (siteData.createdAt && typeof siteData.createdAt === 'object' && 'seconds' in siteData.createdAt) {
-            // It's a Firestore Timestamp-like object
-            const seconds = (siteData.createdAt as { seconds: number }).seconds;
-            createdAt = new Date(seconds * 1000);
-          } else {
-            // It's already a Date or a string/number
-            createdAt = new Date(siteData.createdAt as string | number | Date);
-          }
-          
-          if (siteData.updatedAt && typeof siteData.updatedAt === 'object' && 'seconds' in siteData.updatedAt) {
-            // It's a Firestore Timestamp-like object
-            const seconds = (siteData.updatedAt as { seconds: number }).seconds;
-            updatedAt = new Date(seconds * 1000);
-          } else {
-            // It's already a Date or a string/number
-            updatedAt = new Date(siteData.updatedAt as string | number | Date);
-          }
-          
-          joinedClubsList.push({
-            ...siteData,
-            id: docSnapshot.id,
-            createdAt,
-            updatedAt
+        // Find the club post to get event details
+        const clubPost = allClubOpportunities.find(post => post.id === postId);
+        if (clubPost) {
+          // Add the joined event to personal calendar
+          const personalEvent: PersonalEvent = {
+            id: `club-${postId}`,
+            title: `${clubPost.title} - ${clubPost.clubName}`,
+            description: `Club event: ${clubPost.content}`,
+            date: clubPost.date,
+            startTime: clubPost.startTime || '',
+            endTime: clubPost.endTime || '',
+            location: clubPost.location || '',
+            color: '#3B82F6', // Blue color for club events
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          // Add to personal events
+          const updatedEvents = [...personalEvents, personalEvent];
+          setPersonalEvents(updatedEvents);
+
+          // Save to user's profile
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, {
+            personalEvents: updatedEvents
           });
         }
+        
+        // Refresh the opportunities to show updated participant count
+        fetchAllClubOpportunities();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to join event');
       }
-      
-      setJoinedClubs(joinedClubsList);
     } catch (error) {
-      console.error('Error fetching joined clubs:', error);
+      console.error('Error joining club post:', error);
+      toast.error('Failed to join event');
     }
-  }, [user]);
+  };
+
+  // Handle leaving a club post/event
+  const handleLeaveClubPost = async (postId: string) => {
+    if (!user?.email || !user?.uid) return;
+
+    try {
+      const response = await fetch('/api/club-posts/join', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId,
+          participantEmail: user.email,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Successfully left event');
+        
+        // Remove the event from personal calendar
+        const updatedEvents = personalEvents.filter(event => event.id !== `club-${postId}`);
+        setPersonalEvents(updatedEvents);
+
+        // Save to user's profile
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+          personalEvents: updatedEvents
+        });
+        
+        // Refresh the opportunities to show updated participant count
+        fetchAllClubOpportunities();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to leave event');
+      }
+    } catch (error) {
+      console.error('Error leaving club post:', error);
+      toast.error('Failed to leave event');
+    }
+  };
 
   useEffect(() => {
     if (user) {
-      Promise.all([fetchJoinedClubs(), fetchMeetings(), fetchPersonalEvents()]).finally(() => setLoading(false));
+      Promise.all([fetchMeetings(), fetchPersonalEvents()]).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [user, fetchJoinedClubs, fetchMeetings, fetchPersonalEvents]);
+  }, [user, fetchMeetings, fetchPersonalEvents]);
+
+  // Also fetch opportunities when component mounts
+  useEffect(() => {
+    if (joinedClubs.length > 0) {
+      fetchAllClubOpportunities();
+    }
+  }, [joinedClubs.length, fetchAllClubOpportunities]);
 
   if (loading) {
     return (
@@ -838,58 +1012,6 @@ export default function StudentDashboard() {
             </div>
           )}
         </div>
-        
-        {/* Club Events Section */}
-        {joinedClubs.length > 0 && (
-          <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
-            <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
-              <svg className="w-6 h-6 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Club Events</span>
-            </h2>
-            
-            <div className="space-y-8">
-              {joinedClubs.map((club) => (
-                <div key={club.id} className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{club.clubName} Events</h3>
-                  <ClubEvents
-                    clubId={club.id}
-                    clubName={club.clubName}
-                    userEmail={user?.email || ''}
-                    userName={user?.displayName || user?.email || ''}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Club Posts Section */}
-        {joinedClubs.length > 0 && (
-          <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
-            <h2 className="text-xl font-semibold text-[#0A2540] mb-6 flex items-center">
-              <svg className="w-6 h-6 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-              <span>Club Posts & Announcements</span>
-            </h2>
-            
-            <div className="space-y-8">
-              {joinedClubs.map((club) => (
-                <div key={club.id} className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{club.clubName} Posts</h3>
-                  <ClubPosts
-                    clubId={club.id}
-                    clubName={club.clubName}
-                    userEmail={user?.email || ''}
-                    userName={user?.displayName || user?.email || ''}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         
         {/* Comprehensive Calendar Section */}
         <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
@@ -1075,31 +1197,175 @@ export default function StudentDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">All Available Opportunities</h3>
-                <div className="text-sm text-gray-500">
-                  Browse and join events from all your clubs
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchAllClubOpportunities}
+                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                  <div className="text-sm text-gray-500">
+                    Browse and join events from all your clubs
+                  </div>
                 </div>
               </div>
               
-              {/* Show all available opportunities from all clubs */}
-              <div className="space-y-4">
-                {joinedClubs.map((club) => (
-                  <div key={club.id} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">{club.clubName} Opportunities</h4>
-                    <ClubPosts
-                      clubId={club.id}
-                      clubName={club.clubName}
-                      userEmail={user?.email || ''}
-                      userName={user?.displayName || user?.email || ''}
-                      isEditor={false}
-                    />
+              {/* Unified Calendar for All Club Opportunities */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900">Unified Club Calendar</h4>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentMonth(prev => {
+                        const newMonth = new Date(prev);
+                        newMonth.setMonth(prev.getMonth() - 1);
+                        return newMonth;
+                      })}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+                    </button>
+                    <span className="text-lg font-medium text-gray-900">
+                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() => setCurrentMonth(prev => {
+                        const newMonth = new Date(prev);
+                        newMonth.setMonth(prev.getMonth() + 1);
+                        return newMonth;
+                      })}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+                    </button>
                   </div>
-                ))}
+                </div>
                 
-                {joinedClubs.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Join some clubs to see available opportunities!</p>
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-1 mb-4">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: getDaysInMonth(currentMonth) }, (_, i) => {
+                    const day = i + 1;
+                    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+                    
+                    // Get all opportunities for this date from all clubs
+                    const dayOpportunities = allClubOpportunities.filter(opportunity => {
+                      const opportunityDate = new Date(opportunity.date);
+                      return opportunityDate.toDateString() === date.toDateString();
+                    });
+                    
+                    // Check if this date has opportunities
+                    const hasOpportunities = dayOpportunities.length > 0;
+                    
+                    return (
+                      <div
+                        key={day}
+                        className={`min-h-[80px] p-2 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer ${
+                          date.toDateString() === new Date().toDateString() ? 'bg-blue-50 border-blue-300' : ''
+                        }`}
+                        onClick={() => openDayView(date)}
+                      >
+                        <div className="text-sm font-medium text-gray-900 mb-1">{day}</div>
+                        
+                        {/* Show opportunity indicators */}
+                        {hasOpportunities && (
+                          <div className="space-y-1">
+                            {dayOpportunities.slice(0, 2).map((opportunity, idx) => {
+                              const isJoined = opportunity.participants?.some(
+                                (participant: { email: string }) => participant.email === user?.email
+                              );
+                              
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`text-xs p-1 rounded truncate ${
+                                    opportunity.currentParticipants >= (opportunity.maxParticipants || 999)
+                                      ? 'bg-red-100 text-red-800'
+                                      : isJoined
+                                      ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                      : 'bg-green-100 text-green-800'
+                                  }`}
+                                  title={`${opportunity.title} - ${opportunity.clubName}${isJoined ? ' (Joined)' : ''}`}
+                                >
+                                  {opportunity.title}
+                                  {isJoined && <span className="ml-1">✓</span>}
+                                </div>
+                              );
+                            })}
+                            {dayOpportunities.length > 2 && (
+                              <div className="text-xs text-gray-500 text-center">
+                                +{dayOpportunities.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Calendar Legend */}
+                <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
+                    <span className="text-gray-600">Available Opportunities</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
+                    <span className="text-gray-600">Full Events</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
+                    <span className="text-gray-600">Events You&apos;ve Joined</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-50 border border-blue-300 rounded"></div>
+                    <span className="text-gray-600">Today</span>
+                  </div>
+                </div>
+                
+                {/* Quick Stats */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {allClubOpportunities.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Total Opportunities</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {allClubOpportunities.filter(opp => 
+                        opp.participants.some((p: { email: string }) => p.email === user?.email)
+                      ).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Events Joined</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {joinedClubs.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Clubs</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h5 className="font-medium text-blue-900 mb-2">How to Use This Calendar:</h5>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Click on any date</strong> to see all available opportunities for that day</li>
+                  <li>• <strong>Green indicators</strong> show available events you can join</li>
+                  <li>• <strong>Red indicators</strong> show events that are full</li>
+                  <li>• <strong>Blue highlight</strong> shows today&apos;s date</li>
+                  <li>• All opportunities from your joined clubs are automatically synced here</li>
+                </ul>
               </div>
             </div>
           )}
@@ -1141,6 +1407,8 @@ export default function StudentDashboard() {
                     </h4>
                     <div className="space-y-3">
                       {selectedDayEvents.meetings.map((meeting) => {
+                        // Check if this is a ClubPost or MeetingOpportunity
+                        const isClubPost = 'postType' in meeting;
                         const isJoined = meeting.participants?.some(
                           (participant: { email: string }) => participant.email === user?.email
                         );
@@ -1156,36 +1424,59 @@ export default function StudentDashboard() {
                               )}
                             </div>
                             
-                            <p className="text-gray-600 mb-3 text-sm">{meeting.description}</p>
+                            {/* Handle different content fields */}
+                            <p className="text-gray-600 mb-3 text-sm">
+                              {isClubPost ? (meeting as ClubPost).content : (meeting as MeetingOpportunity).description}
+                            </p>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
                               <div className="flex items-center">
                                 <ClockIcon className="h-4 w-4 mr-2" />
-                                <span>{new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                                <span>
+                                  {new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                </span>
                               </div>
                               <div className="flex items-center">
                                 <MapPinIcon className="h-4 w-4 mr-2" />
-                                <span>Room {meeting.roomNumber}</span>
+                                <span>
+                                  {isClubPost ? (meeting as ClubPost).location || 'Location TBD' : `Room ${(meeting as MeetingOpportunity).roomNumber}`}
+                                </span>
                               </div>
                               <div className="flex items-center">
                                 <UserGroupIcon className="h-4 w-4 mr-2" />
                                 <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
                               </div>
                               <div className="flex items-center">
-                                <span className="font-medium text-blue-600">{meeting.clubName}</span>
+                                <span className="font-medium text-blue-600">
+                                  {isClubPost ? (meeting as ClubPost).clubName : (meeting as MeetingOpportunity).clubName}
+                                </span>
                               </div>
                             </div>
                             
-                            <button
-                              onClick={() => isJoined ? handleLeaveMeeting(meeting.id) : handleJoinMeeting(meeting.id)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                isJoined
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                              }`}
-                            >
-                              {isJoined ? 'Leave Meeting' : 'Join Meeting'}
-                            </button>
+                            {/* Handle different action buttons based on type */}
+                            {isClubPost ? (
+                              <button
+                                onClick={() => isJoined ? handleLeaveClubPost(meeting.id!) : handleJoinClubPost(meeting.id!)}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                  isJoined
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                              >
+                                {isJoined ? 'Leave Event' : 'Join Event'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => isJoined ? handleLeaveMeeting(meeting.id!) : handleJoinMeeting(meeting.id!)}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                  isJoined
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                              >
+                                {isJoined ? 'Leave Meeting' : 'Join Meeting'}
+                              </button>
+                            )}
                           </div>
                         );
                       })}

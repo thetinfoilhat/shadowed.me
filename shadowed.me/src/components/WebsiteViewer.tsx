@@ -1107,7 +1107,7 @@ export default function WebsiteViewer({ website, isEditor, onDelete }: WebsiteVi
             clubName={website.clubName}
             userEmail={user?.email || ''}
             userName={user?.displayName || user?.email || ''}
-            isEditor={false}
+            isEditor={canEdit}
           />
               </motion.div>
             )}

@@ -121,12 +121,33 @@ export async function POST(request: NextRequest) {
     }
 
     const clubData = clubDoc.data();
+    
+    // Check if user is a captain
     const isCaptain = clubData.captainEmails?.includes(createdByEmail) || 
                      clubData.captains?.includes(createdByEmail) || 
                      clubData.captain === createdByEmail;
+    
+    // Check if user is a sponsor
     const isSponsor = clubData.sponsorEmails?.includes(createdByEmail) || 
                      clubData.sponsorEmail === createdByEmail;
-    const isAdmin = createdByEmail === 'admin'; // You might want to check this differently
+    
+    // Check if user is an admin by looking up their role in the database
+    let isAdmin = false;
+    try {
+      // Find user by email to get their role
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('email', '==', createdByEmail));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userData = userSnapshot.docs[0].data();
+        isAdmin = userData.role === 'admin';
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      // If we can't check admin status, assume not admin for security
+      isAdmin = false;
+    }
 
     if (!isCaptain && !isSponsor && !isAdmin) {
       return NextResponse.json({ error: 'You do not have permission to create posts for this club' }, { status: 403 });
@@ -199,12 +220,34 @@ export async function PUT(request: NextRequest) {
     }
 
     const clubData = clubDoc.data();
+    
+    // Check if user is a captain
     const isCaptain = clubData.captainEmails?.includes(updatedBy) || 
                      clubData.captains?.includes(updatedBy) || 
                      clubData.captain === updatedBy;
+    
+    // Check if user is a sponsor
     const isSponsor = clubData.sponsorEmails?.includes(updatedBy) || 
                      clubData.sponsorEmail === updatedBy;
-    const isAdmin = updatedBy === 'admin';
+    
+    // Check if user is an admin by looking up their role in the database
+    let isAdmin = false;
+    try {
+      // Find user by email to get their role
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('email', '==', updatedBy));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userData = userSnapshot.docs[0].data();
+        isAdmin = userData.role === 'admin';
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      // If we can't check admin status, assume not admin for security
+      isAdmin = false;
+    }
+    
     const isCreator = postData.createdByEmail === updatedBy;
 
     if (!isCaptain && !isSponsor && !isAdmin && !isCreator) {
@@ -256,12 +299,34 @@ export async function DELETE(request: NextRequest) {
     }
 
     const clubData = clubDoc.data();
+    
+    // Check if user is a captain
     const isCaptain = clubData.captainEmails?.includes(deletedBy) || 
                      clubData.captains?.includes(deletedBy) || 
                      clubData.captain === deletedBy;
+    
+    // Check if user is a sponsor
     const isSponsor = clubData.sponsorEmails?.includes(deletedBy) || 
                      clubData.sponsorEmail === deletedBy;
-    const isAdmin = deletedBy === 'admin';
+    
+    // Check if user is an admin by looking up their role in the database
+    let isAdmin = false;
+    try {
+      // Find user by email to get their role
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('email', '==', deletedBy));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userData = userSnapshot.docs[0].data();
+        isAdmin = userData.role === 'admin';
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      // If we can't check admin status, assume not admin for security
+      isAdmin = false;
+    }
+    
     const isCreator = postData.createdByEmail === deletedBy;
 
     if (!isCaptain && !isSponsor && !isAdmin && !isCreator) {
