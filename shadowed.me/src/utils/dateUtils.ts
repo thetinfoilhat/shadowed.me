@@ -4,7 +4,14 @@ const parseDate = (dateStr: string | undefined): Date | null => {
   if (!dateStr) return null;
   
   try {
-    // Try ISO format first
+    // Parse date as local time, not UTC
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // For YYYY-MM-DD format, parse as local date at noon to avoid timezone issues
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
+    // Try ISO format for full datetime strings
     let date = parseISO(dateStr);
     
     // If invalid, try other common formats
@@ -16,6 +23,21 @@ const parseDate = (dateStr: string | undefined): Date | null => {
   } catch {
     return null;
   }
+};
+
+// Helper function to parse date strings as local dates
+export const parseLocalDate = (dateStr: string): Date => {
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // For YYYY-MM-DD format, parse as local date at noon to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+  // For other formats or datetime strings, add 'T12:00:00' to avoid timezone shifts
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+    return new Date(dateStr);
+  }
+  // For date-only strings without time, add noon time
+  return new Date(dateStr + 'T12:00:00');
 };
 
 export const formatDate = (dateStr: string | undefined): string => {
