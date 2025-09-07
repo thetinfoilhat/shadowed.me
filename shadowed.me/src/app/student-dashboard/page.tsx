@@ -350,7 +350,7 @@ export default function StudentDashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isDayViewOpen, setIsDayViewOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{
-    meetings: (MeetingOpportunity | ClubPost)[];
+    meetings: (MeetingOpportunity | ClubPost | ClubEvent)[];
     personalEvents: PersonalEvent[];
     date: Date;
   }>({ meetings: [], personalEvents: [], date: new Date() });
