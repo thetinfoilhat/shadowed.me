@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -52,8 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            // Ensure we're not overriding existing roles
-            if (userData.role) {
+            
+            // Check if user has @naperville203.org domain and should be a sponsor
+            const isSponsorDomain = user.email?.endsWith('@naperville203.org');
+            
+            if (isSponsorDomain && userData.role !== 'sponsor') {
+              // Update existing user to sponsor role if they have the domain
+              await updateDoc(doc(db, 'users', user.uid), {
+                role: 'sponsor',
+                updatedAt: new Date()
+              });
+              setUserRole('sponsor');
+              console.log('Updated user to sponsor role based on domain:', user.email);
+            } else if (userData.role) {
               setUserRole(userData.role);
             }
             setCaptainClubs(userData.captainClubs || []);
@@ -91,7 +102,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        if (userData.role) {
+        
+        // Check if user has @naperville203.org domain and should be a sponsor
+        const isSponsorDomain = user.email?.endsWith('@naperville203.org');
+        
+        if (isSponsorDomain && userData.role !== 'sponsor') {
+          // Update existing user to sponsor role if they have the domain
+          await updateDoc(doc(db, 'users', user.uid), {
+            role: 'sponsor',
+            updatedAt: new Date()
+          });
+          setUserRole('sponsor');
+          console.log('Updated user to sponsor role based on domain:', user.email);
+        } else if (userData.role) {
           setUserRole(userData.role);
         }
         setCaptainClubs(userData.captainClubs || []);
@@ -100,7 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('User data refreshed:', {
           role: userData.role,
           captainClubs: userData.captainClubs || [],
-          email: userData.email
+          email: userData.email,
+          isSponsorDomain
         });
       }
     } catch (error) {

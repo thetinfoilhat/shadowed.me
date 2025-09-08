@@ -61,6 +61,26 @@ const getDaysInMonth = (date: Date): number => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 };
 
+// Helper function to check if an event is in the past
+const isEventInPast = (event: ClubPost | MeetingOpportunity): boolean => {
+  const now = new Date();
+  
+  // Get the event date - ClubPost uses 'date', MeetingOpportunity uses 'startDate'
+  const eventDateString = 'date' in event ? event.date : event.startDate;
+  const eventDate = new Date(eventDateString);
+  
+  // If the event has a start time, compare with current time
+  if ('startTime' in event && event.startTime) {
+    const eventDateTime = new Date(`${eventDateString}T${event.startTime}`);
+    return eventDateTime < now;
+  }
+  
+  // Otherwise, just compare dates
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+  return eventDay < today;
+};
+
 // Category color mapping from clubs page
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, lighter: string }> = {
   'STEM': { bg: '#4285F4', text: '#ffffff', lighter: '#d0e0ff' },
@@ -687,13 +707,13 @@ export default function StudentDashboard() {
       if (!user?.uid) return;
 
       try {
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const joinedClubIds = userData.joinedClubs || [];
-          
+      const userData = userDoc.data();
+      const joinedClubIds = userData.joinedClubs || [];
+      
           if (joinedClubIds.length > 0) {
             const clubsData: ClubSite[] = [];
             
@@ -785,7 +805,7 @@ export default function StudentDashboard() {
         
         // Refresh the opportunities to show updated participant count
         fetchAllClubOpportunities();
-      } else {
+          } else {
         const error = await response.json();
         toast.error(error.message || 'Failed to join event');
       }
@@ -945,7 +965,7 @@ export default function StudentDashboard() {
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <CalendarIcon className="w-6 h-6 text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{allClubOpportunities.length}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{allClubOpportunities.filter(opp => !isEventInPast(opp)).length}</h3>
             <p className="text-sm text-gray-600">Available Opportunities</p>
           </div>
           
@@ -1014,16 +1034,16 @@ export default function StudentDashboard() {
         </div>
         
         {/* Comprehensive Calendar Section */}
-        <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
+          <div className="bg-white rounded-xl p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-[#0A2540] flex items-center">
               <CalendarIcon className="h-6 w-6 mr-2" />
               My Calendar & Opportunities
             </h2>
             <div className="text-sm text-gray-600">
-              {allClubOpportunities.length} opportunities available
+              {allClubOpportunities.filter(opp => !isEventInPast(opp)).length} opportunities available
+                </div>
             </div>
-          </div>
           
           {/* Quick Help */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1032,7 +1052,7 @@ export default function StudentDashboard() {
                 <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-              </div>
+                </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-blue-800">How to use your calendar:</h3>
                 <div className="mt-2 text-sm text-blue-700">
@@ -1042,8 +1062,8 @@ export default function StudentDashboard() {
                     <li><strong>Click any date</strong> to see detailed events for that day</li>
                     <li><strong>Add personal events</strong> by clicking the + button on any date</li>
                   </ul>
-                </div>
-              </div>
+            </div>
+          </div>
             </div>
           </div>
           
@@ -1186,11 +1206,11 @@ export default function StudentDashboard() {
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
                   <span className="text-sm text-gray-700 font-medium">Joined Events</span>
-                </div>
+                  </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded border-2 border-gray-300 bg-gray-50"></div>
                   <span className="text-sm text-gray-700 font-medium">Personal Events</span>
-                </div>
+                  </div>
               </div>
             </div>
           ) : (
@@ -1198,24 +1218,24 @@ export default function StudentDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">All Available Opportunities</h3>
                 <div className="flex items-center gap-3">
-                  <button
+                          <button
                     onClick={fetchAllClubOpportunities}
                     className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
                   >
                     Refresh
-                  </button>
+                          </button>
                   <div className="text-sm text-gray-500">
                     Browse and join events from all your clubs
-                  </div>
-                </div>
-              </div>
-              
+                        </div>
+                      </div>
+        </div>
+        
               {/* Unified Calendar for All Club Opportunities */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h4 className="text-lg font-semibold text-gray-900">Unified Club Calendar</h4>
                   <div className="flex items-center space-x-2">
-                    <button
+              <button
                       onClick={() => setCurrentMonth(prev => {
                         const newMonth = new Date(prev);
                         newMonth.setMonth(prev.getMonth() - 1);
@@ -1224,11 +1244,11 @@ export default function StudentDashboard() {
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-                    </button>
+              </button>
                     <span className="text-lg font-medium text-gray-900">
-                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </span>
-                    <button
+              <button
                       onClick={() => setCurrentMonth(prev => {
                         const newMonth = new Date(prev);
                         newMonth.setMonth(prev.getMonth() + 1);
@@ -1237,17 +1257,17 @@ export default function StudentDashboard() {
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <ChevronRightIcon className="h-5 w-5 text-gray-600" />
-                    </button>
+              </button>
                   </div>
-                </div>
-                
+            </div>
+            
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-1 mb-4">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
-                      {day}
-                    </div>
-                  ))}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+                  {day}
+                </div>
+              ))}
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1">
@@ -1263,15 +1283,15 @@ export default function StudentDashboard() {
                     
                     // Check if this date has opportunities
                     const hasOpportunities = dayOpportunities.length > 0;
-                    
-                    return (
-                      <div
+                
+                return (
+                  <div
                         key={day}
                         className={`min-h-[80px] p-2 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer ${
                           date.toDateString() === new Date().toDateString() ? 'bg-blue-50 border-blue-300' : ''
-                        }`}
-                        onClick={() => openDayView(date)}
-                      >
+                    }`}
+                    onClick={() => openDayView(date)}
+                  >
                         <div className="text-sm font-medium text-gray-900 mb-1">{day}</div>
                         
                         {/* Show opportunity indicators */}
@@ -1279,26 +1299,30 @@ export default function StudentDashboard() {
                           <div className="space-y-1">
                             {dayOpportunities.slice(0, 2).map((opportunity, idx) => {
                               const isJoined = opportunity.participants?.some(
-                                (participant: { email: string }) => participant.email === user?.email
-                              );
-                              
-                              return (
-                                <div
+                        (participant: { email: string }) => participant.email === user?.email
+                      );
+                              const isPast = isEventInPast(opportunity);
+                      
+                      return (
+                        <div
                                   key={idx}
                                   className={`text-xs p-1 rounded truncate ${
-                                    opportunity.currentParticipants >= (opportunity.maxParticipants || 999)
+                                    isPast
+                                      ? 'bg-gray-100 text-gray-600 opacity-75'
+                                      : opportunity.currentParticipants >= (opportunity.maxParticipants || 999)
                                       ? 'bg-red-100 text-red-800'
                                       : isJoined
                                       ? 'bg-blue-100 text-blue-800 border border-blue-300'
                                       : 'bg-green-100 text-green-800'
                                   }`}
-                                  title={`${opportunity.title} - ${opportunity.clubName}${isJoined ? ' (Joined)' : ''}`}
+                                  title={`${opportunity.title} - ${opportunity.clubName}${isJoined ? ' (Joined)' : ''}${isPast ? ' (Past Event)' : ''}`}
                                 >
                                   {opportunity.title}
                                   {isJoined && <span className="ml-1">✓</span>}
-                                </div>
-                              );
-                            })}
+                                  {isPast && <span className="ml-1">⏰</span>}
+                        </div>
+                      );
+                    })}
                             {dayOpportunities.length > 2 && (
                               <div className="text-xs text-gray-500 text-center">
                                 +{dayOpportunities.length - 2} more
@@ -1306,9 +1330,9 @@ export default function StudentDashboard() {
                             )}
                           </div>
                         )}
-                      </div>
-                    );
-                  })}
+                  </div>
+                );
+              })}
                 </div>
                 
                 {/* Calendar Legend */}
@@ -1316,14 +1340,18 @@ export default function StudentDashboard() {
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
                     <span className="text-gray-600">Available Opportunities</span>
-                  </div>
+            </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
                     <span className="text-gray-600">Full Events</span>
-                  </div>
+          </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
                     <span className="text-gray-600">Events You&apos;ve Joined</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded opacity-75"></div>
+                    <span className="text-gray-600">Past Events</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-50 border border-blue-300 rounded"></div>
@@ -1335,9 +1363,9 @@ export default function StudentDashboard() {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
-                      {allClubOpportunities.length}
+                      {allClubOpportunities.filter(opp => !isEventInPast(opp)).length}
                     </div>
-                    <div className="text-sm text-gray-600">Total Opportunities</div>
+                    <div className="text-sm text-gray-600">Available Opportunities</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
@@ -1386,7 +1414,7 @@ export default function StudentDashboard() {
                     })}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {selectedDayEvents.meetings.length} opportunities available • {selectedDayEvents.personalEvents.length} personal events
+                    {selectedDayEvents.meetings.filter(meeting => !isEventInPast(meeting)).length} opportunities available • {selectedDayEvents.personalEvents.length} personal events
                   </p>
                 </div>
                 <button
@@ -1403,7 +1431,7 @@ export default function StudentDashboard() {
                   <div>
                     <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
                       <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
-                      Available Opportunities ({selectedDayEvents.meetings.length})
+                      Available Opportunities ({selectedDayEvents.meetings.filter(meeting => !isEventInPast(meeting)).length})
                     </h4>
                     <div className="space-y-3">
                       {selectedDayEvents.meetings.map((meeting) => {
@@ -1412,6 +1440,7 @@ export default function StudentDashboard() {
                         const isJoined = meeting.participants?.some(
                           (participant: { email: string }) => participant.email === user?.email
                         );
+                        const isPast = isEventInPast(meeting);
                         
                         return (
                           <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
@@ -1454,8 +1483,12 @@ export default function StudentDashboard() {
                             </div>
                             
                             {/* Handle different action buttons based on type */}
-                            {isClubPost ? (
-                              <button
+                            {isPast ? (
+                              <div className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-500 cursor-not-allowed">
+                                Past Event
+                              </div>
+                            ) : isClubPost ? (
+                            <button
                                 onClick={() => isJoined ? handleLeaveClubPost(meeting.id!) : handleJoinClubPost(meeting.id!)}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                   isJoined
@@ -1468,14 +1501,14 @@ export default function StudentDashboard() {
                             ) : (
                               <button
                                 onClick={() => isJoined ? handleLeaveMeeting(meeting.id!) : handleJoinMeeting(meeting.id!)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  isJoined
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                              >
-                                {isJoined ? 'Leave Meeting' : 'Join Meeting'}
-                              </button>
+                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                isJoined
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              {isJoined ? 'Leave Meeting' : 'Join Meeting'}
+                            </button>
                             )}
                           </div>
                         );

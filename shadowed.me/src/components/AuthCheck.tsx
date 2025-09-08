@@ -16,17 +16,24 @@ export default function AuthCheck() {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (!userDoc.exists()) {
-          // New user - automatically set as student
+          // Check if user has @naperville203.org domain for automatic sponsor role
+          const isSponsorDomain = user.email?.endsWith('@naperville203.org');
+          const userRole = isSponsorDomain ? 'sponsor' : 'student';
+          
           await setDoc(doc(db, 'users', user.uid), {
             displayName: user.displayName || '',
             email: user.email,
-            role: 'student',
+            role: userRole,
             createdAt: new Date(),
             photoURL: user.photoURL
           });
           
-          setUserRole('student');
-          setShowInfoDialog(true);
+          setUserRole(userRole);
+          
+          // Only show info dialog for students (not sponsors)
+          if (!isSponsorDomain) {
+            setShowInfoDialog(true);
+          }
         } else {
           const userData = userDoc.data();
           if (userData.role) {
