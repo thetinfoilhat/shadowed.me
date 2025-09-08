@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubSite, MeetingOpportunity } from '@/types/club';
-import { parseLocalDate } from '@/utils/dateUtils';
 
 // Personal Event Interface
 interface PersonalEvent {
@@ -50,34 +49,6 @@ interface ClubPost {
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   recurringDays?: string[];
 }
-
-interface ClubEvent {
-  id: string;
-  clubId: string;
-  clubName: string;
-  title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  maxParticipants?: number;
-  currentParticipants: number;
-  participants: Array<{
-    name: string;
-    email: string;
-    grade?: string;
-    school?: string;
-    signupDate: Date;
-  }>;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  status: 'active' | 'cancelled' | 'completed';
-  category?: string;
-  tags?: string[];
-}
-
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
@@ -88,11 +59,6 @@ import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, ChevronLeftIcon, Ch
 // Helper function to get the number of days in a month
 const getDaysInMonth = (date: Date): number => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-};
-
-// Helper function to get the first day of the month (0 = Sunday, 6 = Saturday)
-const getFirstDayOfMonth = (date: Date): number => {
-  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 };
 
 // Category color mapping from clubs page
@@ -341,7 +307,6 @@ export default function StudentDashboard() {
   const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
   const [allClubOpportunities, setAllClubOpportunities] = useState<ClubPost[]>([]);
-  const [allClubEvents, setAllClubEvents] = useState<ClubEvent[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarView, setCalendarView] = useState<'month' | 'list'>('month');
@@ -350,7 +315,7 @@ export default function StudentDashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isDayViewOpen, setIsDayViewOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{
-    meetings: (MeetingOpportunity | ClubPost | ClubEvent)[];
+    meetings: (MeetingOpportunity | ClubPost)[];
     personalEvents: PersonalEvent[];
     date: Date;
   }>({ meetings: [], personalEvents: [], date: new Date() });
@@ -479,51 +444,12 @@ export default function StudentDashboard() {
       }
       
       // Sort by date
-      allOpportunities.sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
+      allOpportunities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setAllClubOpportunities(allOpportunities);
     } catch (error) {
       console.error('Error fetching all club opportunities:', error);
       toast.error('Failed to load club opportunities');
-    }
-  }, [user?.email, joinedClubs]);
-
-  // Fetch all club events from all joined clubs
-  const fetchAllClubEvents = useCallback(async () => {
-    if (!user?.email || joinedClubs.length === 0) return;
-
-    try {
-      const allEvents: ClubEvent[] = [];
-      
-      // Fetch events from each joined club
-      for (const club of joinedClubs) {
-        try {
-          const response = await fetch(`/api/club-events?clubId=${club.id}&status=active`);
-          if (response.ok) {
-            const data = await response.json();
-            const clubEvents = data.events || [];
-            
-            // Add club name to each event for display
-            const eventsWithClubName = clubEvents.map((event: ClubEvent) => ({
-              ...event,
-              clubName: club.clubName,
-              clubId: club.id
-            }));
-            
-            allEvents.push(...eventsWithClubName);
-          }
-        } catch (error) {
-          console.error(`Error fetching events for club ${club.clubName}:`, error);
-        }
-      }
-      
-      // Sort by date
-      allEvents.sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
-      
-      setAllClubEvents(allEvents);
-    } catch (error) {
-      console.error('Error fetching all club events:', error);
-      toast.error('Failed to load club events');
     }
   }, [user?.email, joinedClubs]);
 
@@ -702,39 +628,23 @@ export default function StudentDashboard() {
   const openDayView = (date: Date) => {
     // Get all available meetings for this day (including unjoined ones)
     const dayAllMeetings = meetings.filter(meeting => {
-      const meetingDate = parseLocalDate(meeting.startDate);
+      const meetingDate = new Date(meeting.startDate);
       return meetingDate.toDateString() === date.toDateString() && meeting.status === 'active';
     });
     
     // Get all available club opportunities for this day
     const dayClubOpportunities = allClubOpportunities.filter(opportunity => {
-      const opportunityDate = parseLocalDate(opportunity.date);
+      const opportunityDate = new Date(opportunity.date);
       return opportunityDate.toDateString() === date.toDateString();
     });
     
-    // Get all available club events for this day
-    const dayClubEvents = allClubEvents.filter(event => {
-      const eventDate = parseLocalDate(event.date);
-      return eventDate.toDateString() === date.toDateString();
-    });
+    // Combine both types of opportunities
+    const allOpportunities = [...dayAllMeetings, ...dayClubOpportunities];
     
-    // Get personal events for this day
     const dayPersonalEvents = personalEvents.filter(event => {
-      const eventDate = parseLocalDate(event.date);
+      const eventDate = new Date(event.date);
       return eventDate.toDateString() === date.toDateString();
     });
-    
-    // Filter out events that are already in personal events (user has joined them)
-    const personalEventIds = dayPersonalEvents.map(e => e.id);
-    const filteredDayClubOpportunities = dayClubOpportunities.filter(
-      opp => !personalEventIds.includes(`club-${opp.id}`)
-    );
-    const filteredDayClubEvents = dayClubEvents.filter(
-      event => !personalEventIds.includes(`club-${event.id}`)
-    );
-    
-    // Combine all types of opportunities
-    const allOpportunities = [...dayAllMeetings, ...filteredDayClubOpportunities, ...filteredDayClubEvents];
     
     setSelectedDayEvents({
       meetings: allOpportunities,
@@ -849,15 +759,11 @@ export default function StudentDashboard() {
         const clubPost = allClubOpportunities.find(post => post.id === postId);
         if (clubPost) {
           // Add the joined event to personal calendar
-          // Ensure date is properly formatted as YYYY-MM-DD
-          const eventDate = parseLocalDate(clubPost.date);
-          const formattedDate = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
-          
           const personalEvent: PersonalEvent = {
             id: `club-${postId}`,
             title: `${clubPost.title} - ${clubPost.clubName}`,
             description: `Club event: ${clubPost.content}`,
-            date: formattedDate,
+            date: clubPost.date,
             startTime: clubPost.startTime || '',
             endTime: clubPost.endTime || '',
             location: clubPost.location || '',
@@ -930,116 +836,6 @@ export default function StudentDashboard() {
     }
   };
 
-  // Handle joining a club event
-  const handleJoinClubEvent = async (eventId: string) => {
-    if (!user?.email || !user?.uid) return;
-
-    try {
-      const response = await fetch('/api/club-events/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          eventId,
-          participant: {
-            name: user.displayName || user.email || '',
-            email: user.email,
-            grade: '', // Will be filled from user profile
-            school: '', // Will be filled from user profile
-            signupDate: new Date(),
-          },
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Successfully joined event!');
-        
-        // Find the club event to get event details
-        const clubEvent = allClubEvents.find(event => event.id === eventId);
-        if (clubEvent) {
-          // Add the joined event to personal calendar
-          // Ensure date is properly formatted as YYYY-MM-DD
-          const eventDate = parseLocalDate(clubEvent.date);
-          const formattedDate = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
-          
-          const personalEvent: PersonalEvent = {
-            id: `club-${eventId}`,
-            title: `${clubEvent.title} - ${clubEvent.clubName}`,
-            description: `Club event: ${clubEvent.description}`,
-            date: formattedDate,
-            startTime: clubEvent.startTime || '',
-            endTime: clubEvent.endTime || '',
-            location: clubEvent.location || '',
-            color: '#3B82F6', // Blue color for club events
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-
-          // Add to personal events
-          const updatedEvents = [...personalEvents, personalEvent];
-          setPersonalEvents(updatedEvents);
-
-          // Save to user's profile
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, {
-            personalEvents: updatedEvents
-          });
-        }
-        
-        // Refresh the events to show updated participant count
-        fetchAllClubEvents();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to join event');
-      }
-    } catch (error) {
-      console.error('Error joining club event:', error);
-      toast.error('Failed to join event');
-    }
-  };
-
-  // Handle leaving a club event
-  const handleLeaveClubEvent = async (eventId: string) => {
-    if (!user?.email || !user?.uid) return;
-
-    try {
-      const response = await fetch('/api/club-events/signup', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          eventId,
-          participantEmail: user.email,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Successfully left event');
-        
-        // Remove the event from personal calendar
-        const updatedEvents = personalEvents.filter(event => event.id !== `club-${eventId}`);
-        setPersonalEvents(updatedEvents);
-
-        // Save to user's profile
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-          personalEvents: updatedEvents
-        });
-        
-        // Refresh the events to show updated participant count
-        fetchAllClubEvents();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to leave event');
-      }
-    } catch (error) {
-      console.error('Error leaving club event:', error);
-      toast.error('Failed to leave event');
-    }
-  };
-
   useEffect(() => {
     if (user) {
       Promise.all([fetchMeetings(), fetchPersonalEvents()]).finally(() => setLoading(false));
@@ -1052,9 +848,8 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (joinedClubs.length > 0) {
       fetchAllClubOpportunities();
-      fetchAllClubEvents();
     }
-  }, [joinedClubs.length, fetchAllClubOpportunities, fetchAllClubEvents]);
+  }, [joinedClubs.length, fetchAllClubOpportunities]);
 
   if (loading) {
     return (
@@ -1150,7 +945,7 @@ export default function StudentDashboard() {
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <CalendarIcon className="w-6 h-6 text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{allClubOpportunities.length + allClubEvents.length}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{allClubOpportunities.length}</h3>
             <p className="text-sm text-gray-600">Available Opportunities</p>
           </div>
           
@@ -1226,7 +1021,7 @@ export default function StudentDashboard() {
               My Calendar & Opportunities
             </h2>
             <div className="text-sm text-gray-600">
-              {meetings.filter(m => m.status === 'active').length} opportunities available
+              {allClubOpportunities.length} opportunities available
             </div>
           </div>
           
@@ -1262,7 +1057,7 @@ export default function StudentDashboard() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              Your Events
+              Calendar View
             </button>
             <button
               onClick={() => setCalendarView('list')}
@@ -1272,7 +1067,7 @@ export default function StudentDashboard() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              Available Opportunities
+              All Opportunities
             </button>
           </div>
           
@@ -1310,34 +1105,20 @@ export default function StudentDashboard() {
                 ))}
                 
                 {Array.from({ length: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate() }, (_, i) => {
-                  const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1, 12, 0, 0);
+                  const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1);
                   
-                  // Get all club opportunities for this day
-                  const dayClubOpportunities = allClubOpportunities.filter(opportunity => {
-                    const opportunityDate = parseLocalDate(opportunity.date);
-                    return opportunityDate.toDateString() === date.toDateString();
-                  });
-                  
-                  // Get all club events for this day
-                  const dayClubEvents = allClubEvents.filter(event => {
-                    const eventDate = parseLocalDate(event.date);
-                    return eventDate.toDateString() === date.toDateString();
+                  // Get joined meetings for this day
+                  const dayJoinedMeetings = meetings.filter(meeting => {
+                    const meetingDate = new Date(meeting.startDate);
+                    return meetingDate.toDateString() === date.toDateString() && 
+                           meeting.participants?.some(p => p.email === user?.email);
                   });
                   
                   // Get personal events for this day
                   const dayPersonalEvents = personalEvents.filter(event => {
-                    const eventDate = parseLocalDate(event.date);
+                    const eventDate = new Date(event.date);
                     return eventDate.toDateString() === date.toDateString();
                   });
-                  
-                  // Filter out events that are already in personal events (user has joined them)
-                  const personalEventIds = dayPersonalEvents.map(e => e.id);
-                  const filteredDayClubOpportunities = dayClubOpportunities.filter(
-                    opp => !personalEventIds.includes(`club-${opp.id}`)
-                  );
-                  const filteredDayClubEvents = dayClubEvents.filter(
-                    event => !personalEventIds.includes(`club-${event.id}`)
-                  );
                   
                   return (
                     <div
@@ -1361,56 +1142,21 @@ export default function StudentDashboard() {
                         </button>
                       </div>
                       
-                      {/* Club Opportunities */}
-                      {filteredDayClubOpportunities.map((opportunity, idx) => {
-                        const isJoined = opportunity.participants?.some(
-                          (participant: { email: string }) => participant.email === user?.email
-                        );
-                        return (
-                          <div
-                            key={`opp-${idx}`}
-                            className={`text-xs p-1 mb-1 rounded truncate ${
-                              opportunity.currentParticipants >= (opportunity.maxParticipants || 999)
-                                ? 'bg-red-100 text-red-800'
-                                : isJoined
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                            title={`${opportunity.title} - ${opportunity.clubName}${isJoined ? ' (Joined)' : ''}`}
-                          >
-                            {opportunity.title}
-                            {isJoined && <span className="ml-1">✓</span>}
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Club Events */}
-                      {filteredDayClubEvents.map((event, idx) => {
-                        const isJoined = event.participants?.some(
-                          (participant: { email: string }) => participant.email === user?.email
-                        );
-                        return (
-                          <div
-                            key={`event-${idx}`}
-                            className={`text-xs p-1 mb-1 rounded truncate ${
-                              event.currentParticipants >= (event.maxParticipants || 999)
-                                ? 'bg-red-100 text-red-800'
-                                : isJoined
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                            title={`${event.title} - ${event.clubName}${isJoined ? ' (Joined)' : ''}`}
-                          >
-                            {event.title}
-                            {isJoined && <span className="ml-1">✓</span>}
-                          </div>
-                        );
-                      })}
+                      {/* Joined Club Meetings */}
+                      {dayJoinedMeetings.map((meeting, idx) => (
+                        <div
+                          key={`joined-${idx}`}
+                          className="text-xs p-1 mb-1 rounded bg-green-100 text-green-800 truncate"
+                          title={`${meeting.title} - ${meeting.clubName} (Joined)`}
+                        >
+                          {meeting.title}
+                        </div>
+                      ))}
                       
                       {/* Personal Events */}
                       {dayPersonalEvents.map((event, idx) => (
                         <div
-                          key={`personal-${idx}`}
+                          key={`event-${idx}`}
                           className="text-xs p-1 mb-1 rounded truncate"
                           style={{ 
                             backgroundColor: `${event.color}20`, 
@@ -1453,10 +1199,7 @@ export default function StudentDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900">All Available Opportunities</h3>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => {
-                      fetchAllClubOpportunities();
-                      fetchAllClubEvents();
-                    }}
+                    onClick={fetchAllClubOpportunities}
                     className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
                   >
                     Refresh
@@ -1508,47 +1251,18 @@ export default function StudentDashboard() {
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1">
-                  {/* Empty cells for days before the first day of month */}
-                  {Array.from({ length: getFirstDayOfMonth(currentMonth) }, (_, i) => (
-                    <div key={`empty-${i}`} className="min-h-[80px]"></div>
-                  ))}
-                  
                   {Array.from({ length: getDaysInMonth(currentMonth) }, (_, i) => {
                     const day = i + 1;
-                    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day, 12, 0, 0);
+                    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
                     
                     // Get all opportunities for this date from all clubs
                     const dayOpportunities = allClubOpportunities.filter(opportunity => {
-                      const opportunityDate = parseLocalDate(opportunity.date);
+                      const opportunityDate = new Date(opportunity.date);
                       return opportunityDate.toDateString() === date.toDateString();
                     });
                     
-                    // Get all events for this date from all clubs
-                    const dayEvents = allClubEvents.filter(event => {
-                      const eventDate = parseLocalDate(event.date);
-                      return eventDate.toDateString() === date.toDateString();
-                    });
-                    
-                    // Get personal events for this day to filter out joined events
-                    const dayPersonalEvents = personalEvents.filter(event => {
-                      const eventDate = parseLocalDate(event.date);
-                      return eventDate.toDateString() === date.toDateString();
-                    });
-                    
-                    // Filter out events that are already in personal events (user has joined them)
-                    const personalEventIds = dayPersonalEvents.map(e => e.id);
-                    const filteredDayOpportunities = dayOpportunities.filter(
-                      opp => !personalEventIds.includes(`club-${opp.id}`)
-                    );
-                    const filteredDayEvents = dayEvents.filter(
-                      event => !personalEventIds.includes(`club-${event.id}`)
-                    );
-                    
-                    // Combine all opportunities
-                    const allDayOpportunities = [...filteredDayOpportunities, ...filteredDayEvents];
-                    
                     // Check if this date has opportunities
-                    const hasOpportunities = allDayOpportunities.length > 0;
+                    const hasOpportunities = dayOpportunities.length > 0;
                     
                     return (
                       <div
@@ -1563,7 +1277,7 @@ export default function StudentDashboard() {
                         {/* Show opportunity indicators */}
                         {hasOpportunities && (
                           <div className="space-y-1">
-                            {allDayOpportunities.slice(0, 2).map((opportunity, idx) => {
+                            {dayOpportunities.slice(0, 2).map((opportunity, idx) => {
                               const isJoined = opportunity.participants?.some(
                                 (participant: { email: string }) => participant.email === user?.email
                               );
@@ -1585,9 +1299,9 @@ export default function StudentDashboard() {
                                 </div>
                               );
                             })}
-                            {allDayOpportunities.length > 2 && (
+                            {dayOpportunities.length > 2 && (
                               <div className="text-xs text-gray-500 text-center">
-                                +{allDayOpportunities.length - 2} more
+                                +{dayOpportunities.length - 2} more
                               </div>
                             )}
                           </div>
@@ -1621,7 +1335,7 @@ export default function StudentDashboard() {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
-                      {allClubOpportunities.length + allClubEvents.length}
+                      {allClubOpportunities.length}
                     </div>
                     <div className="text-sm text-gray-600">Total Opportunities</div>
                   </div>
@@ -1629,9 +1343,6 @@ export default function StudentDashboard() {
                     <div className="text-2xl font-bold text-green-600">
                       {allClubOpportunities.filter(opp => 
                         opp.participants.some((p: { email: string }) => p.email === user?.email)
-                      ).length + 
-                      allClubEvents.filter(event => 
-                        event.participants?.some((p: { email: string }) => p.email === user?.email)
                       ).length}
                     </div>
                     <div className="text-sm text-gray-600">Events Joined</div>
@@ -1696,9 +1407,8 @@ export default function StudentDashboard() {
                     </h4>
                     <div className="space-y-3">
                       {selectedDayEvents.meetings.map((meeting) => {
-                        // Check if this is a ClubPost, ClubEvent, or MeetingOpportunity
+                        // Check if this is a ClubPost or MeetingOpportunity
                         const isClubPost = 'postType' in meeting;
-                        const isClubEvent = !isClubPost && 'clubId' in meeting && 'description' in meeting;
                         const isJoined = meeting.participants?.some(
                           (participant: { email: string }) => participant.email === user?.email
                         );
@@ -1716,9 +1426,7 @@ export default function StudentDashboard() {
                             
                             {/* Handle different content fields */}
                             <p className="text-gray-600 mb-3 text-sm">
-                              {isClubPost ? (meeting as ClubPost).content : 
-                               isClubEvent ? (meeting as ClubEvent).description :
-                               (meeting as MeetingOpportunity).description}
+                              {isClubPost ? (meeting as ClubPost).content : (meeting as MeetingOpportunity).description}
                             </p>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
@@ -1731,9 +1439,7 @@ export default function StudentDashboard() {
                               <div className="flex items-center">
                                 <MapPinIcon className="h-4 w-4 mr-2" />
                                 <span>
-                                  {isClubPost ? (meeting as ClubPost).location || 'Location TBD' : 
-                                   isClubEvent ? (meeting as ClubEvent).location || 'Location TBD' :
-                                   `Room ${(meeting as MeetingOpportunity).roomNumber}`}
+                                  {isClubPost ? (meeting as ClubPost).location || 'Location TBD' : `Room ${(meeting as MeetingOpportunity).roomNumber}`}
                                 </span>
                               </div>
                               <div className="flex items-center">
@@ -1742,9 +1448,7 @@ export default function StudentDashboard() {
                               </div>
                               <div className="flex items-center">
                                 <span className="font-medium text-blue-600">
-                                  {isClubPost ? (meeting as ClubPost).clubName : 
-                                   isClubEvent ? (meeting as ClubEvent).clubName :
-                                   (meeting as MeetingOpportunity).clubName}
+                                  {isClubPost ? (meeting as ClubPost).clubName : (meeting as MeetingOpportunity).clubName}
                                 </span>
                               </div>
                             </div>
@@ -1753,17 +1457,6 @@ export default function StudentDashboard() {
                             {isClubPost ? (
                               <button
                                 onClick={() => isJoined ? handleLeaveClubPost(meeting.id!) : handleJoinClubPost(meeting.id!)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  isJoined
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                              >
-                                {isJoined ? 'Leave Event' : 'Join Event'}
-                              </button>
-                            ) : isClubEvent ? (
-                              <button
-                                onClick={() => isJoined ? handleLeaveClubEvent(meeting.id!) : handleJoinClubEvent(meeting.id!)}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                   isJoined
                                     ? 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -1912,7 +1605,7 @@ export default function StudentDashboard() {
                 e.preventDefault();
                 savePersonalEvent({
                   ...eventFormData,
-                  date: selectedDate ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` : ''
+                  date: selectedDate?.toISOString().split('T')[0] || ''
                 });
               }} className="p-6 space-y-4">
                 

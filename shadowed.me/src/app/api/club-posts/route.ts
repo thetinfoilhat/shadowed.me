@@ -336,36 +336,6 @@ export async function DELETE(request: NextRequest) {
     // Delete the post
     await deleteDoc(postRef);
 
-    // If this is an event post, remove it from all participants' personal calendars
-    if (postData.postType === 'event' || postData.postType === 'meeting') {
-      const participants = postData.participants || [];
-      for (const participant of participants) {
-        try {
-          // Find user by email
-          const usersRef = collection(db, 'users');
-          const userQuery = query(usersRef, where('email', '==', participant.email));
-          const userSnapshot = await getDocs(userQuery);
-          
-          if (!userSnapshot.empty) {
-            const userDoc = userSnapshot.docs[0];
-            const userData = userDoc.data();
-            const personalEvents = userData.personalEvents || [];
-            
-            // Remove the event from personal events
-            const updatedPersonalEvents = personalEvents.filter(
-              (event: { id: string }) => event.id !== `club-${postId}`
-            );
-            
-            await updateDoc(doc(db, 'users', userDoc.id), {
-              personalEvents: updatedPersonalEvents
-            });
-          }
-        } catch (error) {
-          console.error(`Error removing post from participant ${participant.email}:`, error);
-        }
-      }
-    }
-
     return NextResponse.json({ 
       success: true, 
       message: 'Post deleted successfully' 

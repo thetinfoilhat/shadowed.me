@@ -65,59 +65,8 @@ export default function Home() {
             {/* Right side content */}
             <div className="hidden lg:block">
               <div className="relative w-full">
-                {/* Main Feature Card */}
-                <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[#E5EEFF] hover:shadow-lg transition-all duration-500 transform hover:-translate-y-1 group">
-                  <div className="bg-[#4A9DFF] px-6 py-4 flex items-center">
-                    <div className="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-lg mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-lg font-semibold">
-                      Upcoming Opportunities
-                    </h3>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                            <span className="text-xs font-medium">MAR</span>
-                            <span className="text-xl font-bold">17</span>
-                          </div>
-                          <div>
-                            <div className="text-[#001440] font-medium">DECA</div>
-                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
-                          </div>
-                        </div>
-                        <div className="text-gray-500 text-xs">Mar 15</div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between pb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-[#38BFA1] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                            <span className="text-xs font-medium">MAR</span>
-                            <span className="text-xl font-bold">23</span>
-                          </div>
-                          <div>
-                            <div className="text-[#001440] font-medium">Investment Club</div>
-                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
-                          </div>
-                        </div>
-                        <div className="text-gray-500 text-xs">Mar 18</div>
-                      </div>
-                    </div>
-                    
-                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline group">
-                      View all opportunities
-                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
-                    </Link>
-                  </div>
-                </div>
-                
                 {/* Stats Card */}
-                <div className="absolute -top-6 -right-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer">
+                <div className="bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-8 h-8 bg-white/20 text-white flex items-center justify-center rounded-md">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
