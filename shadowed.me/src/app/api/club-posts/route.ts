@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface ClubPost {
@@ -31,6 +31,54 @@ interface ClubPost {
   isRecurring?: boolean;
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   recurringDays?: string[];
+}
+
+// Helper function to generate recurring dates
+function generateRecurringDates(
+  startDate: string, 
+  pattern: 'weekly' | 'biweekly' | 'monthly', 
+  days: string[], 
+  count: number = 12
+): string[] {
+  const dates: string[] = [];
+  const start = new Date(startDate + 'T00:00:00');
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
+  // Convert day names to day numbers (0 = Sunday, 1 = Monday, etc.)
+  const targetDays = days.map(day => dayNames.indexOf(day)).filter(day => day !== -1);
+  
+  if (targetDays.length === 0) {
+    // If no specific days selected, use the start date's day of week
+    targetDays.push(start.getDay());
+  }
+  
+  let currentDate = new Date(start);
+  let generatedCount = 0;
+  
+  // Generate dates for the next 6 months (approximately 24-26 weeks)
+  const endDate = new Date(start);
+  endDate.setMonth(endDate.getMonth() + 6);
+  
+  while (currentDate <= endDate && generatedCount < count) {
+    const dayOfWeek = currentDate.getDay();
+    
+    if (targetDays.includes(dayOfWeek)) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      dates.push(dateStr);
+      generatedCount++;
+    }
+    
+    // Move to next occurrence based on pattern
+    if (pattern === 'weekly') {
+      currentDate.setDate(currentDate.getDate() + 7);
+    } else if (pattern === 'biweekly') {
+      currentDate.setDate(currentDate.getDate() + 14);
+    } else if (pattern === 'monthly') {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+  }
+  
+  return dates;
 }
 
 // GET - Get posts for a specific club
@@ -153,7 +201,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have permission to create posts for this club' }, { status: 403 });
     }
 
-    const postData: Omit<ClubPost, 'id'> = {
+    // Create base post data
+    const basePostData: Omit<ClubPost, 'id'> = {
       clubId,
       clubName,
       title,
@@ -177,14 +226,47 @@ export async function POST(request: NextRequest) {
       recurringDays: recurringDays || []
     };
 
-    const docRef = await addDoc(collection(db, 'clubPosts'), postData);
-    console.log('API: Post created successfully with ID:', docRef.id, 'for clubId:', clubId);
+    if (isRecurring && recurringPattern && recurringDays && recurringDays.length > 0) {
+      // Generate recurring dates
+      const recurringDates = generateRecurringDates(date, recurringPattern, recurringDays, 24);
+      console.log('API: Generating recurring events for dates:', recurringDates);
+      
+      // Use batch write to create multiple posts
+      const batch = writeBatch(db);
+      const createdPostIds: string[] = [];
+      
+      for (const recurringDate of recurringDates) {
+        const postRef = doc(collection(db, 'clubPosts'));
+        const postData = {
+          ...basePostData,
+          date: recurringDate,
+          // Add a suffix to distinguish recurring instances
+          title: recurringDates.length > 1 ? `${title} (${recurringDate})` : title
+        };
+        
+        batch.set(postRef, postData);
+        createdPostIds.push(postRef.id);
+      }
+      
+      await batch.commit();
+      console.log('API: Created', createdPostIds.length, 'recurring posts for clubId:', clubId);
+      
+      return NextResponse.json({ 
+        success: true, 
+        postIds: createdPostIds,
+        message: `Created ${createdPostIds.length} recurring events successfully` 
+      });
+    } else {
+      // Create single post
+      const docRef = await addDoc(collection(db, 'clubPosts'), basePostData);
+      console.log('API: Post created successfully with ID:', docRef.id, 'for clubId:', clubId);
 
-    return NextResponse.json({ 
-      success: true, 
-      postId: docRef.id,
-      message: 'Post created successfully' 
-    });
+      return NextResponse.json({ 
+        success: true, 
+        postId: docRef.id,
+        message: 'Post created successfully' 
+      });
+    }
   } catch (error) {
     console.error('Error creating club post:', error);
     return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });

@@ -132,7 +132,12 @@ export default function ClubEventManager({
       });
 
       if (response.ok) {
-        toast.success('Event created successfully');
+        const result = await response.json();
+        if (result.postIds && result.postIds.length > 1) {
+          toast.success(`Created ${result.postIds.length} recurring events successfully`);
+        } else {
+          toast.success('Event created successfully');
+        }
         setShowCreateModal(false);
         resetForm();
         fetchEvents();
