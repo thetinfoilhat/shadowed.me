@@ -816,7 +816,7 @@ function ParticipantsModal({ isOpen, onClose, event }: ParticipantsModalProps) {
                     )}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {participant.joinDate ? new Date(participant.joinDate).toLocaleDateString() : 'Unknown date'}
+                    {participant.signupDate ? new Date(participant.signupDate).toLocaleDateString() : 'Unknown date'}
                   </div>
                 </div>
               ))}
