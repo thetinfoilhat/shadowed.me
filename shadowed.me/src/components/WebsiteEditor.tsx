@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import LoadingSpinner from './LoadingSpinner';
 import Image from 'next/image';
 import { COLOR_OPTIONS, getColorById } from '@/utils/colors';
-import { uploadImage, uploadPDF, deleteFile, uploadPDFResource} from '@/utils/fileUpload';
+import { uploadImage, uploadPDF, deleteFile } from '@/utils/fileUpload';
 import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -709,62 +709,6 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
     window.location.href = `/${formData.slug}`;
   };
 
-  // Handle resource upload
-  const handleResourceUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
-      e.target.value = '';
-      return;
-    }
-    
-    const title = prompt('Enter a title for this resource:');
-    if (!title) {
-      e.target.value = '';
-      return;
-    }
-
-    const description = prompt('Enter a description (optional):') || undefined;
-    
-    const toastId = toast.loading('Uploading resource...');
-    
-    try {
-      const result = await uploadPDFResource(file, formData.slug, title, description);
-      
-      if (!result.success) {
-        toast.error(`Failed to upload resource: ${result.error}`, { id: toastId });
-        return;
-      }
-      
-      if (!result.url) {
-        toast.error('Failed to get resource URL', { id: toastId });
-        return;
-      }
-
-      const newResource: Resource = {
-        type: 'pdf',
-        title: result.title,
-        description: result.description,
-        url: result.url,
-        uploadedAt: result.uploadedAt,
-        fileSize: result.fileSize
-      };
-      
-      const updatedResources = [...(formData.resources || []), newResource];
-      
-      setFormData(prev => ({
-        ...prev,
-        resources: updatedResources
-      }));
-      
-      await handleSave({ resources: updatedResources });
-      toast.success('Resource uploaded successfully', { id: toastId });
-    } catch (error) {
-      console.error('Error uploading resource:', error);
-      toast.error('Failed to upload resource. Please try again.', { id: toastId });
-    } finally {
-      e.target.value = '';
-    }
-  };
 
   // Handle adding a link resource
   const handleAddLinkResource = async () => {
@@ -1337,7 +1281,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   }`}
                 >
                   <PhotoIcon className="h-5 w-5 mr-2" />
-                  Media
+                  Slideshow
                 </button>
 
                 <button
@@ -2140,24 +2084,14 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                   </div>
                 </div>
 
-                {/* Documents & Resources Section */}
+                {/* Resources Section */}
                 <section className="bg-white rounded-xl p-6 shadow-sm mt-8">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-[#180D39]">Documents & Resources</h3>
-                      <p className="text-sm text-gray-600 mt-1">Share important documents and links with your members</p>
+                      <h3 className="text-xl font-bold text-[#180D39]">Resources (interest forms/important links)</h3>
+                      <p className="text-sm text-gray-600 mt-1">Share important links with your members</p>
                     </div>
                     <div className="flex space-x-2">
-                      <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
-                        <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                        Upload PDF
-                        <input 
-                          type="file" 
-                          accept="application/pdf" 
-                          className="hidden"
-                          onChange={handleResourceUpload}
-                        />
-                      </label>
                       <button
                         onClick={handleAddLinkResource}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
@@ -2221,22 +2155,12 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
 
                     {(!formData.resources || formData.resources.length === 0) && (
                       <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                        <DocumentTextIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
+                        <GlobeAltIcon className="h-14 w-14 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-700 font-medium mb-2">No resources added yet</p>
                         <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                          Share important documents and links with your members by uploading PDFs or adding external links.
+                          Share important links with your members by adding external links.
                         </p>
                         <div className="flex justify-center space-x-4">
-                          <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
-                            <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                            Upload PDF
-                            <input 
-                              type="file" 
-                              accept="application/pdf" 
-                              className="hidden"
-                              onChange={handleResourceUpload}
-                            />
-                          </label>
                           <button
                             onClick={handleAddLinkResource}
                             className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm inline-flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
@@ -2253,11 +2177,11 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
                     <div className="mt-4 text-sm text-gray-500">
                       <p className="font-medium mb-2">Resource Tips:</p>
                       <ul className="list-disc pl-5 space-y-1">
-                        <li>Keep PDF file sizes under 10MB</li>
                         <li>Use clear, descriptive titles</li>
                         <li>Add helpful descriptions to make resources easy to find</li>
                         <li>Ensure links are valid and accessible</li>
-                        <li>Organize resources by type (PDF/Link) and purpose</li>
+                        <li>Include https:// for web links</li>
+                        <li>Test links before adding them</li>
                       </ul>
                     </div>
                   )}
@@ -2427,7 +2351,7 @@ export default function WebsiteEditor({ website, onSave, isNew = false }: Websit
               <section className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-bold text-[#180D39]">Informational PDF</h2>
+                    <h2 className="text-xl font-bold text-[#180D39]">Slideshow</h2>
                     <p className="text-sm text-gray-600 mt-1">Upload and manage your club&apos;s informational PDF</p>
                   </div>
                   <label className="bg-gradient-to-r from-[#38BFA1] to-[#2DA891] text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all cursor-pointer">
