@@ -18,6 +18,9 @@ interface PersonalEvent {
   color?: string; // Defaults to blue (#3B82F6) if not specified
   createdAt: Date;
   updatedAt: Date;
+  isJoinedClubEvent?: boolean; // True if this is a joined club event, false if personal event
+  clubId?: string; // ID of the club this event belongs to (for joined events)
+  originalPostId?: string; // Original post ID for joined events
 }
 
 interface ClubPost {
@@ -55,7 +58,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
 import { getColorById } from '@/utils/colors';
 import { toast } from 'react-hot-toast';
-import { CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon, MapPinIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Helper function to get the number of days in a month
 const getDaysInMonth = (date: Date): number => {
@@ -327,6 +330,7 @@ export default function StudentDashboard() {
   // Calendar state
   const [meetings, setMeetings] = useState<MeetingOpportunity[]>([]);
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([]);
+  const [joinedClubEvents, setJoinedClubEvents] = useState<PersonalEvent[]>([]);
   const [allClubOpportunities, setAllClubOpportunities] = useState<ClubPost[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -335,11 +339,17 @@ export default function StudentDashboard() {
   // Personal event modal state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isDayViewOpen, setIsDayViewOpen] = useState(false);
+  const [isOpportunitiesViewOpen, setIsOpportunitiesViewOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{
     meetings: (MeetingOpportunity | ClubPost)[];
     personalEvents: PersonalEvent[];
+    joinedClubEvents: PersonalEvent[];
     date: Date;
-  }>({ meetings: [], personalEvents: [], date: new Date() });
+  }>({ meetings: [], personalEvents: [], joinedClubEvents: [], date: new Date() });
+  const [selectedOpportunitiesEvents, setSelectedOpportunitiesEvents] = useState<{
+    opportunities: (MeetingOpportunity | ClubPost)[];
+    date: Date;
+  }>({ opportunities: [], date: new Date() });
   const [editingEvent, setEditingEvent] = useState<PersonalEvent | null>(null);
   const [eventFormData, setEventFormData] = useState({
     title: '',
@@ -473,67 +483,6 @@ export default function StudentDashboard() {
     }
   }, [user?.email, joinedClubs]);
 
-  const handleJoinMeeting = async (meetingId: string) => {
-    if (!user?.email) return;
-
-    try {
-      const response = await fetch('/api/meetings/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          meetingId,
-          participant: {
-            name: user.displayName || user.email || '',
-            email: user.email,
-            grade: '', // Will be filled from user profile
-            school: '', // Will be filled from user profile
-            signupDate: new Date(),
-          },
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Successfully joined meeting!');
-        fetchMeetings(); // Refresh meetings
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to join meeting');
-      }
-    } catch (error) {
-      console.error('Error joining meeting:', error);
-      toast.error('Failed to join meeting');
-    }
-  };
-
-  const handleLeaveMeeting = async (meetingId: string) => {
-    if (!user?.email) return;
-
-    try {
-      const response = await fetch('/api/meetings/signup', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          meetingId,
-          participantEmail: user.email,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Successfully left meeting');
-        fetchMeetings(); // Refresh meetings
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to leave meeting');
-      }
-    } catch (error) {
-      console.error('Error leaving meeting:', error);
-      toast.error('Failed to leave meeting');
-    }
-  };
 
   // Personal event functions
   const fetchPersonalEvents = useCallback(async () => {
@@ -545,8 +494,14 @@ export default function StudentDashboard() {
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const events = userData.personalEvents || [];
-        setPersonalEvents(events);
+        const allEvents = userData.personalEvents || [];
+        
+        // Separate personal events from joined club events
+        const personalEvents = allEvents.filter((event: PersonalEvent) => !event.isJoinedClubEvent);
+        const joinedClubEvents = allEvents.filter((event: PersonalEvent) => event.isJoinedClubEvent);
+        
+        setPersonalEvents(personalEvents);
+        setJoinedClubEvents(joinedClubEvents);
       }
     } catch (error) {
       console.error('Error fetching personal events:', error);
@@ -645,7 +600,33 @@ export default function StudentDashboard() {
   };
 
   const openDayView = (date: Date) => {
-    // Get all available meetings for this day (including unjoined ones)
+    // For personal calendar popup, we only show joined events and personal events
+    // No need to fetch available opportunities here
+    
+    const dayPersonalEvents = personalEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.toDateString() === date.toDateString();
+    });
+    
+    const dayJoinedClubEvents = joinedClubEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.toDateString() === date.toDateString();
+    });
+    
+    setSelectedDayEvents({
+      meetings: [], // No available opportunities in personal calendar popup
+      personalEvents: dayPersonalEvents, // Only personal events
+      joinedClubEvents: dayJoinedClubEvents, // Separate joined club events
+      date
+    });
+    setSelectedDate(date);
+    setIsDayViewOpen(true);
+  };
+
+  const openOpportunitiesView = (date: Date) => {
+    // For opportunities popup, we show all available opportunities for joining
+    
+    // Get all available meetings for this day
     const dayAllMeetings = meetings.filter(meeting => {
       const meetingDate = new Date(meeting.startDate);
       return meetingDate.toDateString() === date.toDateString() && meeting.status === 'active';
@@ -660,18 +641,12 @@ export default function StudentDashboard() {
     // Combine both types of opportunities
     const allOpportunities = [...dayAllMeetings, ...dayClubOpportunities];
     
-    const dayPersonalEvents = personalEvents.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === date.toDateString();
-    });
-    
-    setSelectedDayEvents({
-      meetings: allOpportunities,
-      personalEvents: dayPersonalEvents,
+    setSelectedOpportunitiesEvents({
+      opportunities: allOpportunities,
       date
     });
     setSelectedDate(date);
-    setIsDayViewOpen(true);
+    setIsOpportunitiesViewOpen(true);
   };
 
   const openEventModal = (date: Date, event?: PersonalEvent) => {
@@ -747,15 +722,18 @@ export default function StudentDashboard() {
     fetchAllClubOpportunities();
   }, [fetchAllClubOpportunities]);
 
-  // Handle joining a club post/event
+  // Handle joining a club post/event (for opportunities popup)
   const handleJoinClubPost = async (postId: string) => {
     if (!user?.email || !user?.uid) return;
 
     try {
+      console.log('Attempting to join club post:', postId, 'for user:', user.email);
+      
       const response = await fetch('/api/club-posts/join', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           postId,
@@ -769,46 +747,27 @@ export default function StudentDashboard() {
         }),
       });
 
+      console.log('Join response status:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Join successful:', result);
         toast.success('Successfully joined event!');
         
-        // Find the club post to get event details
-        const clubPost = allClubOpportunities.find(post => post.id === postId);
-        if (clubPost) {
-          // Add the joined event to personal calendar
-          const personalEvent: PersonalEvent = {
-            id: `club-${postId}`,
-            title: `${clubPost.title} - ${clubPost.clubName}`,
-            description: `Club event: ${clubPost.content}`,
-            date: clubPost.date,
-            startTime: clubPost.startTime || '',
-            endTime: clubPost.endTime || '',
-            location: clubPost.location || '',
-            color: '#3B82F6', // Blue color for club events
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-
-          // Add to personal events
-          const updatedEvents = [...personalEvents, personalEvent];
-          setPersonalEvents(updatedEvents);
-
-          // Save to user's profile
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, {
-            personalEvents: updatedEvents
-          });
-        }
+        // The API already handles adding the event to the user's personal calendar
+        // We just need to refresh the personal events to get the updated data
+        await fetchPersonalEvents();
         
         // Refresh the opportunities to show updated participant count
         fetchAllClubOpportunities();
-          } else {
+      } else {
         const error = await response.json();
-        toast.error(error.message || 'Failed to join event');
+        console.error('Join failed:', error);
+        toast.error(error.error || error.message || 'Failed to join event');
       }
     } catch (error) {
       console.error('Error joining club post:', error);
-      toast.error('Failed to join event');
+      toast.error('Failed to join event - please check your connection');
     }
   };
 
@@ -817,10 +776,13 @@ export default function StudentDashboard() {
     if (!user?.email || !user?.uid) return;
 
     try {
+      console.log('Attempting to leave club post:', postId, 'for user:', user.email);
+      
       const response = await fetch('/api/club-posts/join', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           postId,
@@ -828,28 +790,27 @@ export default function StudentDashboard() {
         }),
       });
 
+      console.log('Leave response status:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Leave successful:', result);
         toast.success('Successfully left event');
         
-        // Remove the event from personal calendar
-        const updatedEvents = personalEvents.filter(event => event.id !== `club-${postId}`);
-        setPersonalEvents(updatedEvents);
-
-        // Save to user's profile
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-          personalEvents: updatedEvents
-        });
+        // The API already handles removing the event from the user's personal calendar
+        // We just need to refresh the personal events to get the updated data
+        await fetchPersonalEvents();
         
         // Refresh the opportunities to show updated participant count
         fetchAllClubOpportunities();
       } else {
         const error = await response.json();
-        toast.error(error.message || 'Failed to leave event');
+        console.error('Leave failed:', error);
+        toast.error(error.error || error.message || 'Failed to leave event');
       }
     } catch (error) {
       console.error('Error leaving club post:', error);
-      toast.error('Failed to leave event');
+      toast.error('Failed to leave event - please check your connection');
     }
   };
 
@@ -1054,7 +1015,7 @@ export default function StudentDashboard() {
                 <h3 className="text-sm font-medium text-blue-800">How to use your calendar:</h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <ul className="list-disc list-inside space-y-1">
-                    <li><strong>Calendar View:</strong> See your joined events and personal events (click to edit)</li>
+                    <li><strong>Calendar View:</strong> See your joined events and personal events (click personal events to edit)</li>
                     <li><strong>List View:</strong> Browse all available opportunities from your clubs and join them</li>
                     <li><strong>Click any date</strong> to see detailed events for that day</li>
                     <li><strong>Add personal events</strong> by clicking the + button on any date</li>
@@ -1137,6 +1098,12 @@ export default function StudentDashboard() {
                     return eventDate.toDateString() === date.toDateString();
                   });
                   
+                  // Get joined club events for this day
+                  const dayJoinedClubEvents = joinedClubEvents.filter(event => {
+                    const eventDate = new Date(event.date);
+                    return eventDate.toDateString() === date.toDateString();
+                  });
+                  
                   return (
                     <div
                       key={i}
@@ -1170,11 +1137,26 @@ export default function StudentDashboard() {
                         </div>
                       ))}
                       
+                      {/* Joined Club Events */}
+                      {dayJoinedClubEvents.map((event, idx) => (
+                        <div
+                          key={`joined-club-${idx}`}
+                          className="text-xs p-1 mb-1 rounded bg-green-100 text-green-800 truncate cursor-pointer"
+                          title={`${event.title} (Joined Club Event - Click to view details)`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDayView(date);
+                          }}
+                        >
+                          {event.title} (Joined)
+                        </div>
+                      ))}
+                      
                       {/* Personal Events */}
                       {dayPersonalEvents.map((event, idx) => (
                         <div
-                          key={`event-${idx}`}
-                          className="text-xs p-1 mb-1 rounded truncate"
+                          key={`personal-${idx}`}
+                          className="text-xs p-1 mb-1 rounded truncate cursor-pointer"
                           style={{ 
                             backgroundColor: `${event.color || '#3B82F6'}20`, 
                             color: event.color || '#3B82F6',
@@ -1202,12 +1184,12 @@ export default function StudentDashboard() {
               <div className="flex items-center justify-center space-x-8 pt-6 border-t border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
-                  <span className="text-sm text-gray-700 font-medium">Joined Events</span>
-                  </div>
+                  <span className="text-sm text-gray-700 font-medium">Joined Club Events</span>
+                </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded border-2 border-gray-300 bg-gray-50"></div>
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3B82F620', border: '1px solid #3B82F640' }}></div>
                   <span className="text-sm text-gray-700 font-medium">Personal Events</span>
-                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -1287,7 +1269,7 @@ export default function StudentDashboard() {
                         className={`min-h-[80px] p-2 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer ${
                           date.toDateString() === new Date().toDateString() ? 'bg-blue-50 border-blue-300' : ''
                     }`}
-                    onClick={() => openDayView(date)}
+                    onClick={() => openOpportunitiesView(date)}
                   >
                         <div className="text-sm font-medium text-gray-900 mb-1">{day}</div>
                         
@@ -1411,7 +1393,7 @@ export default function StudentDashboard() {
                     })}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {selectedDayEvents.meetings.filter(meeting => !isEventInPast(meeting)).length} opportunities available • {selectedDayEvents.personalEvents.length} personal events
+                    {selectedDayEvents.personalEvents.length} personal events • {selectedDayEvents.joinedClubEvents.length} joined club events
                   </p>
                 </div>
                 <button
@@ -1423,97 +1405,67 @@ export default function StudentDashboard() {
               </div>
               
               <div className="p-6 space-y-6">
-                {/* Club Meetings Section */}
-                {selectedDayEvents.meetings.length > 0 && (
+                
+                {/* Joined Club Events Section */}
+                {selectedDayEvents.joinedClubEvents.length > 0 && (
                   <div>
                     <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                      <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
-                      Available Opportunities ({selectedDayEvents.meetings.filter(meeting => !isEventInPast(meeting)).length})
+                      <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
+                      Joined Club Events ({selectedDayEvents.joinedClubEvents.length})
                     </h4>
                     <div className="space-y-3">
-                      {selectedDayEvents.meetings.map((meeting) => {
-                        // Check if this is a ClubPost or MeetingOpportunity
-                        const isClubPost = 'postType' in meeting;
-                        const isJoined = meeting.participants?.some(
-                          (participant: { email: string }) => participant.email === user?.email
-                        );
-                        const isPast = isEventInPast(meeting);
-                        
-                        return (
-                          <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900">{meeting.title}</h5>
-                              {isJoined && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Joined
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Handle different content fields */}
-                            <p className="text-gray-600 mb-3 text-sm">
-                              {isClubPost ? (meeting as ClubPost).content : (meeting as MeetingOpportunity).description}
-                            </p>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
-                              <div className="flex items-center">
-                                <ClockIcon className="h-4 w-4 mr-2" />
-                                <span>
-                                  {new Date(`2000-01-01T${meeting.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${meeting.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <MapPinIcon className="h-4 w-4 mr-2" />
-                                <span>
-                                  {isClubPost ? (meeting as ClubPost).location || 'Location TBD' : `Room ${(meeting as MeetingOpportunity).roomNumber}`}
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <UserGroupIcon className="h-4 w-4 mr-2" />
-                                <span>{meeting.currentParticipants}/{meeting.maxParticipants || '∞'} participants</span>
-                              </div>
-                              <div className="flex items-center">
-                                <span className="font-medium text-blue-600">
-                                  {isClubPost ? (meeting as ClubPost).clubName : (meeting as MeetingOpportunity).clubName}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            {/* Handle different action buttons based on type */}
-                            {isPast ? (
-                              <div className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-500 cursor-not-allowed">
-                                Past Event
-                              </div>
-                            ) : isClubPost ? (
-                            <button
-                                onClick={() => isJoined ? handleLeaveClubPost(meeting.id!) : handleJoinClubPost(meeting.id!)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  isJoined
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                              >
-                                {isJoined ? 'Leave Event' : 'Join Event'}
-                              </button>
-                            ) : (
+                      {selectedDayEvents.joinedClubEvents.map((event) => (
+                        <div key={event.id} className="border border-green-200 bg-green-50 rounded-lg p-4 transition-colors">
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-semibold text-gray-900">
+                              {event.title}
+                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                Joined Club Event
+                              </span>
+                            </h5>
+                            {event.originalPostId && (
                               <button
-                                onClick={() => isJoined ? handleLeaveMeeting(meeting.id!) : handleJoinMeeting(meeting.id!)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                isJoined
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                              }`}
-                            >
-                              {isJoined ? 'Leave Meeting' : 'Join Meeting'}
-                            </button>
+                                onClick={() => {
+                                  setIsDayViewOpen(false);
+                                  handleLeaveClubPost(event.originalPostId!);
+                                }}
+                                className="text-red-400 hover:text-red-600 transition-colors"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
                             )}
                           </div>
-                        );
-                      })}
+                          
+                          {event.description && (
+                            <p className="text-gray-600 mb-3 text-sm">{event.description}</p>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                            {event.startTime && event.endTime && (
+                              <div className="flex items-center">
+                                <ClockIcon className="h-4 w-4 mr-2" />
+                                <span>{new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                              </div>
+                            )}
+                            {event.location && (
+                              <div className="flex items-center">
+                                <MapPinIcon className="h-4 w-4 mr-2" />
+                                <span>{event.location}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full mr-2 bg-green-500"></div>
+                              <span>Joined Club Event</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Personal Events Section */}
                 {selectedDayEvents.personalEvents.length > 0 && (
                   <div>
@@ -1523,9 +1475,11 @@ export default function StudentDashboard() {
                     </h4>
                     <div className="space-y-3">
                       {selectedDayEvents.personalEvents.map((event) => (
-                        <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                        <div key={event.id} className="border border-gray-200 hover:border-gray-300 rounded-lg p-4 transition-colors">
                           <div className="flex items-start justify-between mb-2">
-                            <h5 className="font-semibold text-gray-900">{event.title}</h5>
+                            <h5 className="font-semibold text-gray-900">
+                              {event.title}
+                            </h5>
                             <button
                               onClick={() => {
                                 setIsDayViewOpen(false);
@@ -1568,11 +1522,11 @@ export default function StudentDashboard() {
                 )}
                 
                 {/* No Events Message */}
-                {selectedDayEvents.meetings.length === 0 && selectedDayEvents.personalEvents.length === 0 && (
+                {selectedDayEvents.personalEvents.length === 0 && selectedDayEvents.joinedClubEvents.length === 0 && (
                   <div className="text-center py-8">
                     <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Events or Opportunities</h4>
-                    <p className="text-gray-500 mb-4">This day is free! Add a personal event or check other days for club opportunities.</p>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Events</h4>
+                    <p className="text-gray-500 mb-4">This day is free! Add a personal event or join club events from the calendar view.</p>
                   </div>
                 )}
                 
@@ -1741,6 +1695,131 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Opportunities View Modal */}
+        {isOpportunitiesViewOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedOpportunitiesEvents.date.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedOpportunitiesEvents.opportunities.filter(opp => !isEventInPast(opp)).length} opportunities available
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsOpportunitiesViewOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Available Opportunities Section */}
+                {selectedOpportunitiesEvents.opportunities.length > 0 && (
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                      <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
+                      Available Opportunities ({selectedOpportunitiesEvents.opportunities.filter(opp => !isEventInPast(opp)).length})
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedOpportunitiesEvents.opportunities.map((opportunity) => {
+                        // Check if this is a ClubPost or MeetingOpportunity
+                        const isClubPost = 'postType' in opportunity;
+                        const isJoined = opportunity.participants?.some(
+                          (participant: { email: string }) => participant.email === user?.email
+                        );
+                        const isPast = isEventInPast(opportunity);
+                        
+                        return (
+                          <div key={opportunity.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">{opportunity.title}</h5>
+                              {isJoined && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Joined
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Handle different content fields */}
+                            <p className="text-gray-600 mb-3 text-sm">
+                              {isClubPost ? (opportunity as ClubPost).content : (opportunity as MeetingOpportunity).description}
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 mb-3">
+                              <div className="flex items-center">
+                                <ClockIcon className="h-4 w-4 mr-2" />
+                                <span>
+                                  {opportunity.startTime && opportunity.endTime ? 
+                                    `${new Date(`2000-01-01T${opportunity.startTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${new Date(`2000-01-01T${opportunity.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` :
+                                    'Time TBD'
+                                  }
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <MapPinIcon className="h-4 w-4 mr-2" />
+                                <span>
+                                  {isClubPost ? (opportunity as ClubPost).location || 'Location TBD' : `Room ${(opportunity as MeetingOpportunity).roomNumber}`}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="font-medium text-blue-600">
+                                  {isClubPost ? (opportunity as ClubPost).clubName : (opportunity as MeetingOpportunity).clubName}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <span>{opportunity.currentParticipants}/{opportunity.maxParticipants || '∞'} participants</span>
+                              </div>
+                            </div>
+                            
+                            {/* Action buttons */}
+                            {isPast ? (
+                              <div className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-500 cursor-not-allowed">
+                                Past Event
+                              </div>
+                            ) : isJoined ? (
+                              <button
+                                onClick={() => handleLeaveClubPost(opportunity.id!)}
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                              >
+                                Leave Event
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleJoinClubPost(opportunity.id!)}
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                              >
+                                Join Event
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* No Opportunities Message */}
+                {selectedOpportunitiesEvents.opportunities.length === 0 && (
+                  <div className="text-center py-8">
+                    <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Opportunities Available</h4>
+                    <p className="text-gray-500 mb-4">There are no events available for this day. Check other dates or join more clubs to see more opportunities.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

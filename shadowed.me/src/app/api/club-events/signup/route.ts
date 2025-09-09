@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface MeetingData {
@@ -61,6 +61,42 @@ export async function POST(request: NextRequest) {
       currentParticipants: (eventData.currentParticipants || 0) + 1,
       updatedAt: new Date()
     });
+
+    // Also add to the student's personal calendar (users.personalEvents) as a joined club event
+    try {
+      const usersRef = collection(db, 'users');
+      const userQ = query(usersRef, where('email', '==', participant.email));
+      const userSnap = await getDocs(userQ);
+      if (!userSnap.empty) {
+        const userDocRef = doc(db, 'users', userSnap.docs[0].id);
+        const userData = ((await getDoc(userDocRef)).data() || {}) as { personalEvents?: { id: string }[] };
+        const existingPersonalEvents = userData.personalEvents || [];
+        const personalEventId = `clubEvent:${eventId}`;
+        const alreadyHas = existingPersonalEvents.some((e) => e.id === personalEventId);
+        const newPersonalEvent = {
+          id: personalEventId,
+          title: `${eventData.title || 'Club Event'} - ${eventData.clubName || 'Club'}`,
+          description: eventData.description || '',
+          date: eventData.date,
+          startTime: eventData.startTime || '',
+          endTime: eventData.endTime || '',
+          location: eventData.location || '',
+          color: '#3B82F6',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isJoinedClubEvent: true, // Mark as joined club event
+          clubId: eventData.clubId,
+          originalPostId: eventId
+        };
+        const updatedPersonal = alreadyHas
+          ? existingPersonalEvents.map((e) => (e.id === personalEventId ? { ...newPersonalEvent } : e))
+          : [...existingPersonalEvents, newPersonalEvent];
+        await updateDoc(userDocRef, { personalEvents: updatedPersonal });
+      }
+    } catch (e) {
+      console.error('Failed to update user personal calendar for club event signup:', e);
+      // Do not fail the main request if personal calendar update fails
+    }
 
     // Also update the event in the club's meetings array for backward compatibility
     const clubRef = doc(db, 'clubSites', eventData.clubId);
@@ -133,6 +169,24 @@ export async function DELETE(request: NextRequest) {
       currentParticipants: Math.max(0, (eventData.currentParticipants || 0) - 1),
       updatedAt: new Date()
     });
+
+    // Also remove from the student's personal calendar
+    try {
+      const usersRef = collection(db, 'users');
+      const userQ = query(usersRef, where('email', '==', participantEmail));
+      const userSnap = await getDocs(userQ);
+      if (!userSnap.empty) {
+        const userDocRef = doc(db, 'users', userSnap.docs[0].id);
+        const userData = ((await getDoc(userDocRef)).data() || {}) as { personalEvents?: { id: string }[] };
+        const existingPersonalEvents = userData.personalEvents || [];
+        const personalEventId = `clubEvent:${eventId}`;
+        const updatedPersonal = existingPersonalEvents.filter((e) => e.id !== personalEventId);
+        await updateDoc(userDocRef, { personalEvents: updatedPersonal });
+      }
+    } catch (e) {
+      console.error('Failed to update user personal calendar for club event signout:', e);
+      // Do not fail main request
+    }
 
     // Also update the event in the club's meetings array for backward compatibility
     const clubRef = doc(db, 'clubSites', eventData.clubId);

@@ -13,7 +13,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
-import { formatDateForComparison, formatDateForInput } from '@/utils/dateUtils';
+import { formatDateForComparison, formatDateForInput, formatDate } from '@/utils/dateUtils';
 
 interface ClubPost {
   id?: string;
@@ -627,7 +627,7 @@ function ListView({
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center">
                     <CalendarIcon className="h-4 w-4 mr-1" />
-                    {new Date(post.date).toLocaleDateString()}
+                    {formatDate(post.date)}
                   </div>
                   {post.startTime && (
                     <div className="flex items-center">
@@ -921,7 +921,7 @@ function ParticipantsModal({
                     )}
                   </div>
                   <div className="text-xs text-gray-500">
-                    Joined {participant.joinDate.toLocaleDateString()}
+                    Joined {formatDate(participant.joinDate.toISOString().split('T')[0])}
                   </div>
                 </div>
               ))}

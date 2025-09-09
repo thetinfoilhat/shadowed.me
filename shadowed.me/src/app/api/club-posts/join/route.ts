@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       startTime?: string;
       endTime?: string;
       location?: string;
+      clubId?: string;
+      clubName?: string;
     };
     
     // Check if post is active
@@ -74,20 +76,20 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     });
 
-    // Also add to the student's personal calendar (users.personalEvents)
+    // Also add to the student's personal calendar (users.personalEvents) as a joined club event
     try {
       const usersRef = collection(db, 'users');
       const userQ = query(usersRef, where('email', '==', participant.email));
       const userSnap = await getDocs(userQ);
       if (!userSnap.empty) {
         const userDocRef = doc(db, 'users', userSnap.docs[0].id);
-      const userData = ((await getDoc(userDocRef)).data() || {}) as { personalEvents?: { id: string }[] };
-      const existingPersonalEvents = userData.personalEvents || [];
+        const userData = ((await getDoc(userDocRef)).data() || {}) as { personalEvents?: { id: string }[] };
+        const existingPersonalEvents = userData.personalEvents || [];
         const personalEventId = `clubPost:${postId}`;
         const alreadyHas = existingPersonalEvents.some((e) => e.id === personalEventId);
         const newPersonalEvent = {
           id: personalEventId,
-          title: postData.title || 'Club Event',
+          title: `${postData.title || 'Club Event'} - ${postData.clubName || 'Club'}`,
           description: postData.content || '',
           date: postData.date,
           startTime: postData.startTime || '',
@@ -95,7 +97,10 @@ export async function POST(request: NextRequest) {
           location: postData.location || '',
           color: '#3B82F6',
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          isJoinedClubEvent: true, // Mark as joined club event
+          clubId: postData.clubId,
+          originalPostId: postId
         };
         const updatedPersonal = alreadyHas
           ? existingPersonalEvents.map((e) => (e.id === personalEventId ? { ...newPersonalEvent } : e))
@@ -148,6 +153,8 @@ export async function DELETE(request: NextRequest) {
       startTime?: string;
       endTime?: string;
       location?: string;
+      clubId?: string;
+      clubName?: string;
     };
     
     // Check if user is joined
