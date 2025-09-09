@@ -13,6 +13,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
+import { formatDateForComparison, formatDateForInput } from '@/utils/dateUtils';
 
 interface ClubPost {
   id?: string;
@@ -20,7 +21,7 @@ interface ClubPost {
   clubName: string;
   title: string;
   content: string;
-  postType: 'event' | 'announcement' | 'meeting' | 'general';
+  postType: 'event';
   date: string;
   startTime?: string;
   endTime?: string;
@@ -98,7 +99,6 @@ export default function ClubPostManager({
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    postType: 'event' as 'event' | 'announcement' | 'meeting' | 'general',
     date: '',
     startTime: '',
     endTime: '',
@@ -157,7 +157,7 @@ export default function ClubPostManager({
         clubName,
         title: formData.title,
         content: formData.content,
-        postType: formData.postType,
+        postType: 'event',
         date: formData.date,
         startTime: formData.startTime || undefined,
         endTime: formData.endTime || undefined,
@@ -248,7 +248,6 @@ export default function ClubPostManager({
     setFormData({
       title: '',
       content: '',
-      postType: 'event',
       date: '',
       startTime: '',
       endTime: '',
@@ -267,7 +266,6 @@ export default function ClubPostManager({
     setFormData({
       title: post.title,
       content: post.content,
-      postType: post.postType,
       date: post.date,
       startTime: post.startTime || '',
       endTime: post.endTime || '',
@@ -285,7 +283,7 @@ export default function ClubPostManager({
   const openCreateModal = () => {
     setSelectedPost(null);
     resetForm();
-    setFormData(prev => ({ ...prev, date: new Date().toISOString().split('T')[0] }));
+    setFormData(prev => ({ ...prev, date: formatDateForInput(new Date()) }));
     setShowCreateModal(true);
   };
 
@@ -309,7 +307,7 @@ export default function ClubPostManager({
   };
 
   const getPostsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForComparison(date);
     return posts.filter(post => post.date === dateStr);
   };
 
@@ -353,8 +351,8 @@ export default function ClubPostManager({
                   clubName,
                   title: 'Test Post',
                   content: 'This is a test post to verify the system is working.',
-                  postType: 'announcement' as const,
-                  date: new Date().toISOString().split('T')[0],
+                  postType: 'event' as const,
+                  date: formatDateForInput(new Date()),
                   createdBy: user?.uid || '',
                   createdByEmail: userEmail
                 };
@@ -558,12 +556,8 @@ function CalendarView({
                       key={post.id}
                       className="text-xs p-1 rounded cursor-pointer hover:bg-blue-50 transition-colors"
                       style={{
-                        backgroundColor: post.postType === 'event' ? '#dbeafe' : 
-                                       post.postType === 'meeting' ? '#fef3c7' : 
-                                       post.postType === 'announcement' ? '#f3e8ff' : '#f3f4f6',
-                        color: post.postType === 'event' ? '#1e40af' : 
-                               post.postType === 'meeting' ? '#92400e' : 
-                               post.postType === 'announcement' ? '#7c3aed' : '#374151'
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af'
                       }}
                       onClick={() => onPostClick(post)}
                       title={post.title}
@@ -599,12 +593,9 @@ function ListView({
   formatTime: (time: string) => string;
 }) {
   const getPostTypeColor = (type: string) => {
-    switch (type) {
-      case 'event': return 'bg-blue-100 text-blue-800';
-      case 'meeting': return 'bg-yellow-100 text-yellow-800';
-      case 'announcement': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    // Always return blue regardless of type
+    void type; // Suppress unused parameter warning
+    return 'bg-blue-100 text-blue-800';
   };
 
   return (
@@ -717,7 +708,6 @@ function PostFormModal({
   formData: {
     title: string;
     content: string;
-    postType: 'event' | 'announcement' | 'meeting' | 'general';
     date: string;
     startTime: string;
     endTime: string;
@@ -731,7 +721,6 @@ function PostFormModal({
   setFormData: (data: {
     title: string;
     content: string;
-    postType: 'event' | 'announcement' | 'meeting' | 'general';
     date: string;
     startTime: string;
     endTime: string;
@@ -774,20 +763,6 @@ function PostFormModal({
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-              <select
-                required
-                value={formData.postType}
-                onChange={(e) => setFormData({ ...formData, postType: e.target.value as 'event' | 'announcement' | 'meeting' | 'general' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="event">Event</option>
-                <option value="meeting">Meeting</option>
-                <option value="announcement">Announcement</option>
-                <option value="general">General</option>
-              </select>
-            </div>
           </div>
 
           <div>

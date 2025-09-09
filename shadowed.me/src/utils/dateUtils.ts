@@ -92,4 +92,22 @@ export const formatTime = (timeStr: string | undefined): string => {
   } catch {
     return 'Invalid time format';
   }
+};
+
+// Helper function to format a Date object as YYYY-MM-DD in local timezone
+// This prevents timezone shifts that can cause dates to appear one day earlier
+export const formatDateForInput = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to format a Date object as YYYY-MM-DD for comparison
+// This prevents timezone shifts when comparing dates
+export const formatDateForComparison = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }; 

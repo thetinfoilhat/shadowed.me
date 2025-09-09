@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubSite, MeetingOpportunity } from '@/types/club';
+import { formatDateForInput } from '@/utils/dateUtils';
 
 // Personal Event Interface
 interface PersonalEvent {
@@ -14,7 +15,7 @@ interface PersonalEvent {
   startTime?: string;
   endTime?: string;
   location?: string;
-  color?: string;
+  color?: string; // Defaults to blue (#3B82F6) if not specified
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,7 +26,7 @@ interface ClubPost {
   clubName: string;
   title: string;
   content: string;
-  postType: 'event' | 'announcement' | 'meeting' | 'general';
+  postType: 'event';
   date: string;
   startTime?: string;
   endTime?: string;
@@ -345,8 +346,7 @@ export default function StudentDashboard() {
     description: '',
     startTime: '',
     endTime: '',
-    location: '',
-    color: '#38BFA1'
+    location: ''
   });
 
   // Function to leave a club
@@ -589,7 +589,7 @@ export default function StudentDashboard() {
           startTime: eventData.startTime || '',
           endTime: eventData.endTime || '',
           location: eventData.location || '',
-          color: eventData.color || '#38BFA1',
+          color: '#3B82F6',
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -611,8 +611,7 @@ export default function StudentDashboard() {
         description: '',
         startTime: '',
         endTime: '',
-        location: '',
-        color: '#38BFA1'
+        location: ''
       });
     } catch (error) {
       console.error('Error saving personal event:', error);
@@ -684,8 +683,7 @@ export default function StudentDashboard() {
         description: event.description || '',
         startTime: event.startTime || '',
         endTime: event.endTime || '',
-        location: event.location || '',
-        color: event.color || '#38BFA1'
+        location: event.location || ''
       });
     } else {
       setEditingEvent(null);
@@ -694,8 +692,7 @@ export default function StudentDashboard() {
         description: '',
         startTime: '',
         endTime: '',
-        location: '',
-        color: '#38BFA1'
+        location: ''
       });
     }
     setIsEventModalOpen(true);
@@ -1179,9 +1176,9 @@ export default function StudentDashboard() {
                           key={`event-${idx}`}
                           className="text-xs p-1 mb-1 rounded truncate"
                           style={{ 
-                            backgroundColor: `${event.color}20`, 
-                            color: event.color,
-                            border: `1px solid ${event.color}40`
+                            backgroundColor: `${event.color || '#3B82F6'}20`, 
+                            color: event.color || '#3B82F6',
+                            border: `1px solid ${event.color || '#3B82F6'}40`
                           }}
                           title={event.title}
                           onClick={(e) => {
@@ -1560,7 +1557,7 @@ export default function StudentDashboard() {
                               </div>
                             )}
                             <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
+                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: event.color || '#3B82F6' }}></div>
                               <span>Personal Event</span>
                             </div>
                           </div>
@@ -1624,8 +1621,7 @@ export default function StudentDashboard() {
                       description: '',
                       startTime: '',
                       endTime: '',
-                      location: '',
-                      color: '#38BFA1'
+                      location: ''
                     });
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1638,7 +1634,7 @@ export default function StudentDashboard() {
                 e.preventDefault();
                 savePersonalEvent({
                   ...eventFormData,
-                  date: selectedDate?.toISOString().split('T')[0] || ''
+                  date: selectedDate ? formatDateForInput(selectedDate) : ''
                 });
               }} className="p-6 space-y-4">
                 
@@ -1707,24 +1703,6 @@ export default function StudentDashboard() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Color
-                  </label>
-                  <div className="flex gap-2">
-                    {['#38BFA1', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#10B981', '#F97316'].map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setEventFormData(prev => ({ ...prev, color }))}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          eventFormData.color === color ? 'border-gray-400 scale-110' : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
 
                 <div className="flex items-center justify-between pt-4">
                   {editingEvent && (
@@ -1747,8 +1725,7 @@ export default function StudentDashboard() {
                           description: '',
                           startTime: '',
                           endTime: '',
-                          location: '',
-                          color: '#38BFA1'
+                          location: ''
                         });
                       }}
                       className="px-4 py-2 text-gray-600 hover:text-gray-700 font-medium text-sm"

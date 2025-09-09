@@ -8,7 +8,7 @@ interface ClubPost {
   clubName: string;
   title: string;
   content: string;
-  postType: 'event' | 'announcement' | 'meeting' | 'general';
+  postType: 'event';
   date: string;
   startTime?: string;
   endTime?: string;

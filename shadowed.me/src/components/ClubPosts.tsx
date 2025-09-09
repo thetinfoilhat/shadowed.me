@@ -12,6 +12,7 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { formatDateForComparison } from '@/utils/dateUtils';
 
 
 interface ClubPost {
@@ -20,7 +21,7 @@ interface ClubPost {
   clubName: string;
   title: string;
   content: string;
-  postType: 'event' | 'announcement' | 'meeting' | 'general';
+  postType: 'event';
   date: string;
   startTime?: string;
   endTime?: string;
@@ -199,7 +200,7 @@ export default function ClubPosts({ clubId, clubName, userEmail, userName, isEdi
   };
 
   const getPostsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForComparison(date);
     return posts.filter(post => post.date === dateStr);
   };
 
@@ -216,12 +217,9 @@ export default function ClubPosts({ clubId, clubName, userEmail, userName, isEdi
   };
 
   const getPostTypeColor = (type: string) => {
-    switch (type) {
-      case 'event': return 'bg-blue-100 text-blue-800';
-      case 'meeting': return 'bg-yellow-100 text-yellow-800';
-      case 'announcement': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    // Always return blue regardless of type
+    void type; // Suppress unused parameter warning
+    return 'bg-blue-100 text-blue-800';
   };
 
   if (loading) {
@@ -392,12 +390,8 @@ function CalendarView({
                       key={post.id}
                       className="text-xs p-1 rounded cursor-pointer hover:bg-blue-50 transition-colors"
                       style={{
-                        backgroundColor: post.postType === 'event' ? '#dbeafe' : 
-                                       post.postType === 'meeting' ? '#fef3c7' : 
-                                       post.postType === 'announcement' ? '#f3e8ff' : '#f3f4f6',
-                        color: post.postType === 'event' ? '#1e40af' : 
-                               post.postType === 'meeting' ? '#92400e' : 
-                               post.postType === 'announcement' ? '#7c3aed' : '#374151'
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af'
                       }}
                       onClick={() => onPostClick(post)}
                       title={post.title}
