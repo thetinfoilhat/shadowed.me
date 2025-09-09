@@ -73,46 +73,51 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div>
-                      <h3 className="text-white font-bold text-lg">Upcoming Opportunities</h3>
-                      <p className="text-white/80 text-sm">Events & meetings this week</p>
-                    </div>
+                    <h3 className="text-white text-lg font-semibold">
+                      Upcoming Opportunities
+                    </h3>
                   </div>
                   
-                  <div className="p-6 space-y-4">
-                    {/* Sample Event 1 */}
-                    <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 hover:border-blue-200 transition-colors group cursor-pointer">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">DECA Competition Prep</h4>
-                        <p className="text-xs text-gray-600 mt-1">Business & Entrepreneurship Club</p>
-                        <p className="text-xs text-gray-500 mt-1">Tomorrow, 3:30 PM • Room 205</p>
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-[#4A9DFF] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                            <span className="text-xs font-medium">MAR</span>
+                            <span className="text-xl font-bold">17</span>
+                          </div>
+                          <div>
+                            <div className="text-[#001440] font-medium">DECA</div>
+                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
+                          </div>
+                        </div>
+                        <div className="text-gray-500 text-xs">Mar 15</div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-[#38BFA1] p-2 rounded-lg text-white flex flex-col items-center justify-center w-12 h-14 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                            <span className="text-xs font-medium">MAR</span>
+                            <span className="text-xl font-bold">23</span>
+                          </div>
+                          <div>
+                            <div className="text-[#001440] font-medium">Investment Club</div>
+                            <div className="text-gray-500 text-xs mt-1">Naperville North High School</div>
+                          </div>
+                        </div>
+                        <div className="text-gray-500 text-xs">Mar 18</div>
                       </div>
                     </div>
                     
-                    {/* Sample Event 2 */}
-                    <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100 hover:border-green-200 transition-colors group cursor-pointer">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-green-700 transition-colors">Investment Club Meeting</h4>
-                        <p className="text-xs text-gray-600 mt-1">Finance & Investment Club</p>
-                        <p className="text-xs text-gray-500 mt-1">Friday, 2:45 PM • Library</p>
-                      </div>
-                    </div>
-                    
-                    {/* View All Button */}
-                    <div className="pt-2">
-                      <Link href="/clubs">
-                        <button className="w-full px-4 py-2 bg-gradient-to-r from-[#4A9DFF] to-[#38BFA1] text-white text-sm font-medium rounded-lg hover:from-[#38BFA1] hover:to-[#4A9DFF] transition-all duration-300 transform hover:scale-[1.02] shadow-sm hover:shadow-md">
-                          View All Opportunities
-                        </button>
-                      </Link>
-                    </div>
+                    <Link href="/clubs" className="text-[#4A9DFF] text-sm font-medium flex items-center mt-4 hover:underline group">
+                      View all opportunities
+                      <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                    </Link>
                   </div>
                 </div>
                 
                 {/* Stats Card */}
-                <div className="mt-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer">
+                <div className="absolute -top-6 -right-6 bg-[#FF9913] rounded-lg p-4 shadow-md rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-8 h-8 bg-white/20 text-white flex items-center justify-center rounded-md">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
