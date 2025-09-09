@@ -8,7 +8,6 @@ import { XCircleIcon, PencilIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, PlusIc
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ClubEventManager from '@/components/ClubEventManager';
-import ClubPostManager from '@/components/ClubPostManager';
 
 interface ClubSite {
   id: string;
@@ -54,9 +53,6 @@ export default function SponsorDashboard() {
   const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
   const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
   
-  // Post management state
-  const [showPostManager, setShowPostManager] = useState(false);
-  const [selectedClubForPosts, setSelectedClubForPosts] = useState<ClubSite | null>(null);
   const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);
   const [clubInfoForm, setClubInfoForm] = useState({
     description: '',
@@ -671,8 +667,8 @@ export default function SponsorDashboard() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {filteredClubs.map((club) => (
                 <div key={club.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-[#38BFA1]/20 transition-all duration-300 overflow-hidden group transform hover:-translate-y-1">
-                  {/* Club Header with Gradient Background */}
-                  <div className="relative bg-gradient-to-br from-[#38BFA1] to-[#2DA891] p-6 text-white">
+                  {/* Club Header with Custom Blue Background */}
+                  <div className="relative p-6 text-white" style={{ background: '#38B6FF' }}>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
                     
@@ -776,63 +772,55 @@ export default function SponsorDashboard() {
                       </div>
                     </div>
 
-                    {/* Action Buttons - Tabulated Grid */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <button
-                        onClick={() => handleOpenClubInfo(club)}
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                        <span>Edit Info</span>
-                      </button>
-                      <button
-                        onClick={() => handleOpenMembers(club)}
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <UserGroupIcon className="h-4 w-4" />
-                        <span>Members</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedClub(club);
-                          setSelectedCaptains(club.captainEmails || []);
-                        }}
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-blue-700 bg-blue-100 hover:bg-blue-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <UserIcon className="h-4 w-4" />
-                        <span>Captains</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedClubForEvents(club);
-                          setShowEventManager(true);
-                        }}
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-purple-700 bg-purple-100 hover:bg-purple-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>Events</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          console.log('Sponsor Dashboard: Opening post manager for club:', { id: club.id, name: club.clubName });
-                          setSelectedClubForPosts(club);
-                          setShowPostManager(true);
-                        }}
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-green-700 bg-green-100 hover:bg-green-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>Posts</span>
-                      </button>
-                      <a
-                        href={`/${club.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-white bg-[#38BFA1] hover:bg-[#2DA891] transition-all duration-200 hover:shadow-md"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                        <span>View Site</span>
-                      </a>
-                    </div>
+                     {/* Action Buttons - 2x2 Grid */}
+                     <div className="grid grid-cols-2 gap-3">
+                       <button
+                         onClick={() => handleOpenClubInfo(club)}
+                         className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
+                       >
+                         <PencilIcon className="h-4 w-4" />
+                         <span>Edit Info</span>
+                       </button>
+                       <button
+                         onClick={() => handleOpenMembers(club)}
+                         className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
+                       >
+                         <UserGroupIcon className="h-4 w-4" />
+                         <span>Members</span>
+                       </button>
+                       <button
+                         onClick={() => {
+                           setSelectedClub(club);
+                           setSelectedCaptains(club.captainEmails || []);
+                         }}
+                         className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-blue-700 bg-blue-100 hover:bg-blue-200 transition-all duration-200 hover:shadow-md"
+                       >
+                         <UserIcon className="h-4 w-4" />
+                         <span>Captains</span>
+                       </button>
+                       <button
+                         onClick={() => {
+                           setSelectedClubForEvents(club);
+                           setShowEventManager(true);
+                         }}
+                         className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-purple-700 bg-purple-100 hover:bg-purple-200 transition-all duration-200 hover:shadow-md"
+                       >
+                         <CalendarIcon className="h-4 w-4" />
+                         <span>Events</span>
+                       </button>
+                       <a
+                         href={`/${club.slug}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-white transition-all duration-200 hover:shadow-md col-span-2"
+                         style={{ backgroundColor: '#38B6FF' }}
+                         onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#2A8CE8'}
+                         onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#38B6FF'}
+                       >
+                         <EyeIcon className="h-4 w-4" />
+                         <span>View Site</span>
+                       </a>
+                     </div>
                   </div>
                 </div>
               ))}
@@ -1355,19 +1343,6 @@ export default function SponsorDashboard() {
         />
       )}
 
-      {/* Club Post Manager */}
-      {showPostManager && selectedClubForPosts && (
-        <ClubPostManager
-          clubId={selectedClubForPosts.id}
-          clubName={selectedClubForPosts.clubName}
-          userEmail={user?.email || ''}
-          isOpen={showPostManager}
-          onClose={() => {
-            setShowPostManager(false);
-            setSelectedClubForPosts(null);
-          }}
-        />
-      )}
     </div>
   );
 } 
