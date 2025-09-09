@@ -49,9 +49,9 @@ export default function SponsorDashboard() {
   const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
   const [showClubInfoModal, setShowClubInfoModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
-  const [showEventManager, setShowEventManager] = useState(false);
   const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubSite | null>(null);
   const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
+  const [showEventManager, setShowEventManager] = useState(false);
   const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
   
   const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);

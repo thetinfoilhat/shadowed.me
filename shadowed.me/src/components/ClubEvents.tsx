@@ -16,11 +16,12 @@ interface ClubEvent {
   clubId: string;
   clubName: string;
   title: string;
-  description: string;
+  content: string; // Changed from description to content
+  postType: 'event';
   date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
+  startTime?: string; // Made optional to match ClubPost
+  endTime?: string; // Made optional to match ClubPost
+  location?: string; // Made optional to match ClubPost
   maxParticipants?: number;
   currentParticipants: number;
   participants: Array<{
@@ -28,13 +29,13 @@ interface ClubEvent {
     email: string;
     grade?: string;
     school?: string;
-    signupDate: Date;
+    joinDate: Date; // Changed from signupDate to joinDate
   }>;
   createdBy: string;
+  createdByEmail: string; // Added to match ClubPost
   createdAt: Date;
   updatedAt: Date;
   status: 'active' | 'cancelled' | 'completed';
-  category?: string;
   tags?: string[];
 }
 
@@ -54,11 +55,11 @@ export default function ClubEvents({ clubId, clubName, userEmail, userName }: Cl
     
     try {
       setLoading(true);
-      const response = await fetch(`/api/club-events?clubId=${clubId}&status=active`);
+      const response = await fetch(`/api/club-posts?clubId=${clubId}&status=active`);
       
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events || []);
+        setEvents(data.posts || []);
       } else {
         toast.error('Failed to fetch events');
       }
@@ -76,19 +77,19 @@ export default function ClubEvents({ clubId, clubName, userEmail, userName }: Cl
 
   const handleJoinEvent = async (eventId: string) => {
     try {
-      const response = await fetch('/api/club-events/signup', {
+      const response = await fetch('/api/club-posts/join', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          eventId,
+          postId: eventId,
           participant: {
             name: userName,
             email: userEmail,
             grade: '', // Will be filled from user profile
             school: '', // Will be filled from user profile
-            signupDate: new Date(),
+            joinDate: new Date(),
           },
         }),
       });
@@ -108,13 +109,13 @@ export default function ClubEvents({ clubId, clubName, userEmail, userName }: Cl
 
   const handleLeaveEvent = async (eventId: string) => {
     try {
-      const response = await fetch('/api/club-events/signup', {
+      const response = await fetch('/api/club-posts/join', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          eventId,
+          postId: eventId,
           participantEmail: userEmail,
         }),
       });
@@ -186,8 +187,8 @@ export default function ClubEvents({ clubId, clubName, userEmail, userName }: Cl
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h3>
-                    {event.description && (
-                      <p className="text-gray-600 mb-3">{event.description}</p>
+                    {event.content && (
+                      <p className="text-gray-600 mb-3">{event.content}</p>
                     )}
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500">

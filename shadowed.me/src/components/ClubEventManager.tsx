@@ -90,11 +90,11 @@ export default function ClubEventManager({
     
     try {
       setLoading(true);
-      const response = await fetch(`/api/club-events?clubId=${clubId}&status=all`);
+      const response = await fetch(`/api/club-posts?clubId=${clubId}&status=all`);
       
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events || []);
+        setEvents(data.posts || []);
       } else {
         toast.error('Failed to fetch events');
       }
@@ -114,7 +114,7 @@ export default function ClubEventManager({
 
   const handleCreateEvent = async () => {
     try {
-      const response = await fetch('/api/club-events', {
+      const response = await fetch('/api/club-posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,6 +124,9 @@ export default function ClubEventManager({
           clubId,
           clubName,
           createdBy: userEmail,
+          createdByEmail: userEmail,
+          content: eventForm.description, // Map description to content
+          postType: 'event',
           maxParticipants: eventForm.maxParticipants ? parseInt(eventForm.maxParticipants) : null
         }),
       });
@@ -147,15 +150,17 @@ export default function ClubEventManager({
     if (!selectedEvent) return;
     
     try {
-      const response = await fetch('/api/club-events', {
+      const response = await fetch('/api/club-posts', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          eventId: selectedEvent.id,
+          postId: selectedEvent.id,
           updates: {
             ...eventForm,
+            content: eventForm.description, // Map description to content
+            postType: 'event',
             maxParticipants: eventForm.maxParticipants ? parseInt(eventForm.maxParticipants) : null
           },
           updatedBy: userEmail
@@ -182,13 +187,13 @@ export default function ClubEventManager({
     if (!confirm('Are you sure you want to delete this event?')) return;
     
     try {
-      const response = await fetch('/api/club-events', {
+      const response = await fetch('/api/club-posts', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          eventId,
+          postId: eventId,
           deletedBy: userEmail
         }),
       });
@@ -258,8 +263,10 @@ export default function ClubEventManager({
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === date.toDateString();
+      // Create date objects in the same timezone to avoid timezone issues
+      const eventDate = new Date(event.date + 'T00:00:00');
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return eventDate.getTime() === compareDate.getTime();
     });
   };
 
@@ -368,7 +375,7 @@ export default function ClubEventManager({
                 );
               })}
               
-              {Array.from({ length: 6 - getFirstDayOfMonth(currentMonth) - getDaysInMonth(currentMonth) }, (_, i) => (
+              {Array.from({ length: (7 - ((getFirstDayOfMonth(currentMonth) + getDaysInMonth(currentMonth)) % 7)) % 7 }, (_, i) => (
                 <div key={`empty-end-${i}`} className="p-2"></div>
               ))}
             </div>
@@ -809,7 +816,7 @@ function ParticipantsModal({ isOpen, onClose, event }: ParticipantsModalProps) {
                     )}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {participant.signupDate.toLocaleDateString()}
+                    {participant.joinDate ? new Date(participant.joinDate).toLocaleDateString() : 'Unknown date'}
                   </div>
                 </div>
               ))}
@@ -817,7 +824,20 @@ function ParticipantsModal({ isOpen, onClose, event }: ParticipantsModalProps) {
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex justify-end">
+        <div className="p-6 border-t border-gray-200 flex justify-between">
+          <button
+            onClick={() => {
+              const emails = event.participants.map(p => p.email).join(', ');
+              navigator.clipboard.writeText(emails).then(() => {
+                toast.success('All emails copied to clipboard!');
+              }).catch(() => {
+                toast.error('Failed to copy emails');
+              });
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Copy All Emails
+          </button>
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors"

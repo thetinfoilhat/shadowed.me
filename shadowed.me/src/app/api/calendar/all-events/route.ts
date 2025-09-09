@@ -6,10 +6,10 @@ export async function GET() {
   try {
     // Fetch all active club posts from all clubs
     const postsRef = collection(db, 'clubPosts');
-    const q = query(postsRef, where('status', '==', 'active'));
-    const postsSnapshot = await getDocs(q);
+    const postsQuery = query(postsRef, where('status', '==', 'active'));
+    const postsSnapshot = await getDocs(postsQuery);
     
-    const events = postsSnapshot.docs.map(doc => {
+    const postEvents = postsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -33,17 +33,21 @@ export async function GET() {
         tags: data.tags || [],
         isRecurring: data.isRecurring || false,
         recurringPattern: data.recurringPattern || null,
-        recurringDays: data.recurringDays || []
+        recurringDays: data.recurringDays || [],
+        source: 'clubPosts'
       };
     });
 
+    // Use only clubPosts collection
+    const allEvents = postEvents;
+
     // Sort events by date
-    events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    allEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return NextResponse.json({ 
       success: true, 
-      events,
-      count: events.length 
+      events: allEvents,
+      count: allEvents.length 
     });
   } catch (error) {
     console.error('Error fetching all events:', error);

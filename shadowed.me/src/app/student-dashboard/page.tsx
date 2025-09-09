@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubSite, MeetingOpportunity } from '@/types/club';
 import { formatDateForInput } from '@/utils/dateUtils';
@@ -426,15 +426,48 @@ export default function StudentDashboard() {
     if (!user?.email) return;
 
     try {
+      const allMeetings: MeetingOpportunity[] = [];
+      
       // Get all meetings from the meetings collection
       const meetingsRef = collection(db, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
       
-      const allMeetings: MeetingOpportunity[] = [];
-      
       meetingsSnapshot.forEach((doc) => {
         const meetingData = doc.data() as MeetingOpportunity;
         const meeting = { ...meetingData, id: doc.id };
+        allMeetings.push(meeting);
+      });
+
+      // Also get all active club posts and convert them to MeetingOpportunity format
+      const postsRef = collection(db, 'clubPosts');
+      const postsQuery = query(postsRef, where('status', '==', 'active'), where('postType', '==', 'event'));
+      const postsSnapshot = await getDocs(postsQuery);
+      
+      postsSnapshot.forEach((doc) => {
+        const postData = doc.data();
+        const meeting: MeetingOpportunity = {
+          id: doc.id,
+          title: postData.title,
+          description: postData.content || '',
+          startDate: postData.date,
+          endDate: postData.date,
+          startTime: postData.startTime || '',
+          endTime: postData.endTime || '',
+          roomNumber: postData.location || '',
+          maxParticipants: postData.maxParticipants || null,
+          currentParticipants: postData.currentParticipants || 0,
+          participants: postData.participants || [],
+          createdBy: postData.createdBy,
+          createdAt: postData.createdAt?.toDate ? postData.createdAt.toDate() : new Date(postData.createdAt),
+          updatedAt: postData.updatedAt?.toDate ? postData.updatedAt.toDate() : new Date(postData.updatedAt),
+          status: postData.status || 'active',
+          tags: postData.tags || [],
+          isRecurring: postData.isRecurring || false,
+          recurringPattern: postData.recurringPattern || null,
+          recurringDays: postData.recurringDays || [],
+          clubId: postData.clubId,
+          clubName: postData.clubName
+        };
         allMeetings.push(meeting);
       });
       
@@ -455,9 +488,10 @@ export default function StudentDashboard() {
       // Fetch opportunities from each joined club
       for (const club of joinedClubs) {
         try {
-          const response = await fetch(`/api/club-posts?clubId=${club.id}&status=active`);
-          if (response.ok) {
-            const data = await response.json();
+          // Fetch from clubPosts
+          const postsResponse = await fetch(`/api/club-posts?clubId=${club.id}&status=active`);
+          if (postsResponse.ok) {
+            const data = await postsResponse.json();
             const clubPosts = data.posts || [];
             
             // Add club name to each post for display
@@ -468,6 +502,7 @@ export default function StudentDashboard() {
             
             allOpportunities.push(...postsWithClubName);
           }
+
         } catch (error) {
           console.error(`Error fetching opportunities for club ${club.clubName}:`, error);
         }
@@ -604,13 +639,15 @@ export default function StudentDashboard() {
     // No need to fetch available opportunities here
     
     const dayPersonalEvents = personalEvents.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === date.toDateString();
+      const eventDate = new Date(event.date + 'T00:00:00');
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return eventDate.getTime() === compareDate.getTime();
     });
     
     const dayJoinedClubEvents = joinedClubEvents.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === date.toDateString();
+      const eventDate = new Date(event.date + 'T00:00:00');
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return eventDate.getTime() === compareDate.getTime();
     });
     
     setSelectedDayEvents({
@@ -628,14 +665,16 @@ export default function StudentDashboard() {
     
     // Get all available meetings for this day
     const dayAllMeetings = meetings.filter(meeting => {
-      const meetingDate = new Date(meeting.startDate);
-      return meetingDate.toDateString() === date.toDateString() && meeting.status === 'active';
+      const meetingDate = new Date(meeting.startDate + 'T00:00:00');
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return meetingDate.getTime() === compareDate.getTime() && meeting.status === 'active';
     });
     
     // Get all available club opportunities for this day
     const dayClubOpportunities = allClubOpportunities.filter(opportunity => {
-      const opportunityDate = new Date(opportunity.date);
-      return opportunityDate.toDateString() === date.toDateString();
+      const opportunityDate = new Date(opportunity.date + 'T00:00:00');
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return opportunityDate.getTime() === compareDate.getTime();
     });
     
     // Combine both types of opportunities
@@ -1087,28 +1126,31 @@ export default function StudentDashboard() {
                   
                   // Get joined meetings for this day
                   const dayJoinedMeetings = meetings.filter(meeting => {
-                    const meetingDate = new Date(meeting.startDate);
-                    return meetingDate.toDateString() === date.toDateString() && 
+                    const meetingDate = new Date(meeting.startDate + 'T00:00:00');
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    return meetingDate.getTime() === compareDate.getTime() && 
                            meeting.participants?.some(p => p.email === user?.email);
                   });
                   
                   // Get personal events for this day
                   const dayPersonalEvents = personalEvents.filter(event => {
-                    const eventDate = new Date(event.date);
-                    return eventDate.toDateString() === date.toDateString();
+                    const eventDate = new Date(event.date + 'T00:00:00');
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    return eventDate.getTime() === compareDate.getTime();
                   });
                   
                   // Get joined club events for this day
                   const dayJoinedClubEvents = joinedClubEvents.filter(event => {
-                    const eventDate = new Date(event.date);
-                    return eventDate.toDateString() === date.toDateString();
+                    const eventDate = new Date(event.date + 'T00:00:00');
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    return eventDate.getTime() === compareDate.getTime();
                   });
                   
                   return (
                     <div
                       key={i}
                       className={`p-2 min-h-[80px] border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer ${
-                        selectedDate?.toDateString() === date.toDateString() ? 'bg-[#38BFA1]/10 border-[#38BFA1]' : ''
+                        selectedDate && selectedDate.getTime() === date.getTime() ? 'bg-[#38BFA1]/10 border-[#38BFA1]' : ''
                       }`}
                       onClick={() => openDayView(date)}
                     >
@@ -1256,8 +1298,9 @@ export default function StudentDashboard() {
                     
                     // Get all opportunities for this date from all clubs
                     const dayOpportunities = allClubOpportunities.filter(opportunity => {
-                      const opportunityDate = new Date(opportunity.date);
-                      return opportunityDate.toDateString() === date.toDateString();
+                      const opportunityDate = new Date(opportunity.date + 'T00:00:00');
+                      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      return opportunityDate.getTime() === compareDate.getTime();
                     });
                     
                     // Check if this date has opportunities
@@ -1267,7 +1310,7 @@ export default function StudentDashboard() {
                   <div
                         key={day}
                         className={`min-h-[80px] p-2 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer ${
-                          date.toDateString() === new Date().toDateString() ? 'bg-blue-50 border-blue-300' : ''
+                          date.getTime() === new Date().setHours(0,0,0,0) ? 'bg-blue-50 border-blue-300' : ''
                     }`}
                     onClick={() => openOpportunitiesView(date)}
                   >
