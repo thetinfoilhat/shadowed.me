@@ -43,6 +43,7 @@ interface ClubEvent {
   isRecurring?: boolean;
   recurringPattern?: 'weekly' | 'biweekly' | 'monthly';
   recurringDays?: string[];
+  recurringGroupId?: string;
 }
 
 interface ClubEventManagerProps {
@@ -65,6 +66,8 @@ export default function ClubEventManager({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<ClubEvent | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ClubEvent | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -114,21 +117,25 @@ export default function ClubEventManager({
 
   const handleCreateEvent = async () => {
     try {
+      const requestData = {
+        ...eventForm,
+        clubId,
+        clubName,
+        createdBy: userEmail,
+        createdByEmail: userEmail,
+        content: eventForm.description, // Map description to content
+        postType: 'event',
+        maxParticipants: eventForm.maxParticipants ? parseInt(eventForm.maxParticipants) : null
+      };
+      
+      console.log('Creating event with data:', requestData);
+      
       const response = await fetch('/api/club-posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...eventForm,
-          clubId,
-          clubName,
-          createdBy: userEmail,
-          createdByEmail: userEmail,
-          content: eventForm.description, // Map description to content
-          postType: 'event',
-          maxParticipants: eventForm.maxParticipants ? parseInt(eventForm.maxParticipants) : null
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {
@@ -439,6 +446,11 @@ export default function ClubEventManager({
                         </div>
                         
                         <div className="flex items-center gap-2">
+                          {event.isRecurring && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Recurring
+                            </span>
+                          )}
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             event.status === 'active' ? 'bg-green-100 text-green-800' :
                             event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
@@ -467,7 +479,10 @@ export default function ClubEventManager({
                             <PencilIcon className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteEvent(event.id)}
+                            onClick={() => {
+                              setEventToDelete(event);
+                              setShowDeleteConfirmModal(true);
+                            }}
                             className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -522,6 +537,72 @@ export default function ClubEventManager({
             }}
             event={selectedEvent}
           />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmModal && eventToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Delete Event</h3>
+                <p className="text-gray-600 mb-6">
+                  {eventToDelete.isRecurring 
+                    ? `This is a recurring event. Would you like to delete just this instance or the entire series?`
+                    : 'Are you sure you want to delete this event?'
+                  }
+                </p>
+                
+                <div className="flex gap-3">
+                  {eventToDelete.isRecurring && (
+                    <>
+                      <button
+                        onClick={() => {
+                          handleDeleteEvent(eventToDelete.id);
+                          setShowDeleteConfirmModal(false);
+                          setEventToDelete(null);
+                        }}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        Delete This Instance Only
+                      </button>
+                      <button
+                        onClick={() => {
+                          // TODO: Implement delete entire series
+                          toast.error('Delete entire series not implemented yet');
+                          setShowDeleteConfirmModal(false);
+                          setEventToDelete(null);
+                        }}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Delete Entire Series
+                      </button>
+                    </>
+                  )}
+                  {!eventToDelete.isRecurring && (
+                    <button
+                      onClick={() => {
+                        handleDeleteEvent(eventToDelete.id);
+                        setShowDeleteConfirmModal(false);
+                        setEventToDelete(null);
+                      }}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Delete Event
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirmModal(false);
+                      setEventToDelete(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

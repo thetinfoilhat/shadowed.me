@@ -31,6 +31,7 @@ interface ClubPost {
   isRecurring?: boolean;
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   recurringDays?: string[];
+  recurringGroupId?: string;
 }
 
 // Helper function to generate recurring dates
@@ -66,6 +67,7 @@ function generateRecurringDates(
       const dateStr = currentDate.toISOString().split('T')[0];
       dates.push(dateStr);
       generatedCount++;
+      console.log(`Added date: ${dateStr} (${pattern} pattern, day ${dayOfWeek})`);
     }
     
     // Move to next occurrence based on pattern
@@ -74,7 +76,12 @@ function generateRecurringDates(
     } else if (pattern === 'biweekly') {
       currentDate.setDate(currentDate.getDate() + 14);
     } else if (pattern === 'monthly') {
+      // For monthly, add 1 month to the current date
+      // This handles month boundaries correctly (e.g., Jan 31 -> Feb 28/29)
+      const beforeMonth = currentDate.getMonth();
       currentDate.setMonth(currentDate.getMonth() + 1);
+      const afterMonth = currentDate.getMonth();
+      console.log(`Monthly: ${beforeMonth} -> ${afterMonth}, date: ${currentDate.toISOString().split('T')[0]}`);
     }
   }
   
@@ -229,7 +236,16 @@ export async function POST(request: NextRequest) {
     if (isRecurring && recurringPattern && recurringDays && recurringDays.length > 0) {
       // Generate recurring dates
       const recurringDates = generateRecurringDates(date, recurringPattern, recurringDays, 24);
-      console.log('API: Generating recurring events for dates:', recurringDates);
+      console.log('API: Generating recurring events:', {
+        pattern: recurringPattern,
+        days: recurringDays,
+        startDate: date,
+        generatedDates: recurringDates,
+        count: recurringDates.length
+      });
+      
+      // Generate a unique group ID for this recurring series
+      const recurringGroupId = `recurring_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Use batch write to create multiple posts
       const batch = writeBatch(db);
@@ -240,6 +256,7 @@ export async function POST(request: NextRequest) {
         const postData = {
           ...basePostData,
           date: recurringDate,
+          recurringGroupId: recurringGroupId,
           // Add a suffix to distinguish recurring instances
           title: recurringDates.length > 1 ? `${title} (${recurringDate})` : title
         };
@@ -249,11 +266,12 @@ export async function POST(request: NextRequest) {
       }
       
       await batch.commit();
-      console.log('API: Created', createdPostIds.length, 'recurring posts for clubId:', clubId);
+      console.log('API: Created', createdPostIds.length, 'recurring posts for clubId:', clubId, 'with groupId:', recurringGroupId);
       
       return NextResponse.json({ 
         success: true, 
         postIds: createdPostIds,
+        recurringGroupId: recurringGroupId,
         message: `Created ${createdPostIds.length} recurring events successfully` 
       });
     } else {
