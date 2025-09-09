@@ -668,94 +668,149 @@ export default function SponsorDashboard() {
               </button>
           </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {filteredClubs.map((club) => (
-                <div key={club.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group">
-                <div className="p-6">
-                    {/* Club Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-[#38BFA1] transition-colors">
-                          {club.clubName}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {club.category || 'Uncategorized'} • {club.updatedAt.toLocaleDateString()}
-                        </p>
-                        {/* Show sponsor count */}
-                        <div className="mt-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <div key={club.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-[#38BFA1]/20 transition-all duration-300 overflow-hidden group transform hover:-translate-y-1">
+                  {/* Club Header with Gradient Background */}
+                  <div className="relative bg-gradient-to-br from-[#38BFA1] to-[#2DA891] p-6 text-white">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-white/90 transition-colors">
+                            {club.clubName}
+                          </h3>
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-sm">
+                              {club.category || 'Uncategorized'}
+                            </span>
+                            <span className="text-white/80 text-sm">
+                              Updated {club.updatedAt.toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveSponsor(club.id)}
+                          className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all duration-200 backdrop-blur-sm"
+                          title="Remove as sponsor"
+                        >
+                          <XCircleIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                      
+                      {/* Status Indicators */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <span className="text-sm font-medium text-white">
                             {((club.sponsorEmails?.length || 0) + (club.sponsorEmail ? 1 : 0))}/4 Sponsors
                           </span>
-                    </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveSponsor(club.id)}
-                        className="p-2 rounded-full text-red-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
-                        title="Remove as sponsor"
-                      >
-                        <XCircleIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    {/* Club Info */}
-                    <div className="space-y-3 mb-6">
-                      {club.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{club.description}</p>
-                      )}
-                      {club.meetingInfo && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium text-gray-700">Meetings:</span> {club.meetingInfo}
-                        </p>
-                      )}
-                      <div className="flex items-center text-sm">
-                        <span className="font-medium text-gray-700 mr-2">Captains:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          getCaptainCount(club) > 0
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-600'
+                        </div>
+                        <div className={`flex items-center gap-2 backdrop-blur-sm rounded-full px-3 py-1 ${
+                          getCaptainCount(club) > 0 ? 'bg-green-500/30' : 'bg-yellow-500/30'
                         }`}>
-                          {getCaptainCount(club) > 0 
-                            ? `${getCaptainCount(club)}/4 Captains` 
-                            : 'Not assigned'}
-                      </span>
+                          <div className={`w-2 h-2 rounded-full ${
+                            getCaptainCount(club) > 0 ? 'bg-green-300' : 'bg-yellow-300'
+                          }`}></div>
+                          <span className="text-sm font-medium text-white">
+                            {getCaptainCount(club) > 0 
+                              ? `${getCaptainCount(club)}/4 Captains` 
+                              : 'No Captains'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Club Content - Tabulated Layout */}
+                  <div className="p-6">
+                    {/* Information Table */}
+                    <div className="mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Club Description */}
+                        {club.description && (
+                          <div className="md:col-span-2">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Description</h4>
+                            <p className="text-gray-700 leading-relaxed line-clamp-3">{club.description}</p>
+                          </div>
+                        )}
+
+                        {/* Meeting Information */}
+                        {club.meetingInfo && (
+                          <div className="md:col-span-2">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Meeting Schedule</h4>
+                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 bg-[#38BFA1]/10 rounded-md flex items-center justify-center">
+                                  <CalendarIcon className="h-3 w-3 text-[#38BFA1]" />
+                                </div>
+                                <p className="text-gray-600 text-sm">{club.meetingInfo}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Activity Types */}
+                        {club.activityTypes && club.activityTypes.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Activity Types</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {club.activityTypes.map((type, index) => (
+                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">
+                                  {type}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Contact Information */}
+                        {club.jamboreeMeetingInfo?.email && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Contact</h4>
+                            <p className="text-gray-600 text-sm">{club.jamboreeMeetingInfo.email}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2">
-                        <button
+                    {/* Action Buttons - Tabulated Grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
                         onClick={() => handleOpenClubInfo(club)}
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                        >
-                        <PencilIcon className="h-3 w-3 mr-1" />
-                        Edit Info
-                        </button>
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                        <span>Edit Info</span>
+                      </button>
                       <button
                         onClick={() => handleOpenMembers(club)}
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <UserGroupIcon className="h-3 w-3 mr-1" />
-                        Members
+                        <UserGroupIcon className="h-4 w-4" />
+                        <span>Members</span>
                       </button>
                       <button
                         onClick={() => {
                           setSelectedClub(club);
                           setSelectedCaptains(club.captainEmails || []);
                         }}
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-blue-700 bg-blue-100 hover:bg-blue-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <UserIcon className="h-3 w-3 mr-1" />
-                        Assign Captains
+                        <UserIcon className="h-4 w-4" />
+                        <span>Captains</span>
                       </button>
                       <button
                         onClick={() => {
                           setSelectedClubForEvents(club);
                           setShowEventManager(true);
                         }}
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors"
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-purple-700 bg-purple-100 hover:bg-purple-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <CalendarIcon className="h-3 w-3 mr-1" />
-                        Manage Events
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Events</span>
                       </button>
                       <button
                         onClick={() => {
@@ -763,19 +818,19 @@ export default function SponsorDashboard() {
                           setSelectedClubForPosts(club);
                           setShowPostManager(true);
                         }}
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-green-700 bg-green-100 hover:bg-green-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <CalendarIcon className="h-3 w-3 mr-1" />
-                        Manage Posts
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Posts</span>
                       </button>
                       <a
                         href={`/${club.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                        className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-white bg-[#38BFA1] hover:bg-[#2DA891] transition-all duration-200 hover:shadow-md"
                       >
-                        <EyeIcon className="h-3 w-3 mr-1" />
-                        View Site
+                        <EyeIcon className="h-4 w-4" />
+                        <span>View Site</span>
                       </a>
                     </div>
                   </div>
