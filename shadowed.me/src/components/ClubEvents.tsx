@@ -36,6 +36,7 @@ interface ClubEvent {
   createdAt: Date;
   updatedAt: Date;
   status: 'active' | 'cancelled' | 'completed';
+  category?: string;
   tags?: string[];
 }
 
@@ -198,7 +199,7 @@ export default function ClubEvents({ clubId, clubName, userEmail, userName }: Cl
                       </div>
                       <div className="flex items-center">
                         <ClockIcon className="h-4 w-4 mr-2" />
-                        <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
+                        <span>{event.startTime ? formatTime(event.startTime) : 'TBD'} - {event.endTime ? formatTime(event.endTime) : 'TBD'}</span>
                       </div>
                       <div className="flex items-center">
                         <MapPinIcon className="h-4 w-4 mr-2" />
