@@ -47,13 +47,24 @@ export default function SponsorDashboard() {
   const [discoverSearchQuery, setDiscoverSearchQuery] = useState<string>('');
   const [selectedClub, setSelectedClub] = useState<ClubSite | null>(null);
   const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
+  const [showClubInfoModal, setShowClubInfoModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showEventManager, setShowEventManager] = useState(false);
+  const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubSite | null>(null);
   const [selectedClubForMembers, setSelectedClubForMembers] = useState<ClubSite | null>(null);
   const [selectedClubForEvents, setSelectedClubForEvents] = useState<ClubSite | null>(null);
   
   const [clubMembers, setClubMembers] = useState<{ name: string; email: string }[]>([]);
+  const [clubInfoForm, setClubInfoForm] = useState({
+    description: '',
+    meetingInfo: '',
+    category: '',
+    contactEmail: '',
+    captains: [] as string[],
+    activityTypes: [] as string[]
+  });
   const [captainSearchQuery, setCaptainSearchQuery] = useState<string>('');
+  const [clubCaptainSearchQuery, setClubCaptainSearchQuery] = useState<string>('');
 
   const fetchSponsoredClubs = useCallback(async () => {
     if (!user?.email) return;
@@ -316,7 +327,147 @@ export default function SponsorDashboard() {
     }
   };
 
+  const handleOpenClubInfo = (club: ClubSite) => {
+    setSelectedClubForInfo(club);
+    
+    // Get existing captains from multiple possible sources
+    let existingCaptains: string[] = [];
+    if (club.captainEmails && club.captainEmails.length > 0) {
+      existingCaptains = club.captainEmails;
+    } else if (club.captainEmail) {
+      existingCaptains = [club.captainEmail];
+    } else if (club.captains && club.captains.length > 0) {
+      existingCaptains = club.captains;
+    } else if (club.jamboreeMeetingInfo?.captains) {
+      // Handle legacy captains stored as comma-separated string
+      const captainNames = club.jamboreeMeetingInfo.captains.split(/,\s*/).filter(Boolean);
+      // Try to match names to emails (this is a fallback)
+      existingCaptains = captainNames;
+    }
+    
+    setClubInfoForm({
+      description: club.description || '',
+      meetingInfo: club.meetingInfo || '',
+      category: club.category || '',
+      contactEmail: club.jamboreeMeetingInfo?.email || '',
+      captains: existingCaptains,
+      activityTypes: club.activityTypes || []
+    });
+    setShowClubInfoModal(true);
+  };
 
+  const handleSaveClubInfo = async () => {
+    if (!selectedClubForInfo) return;
+    
+    try {
+      // Get the current club data to find removed captains
+      const clubRef = doc(db, 'clubSites', selectedClubForInfo.id);
+      const clubDoc = await getDoc(clubRef);
+      let previousCaptains: string[] = [];
+      
+      if (clubDoc.exists()) {
+        const clubData = clubDoc.data();
+        previousCaptains = clubData.captainEmails || clubData.captains || [];
+      }
+      
+      // Find captains that have been removed
+      const removedCaptains = previousCaptains.filter(email => !clubInfoForm.captains.includes(email));
+      
+      // Remove club from captainClubs array for removed captains using the new API
+      if (removedCaptains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of removedCaptains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            
+            // Use the new API route to remove captain role
+            await fetch('/api/user-role', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: userDoc.id,
+                newRole: 'student',
+                clubId: selectedClubForInfo.id,
+                action: 'remove'
+              }),
+            });
+          }
+        }
+      }
+      
+      // Get captain display names for jamboreeMeetingInfo
+      const captainDisplayNames = [];
+      if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
+        for (const captainEmail of clubInfoForm.captains) {
+          const captain = allStudents.find(s => s.email === captainEmail);
+          const displayName = captain?.name || captainEmail;
+          captainDisplayNames.push(displayName);
+        }
+      }
+      
+      await updateDoc(clubRef, {
+        description: clubInfoForm.description,
+        meetingInfo: clubInfoForm.meetingInfo,
+        category: clubInfoForm.category,
+        activityTypes: clubInfoForm.activityTypes,
+
+        'jamboreeMeetingInfo.email': clubInfoForm.contactEmail,
+        captainEmails: clubInfoForm.captains,
+        'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
+        updatedAt: new Date()
+      });
+      
+      // Update user roles to captain for all assigned captains using the new API
+      const promotedUsers: string[] = [];
+      if (clubInfoForm.captains && clubInfoForm.captains.length > 0) {
+        const usersRef = collection(db, 'users');
+        for (const captainEmail of clubInfoForm.captains) {
+          const userQuery = query(usersRef, where('email', '==', captainEmail));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            
+            // Use the new API route to update user role and ensure continuity
+            const response = await fetch('/api/user-role', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: userDoc.id,
+                newRole: 'captain',
+                clubId: selectedClubForInfo.id,
+                action: 'add'
+              }),
+            });
+
+            if (response.ok) {
+              promotedUsers.push(captainEmail);
+            }
+          }
+        }
+      }
+      
+      // If the current user was promoted, refresh their data
+      if (promotedUsers.includes(user?.email || '')) {
+        await refreshUserData();
+      }
+      
+      toast.success('Club information updated successfully');
+      setShowClubInfoModal(false);
+      setSelectedClubForInfo(null);
+      fetchSponsoredClubs();
+    } catch (error) {
+      console.error('Error updating club info:', error);
+      toast.error('Failed to update club information');
+    }
+  };
 
   const handleOpenMembers = async (club: ClubSite) => {
     setSelectedClubForMembers(club);
@@ -417,6 +568,11 @@ export default function SponsorDashboard() {
      student.email.toLowerCase().includes(captainSearchQuery.toLowerCase()))
   );
 
+  const filteredClubStudents = allStudents.filter(student =>
+    !clubInfoForm.captains?.includes(student.email) &&
+    (student.name?.toLowerCase().includes(clubCaptainSearchQuery.toLowerCase()) ||
+     student.email.toLowerCase().includes(clubCaptainSearchQuery.toLowerCase()))
+  );
 
   if (loading) {
     return <LoadingSpinner />;
@@ -624,7 +780,7 @@ export default function SponsorDashboard() {
                      {/* Action Buttons - 2x2 Grid */}
                      <div className="grid grid-cols-2 gap-3">
                        <button
-                         onClick={() => window.open(`/${club.slug}?edit=true`, '_blank')}
+                         onClick={() => handleOpenClubInfo(club)}
                          className="flex flex-col items-center justify-center gap-2 px-3 py-4 text-xs font-medium rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 hover:shadow-md"
                        >
                          <PencilIcon className="h-4 w-4" />
@@ -916,6 +1072,230 @@ export default function SponsorDashboard() {
         </div>
       )}
 
+      {/* Club Info Modal */}
+      {showClubInfoModal && selectedClubForInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Edit Club Information</h2>
+              <p className="text-gray-600 mt-1 text-sm">
+                Update information for {selectedClubForInfo.clubName}
+              </p>
+                </div>
+            
+            <div className="p-6 space-y-4">
+                          <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Description
+                </label>
+                <textarea
+                  value={clubInfoForm.description}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  rows={4}
+                  placeholder="Enter club description"
+                />
+                          </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Meeting Information
+                </label>
+                <textarea
+                  value={clubInfoForm.meetingInfo}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, meetingInfo: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  rows={3}
+                  placeholder="Enter meeting times and location"
+                />
+                        </div>
+                        
+                          <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Category
+                </label>
+                <select
+                  value={clubInfoForm.category}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                >
+                  <option value="">Select Category</option>
+                  <option value="STEM">STEM</option>
+                  <option value="Humanities">Humanities</option>
+                  <option value="Business">Business</option>
+                  <option value="Music, Arts, & Performing Arts">Music, Arts, & Performing Arts</option>
+                  <option value="Academic">Academic</option>
+                  <option value="Language & Culture">Language & Culture</option>
+                  <option value="Medical">Medical</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Community Service & Leadership">Community Service & Leadership</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+                          </div>
+
+                          <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Activity Types
+                </label>
+                <div className="space-y-2">
+                  {['Competitive', 'Leadership', 'Tryout', 'Public Speaking', 'Performance', 'Casual', 'Academic'].map((type) => (
+                    <label key={type} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={clubInfoForm.activityTypes.includes(type)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              activityTypes: [...prev.activityTypes, type] 
+                            }));
+                          } else {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              activityTypes: prev.activityTypes.filter(t => t !== type) 
+                            }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{type}</span>
+                    </label>
+                  ))}
+                          </div>
+              </div>
+
+                          <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Contact Email
+                </label>
+                <input
+                  type="email"
+                  value={clubInfoForm.contactEmail}
+                  onChange={(e) => setClubInfoForm(prev => ({ ...prev, contactEmail: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1]"
+                  placeholder="Enter contact email"
+                />
+                          </div>
+
+                          <div>
+                <label className="block text-gray-700 font-medium mb-2 text-sm">
+                  Captains (up to 4)
+                </label>
+                
+                {/* Search for captains */}
+                <div className="mb-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search students by name or email..."
+                      value={clubCaptainSearchQuery}
+                      onChange={(e) => setClubCaptainSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] text-sm"
+                    />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                        
+                {/* Selected Captains */}
+                {clubInfoForm.captains && clubInfoForm.captains.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {clubInfoForm.captains.map((email) => {
+                        const student = allStudents.find(s => s.email === email);
+                        return (
+                          <div key={email} className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                            <span>{student?.name || email}</span>
+                            <span className={`ml-1 inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
+                              student?.role === 'captain' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {student?.role || 'student'}
+                            </span>
+                          <button
+                              onClick={() => {
+                                setClubInfoForm(prev => ({ 
+                                  ...prev, 
+                                  captains: prev.captains.filter(e => e !== email) 
+                                }));
+                              }}
+                              className="ml-1 text-green-600 hover:text-green-800"
+                            >
+                              <XCircleIcon className="h-3 w-3" />
+                          </button>
+                        </div>
+                        );
+                      })}
+                      </div>
+                </div>
+              )}
+
+                {/* Available Students */}
+                <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {filteredClubStudents.map((student) => (
+                          <button
+                      key={student.uid}
+                      onClick={() => {
+                        const currentCaptains = clubInfoForm.captains || [];
+                        if (!currentCaptains.includes(student.email)) {
+                          if (currentCaptains.length < 4) {
+                            setClubInfoForm(prev => ({ 
+                              ...prev, 
+                              captains: [...currentCaptains, student.email] 
+                            }));
+                          } else {
+                            toast.error('Maximum 4 captains allowed');
+                          }
+                        }
+                      }}
+                      disabled={clubInfoForm.captains?.includes(student.email)}
+                      className={`w-full p-2 text-left rounded transition-all ${
+                        clubInfoForm.captains?.includes(student.email)
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white hover:bg-[#38BFA1]/5 cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-xs">{student.name || 'No name'}</div>
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
+                          student.role === 'captain' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {student.role || 'student'}
+                        </span>
+                </div>
+                      <div className="text-xs text-gray-500">{student.email}</div>
+                          </button>
+                  ))}
+                        </div>
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  {(clubInfoForm.captains?.length || 0)}/4 captains selected
+                            </p>
+                      </div>
+                    </div>
+                        
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowClubInfoModal(false);
+                  setSelectedClubForInfo(null);
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveClubInfo}
+                className="px-4 py-2 bg-[#38BFA1] text-white rounded-lg hover:bg-[#2DA891] transition-colors"
+              >
+                Save Changes
+              </button>
+                          </div>
+                          </div>
+                </div>
+              )}
 
       {/* Members Modal */}
       {showMembersModal && selectedClubForMembers && (

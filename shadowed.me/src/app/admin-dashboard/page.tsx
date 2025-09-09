@@ -62,6 +62,12 @@ export default function AdminDashboard() {
   // Post management state
   const [showPostManager, setShowPostManager] = useState(false);
   const [selectedClubForPosts, setSelectedClubForPosts] = useState<ClubListing | null>(null);
+  
+  // Club role management state
+  const [clubSponsors, setClubSponsors] = useState<string[]>([]);
+  const [clubCaptains, setClubCaptains] = useState<string[]>([]);
+  const [sponsorSearchQuery, setSponsorSearchQuery] = useState('');
+  const [captainSearchQuery, setCaptainSearchQuery] = useState('');
 
   // Fetch data
   const fetchUsers = useCallback(async () => {
@@ -325,6 +331,8 @@ export default function AdminDashboard() {
   // Club actions
   const handleEditClub = (club: ClubListing) => {
     setSelectedClub(club);
+    setClubSponsors(club.sponsorEmails || []);
+    setClubCaptains(club.captainEmails || []);
     setShowClubEditModal(true);
   };
 
@@ -338,6 +346,87 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting club:', error);
       toast.error('Failed to delete club');
+    }
+  };
+
+  // Sponsor and Captain management
+  const handleAddSponsor = async (email: string) => {
+    if (!selectedClub || !email.trim()) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', selectedClub.id);
+      const updatedSponsors = [...clubSponsors, email.trim()];
+      
+      await updateDoc(clubRef, {
+        sponsorEmails: updatedSponsors,
+        updatedAt: new Date()
+      });
+      
+      setClubSponsors(updatedSponsors);
+      toast.success('Sponsor added successfully');
+    } catch (error) {
+      console.error('Error adding sponsor:', error);
+      toast.error('Failed to add sponsor');
+    }
+  };
+
+  const handleRemoveSponsor = async (email: string) => {
+    if (!selectedClub) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', selectedClub.id);
+      const updatedSponsors = clubSponsors.filter(e => e !== email);
+      
+      await updateDoc(clubRef, {
+        sponsorEmails: updatedSponsors,
+        updatedAt: new Date()
+      });
+      
+      setClubSponsors(updatedSponsors);
+      toast.success('Sponsor removed successfully');
+    } catch (error) {
+      console.error('Error removing sponsor:', error);
+      toast.error('Failed to remove sponsor');
+    }
+  };
+
+  const handleAddCaptain = async (email: string) => {
+    if (!selectedClub || !email.trim()) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', selectedClub.id);
+      const updatedCaptains = [...clubCaptains, email.trim()];
+      
+      await updateDoc(clubRef, {
+        captainEmails: updatedCaptains,
+        updatedAt: new Date()
+      });
+      
+      setClubCaptains(updatedCaptains);
+      toast.success('Captain added successfully');
+    } catch (error) {
+      console.error('Error adding captain:', error);
+      toast.error('Failed to add captain');
+    }
+  };
+
+  const handleRemoveCaptain = async (email: string) => {
+    if (!selectedClub) return;
+    
+    try {
+      const clubRef = doc(db, 'clubSites', selectedClub.id);
+      const updatedCaptains = clubCaptains.filter(e => e !== email);
+      
+      await updateDoc(clubRef, {
+        captainEmails: updatedCaptains,
+        updatedAt: new Date()
+      });
+      
+      setClubCaptains(updatedCaptains);
+      toast.success('Captain removed successfully');
+    } catch (error) {
+      console.error('Error removing captain:', error);
+      toast.error('Failed to remove captain');
     }
   };
 
@@ -790,13 +879,85 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Captains</label>
-                  <p className="text-gray-900">{getCaptainInfo(selectedClub)}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Manage Captains</label>
+                  
+                  {/* Current Captains */}
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {clubCaptains.map((email) => (
+                        <div key={email} className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+                          <span>{email}</span>
+                          <button
+                            onClick={() => handleRemoveCaptain(email)}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Add Captain */}
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="Enter captain email"
+                      value={captainSearchQuery}
+                      onChange={(e) => setCaptainSearchQuery(e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        handleAddCaptain(captainSearchQuery);
+                        setCaptainSearchQuery('');
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Sponsors</label>
-                  <p className="text-gray-900">{getSponsorInfo(selectedClub)}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Manage Sponsors</label>
+                  
+                  {/* Current Sponsors */}
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {clubSponsors.map((email) => (
+                        <div key={email} className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
+                          <span>{email}</span>
+                          <button
+                            onClick={() => handleRemoveSponsor(email)}
+                            className="ml-1 text-green-600 hover:text-green-800"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Add Sponsor */}
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="Enter sponsor email"
+                      value={sponsorSearchQuery}
+                      onChange={(e) => setSponsorSearchQuery(e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                    <button
+                      onClick={() => {
+                        handleAddSponsor(sponsorSearchQuery);
+                        setSponsorSearchQuery('');
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
