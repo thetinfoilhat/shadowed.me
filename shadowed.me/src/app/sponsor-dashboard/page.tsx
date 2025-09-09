@@ -44,6 +44,7 @@ export default function SponsorDashboard() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showDiscoverModal, setShowDiscoverModal] = useState(false);
   const [availableClubs, setAvailableClubs] = useState<ClubSite[]>([]);
+  const [discoverSearchQuery, setDiscoverSearchQuery] = useState<string>('');
   const [selectedClub, setSelectedClub] = useState<ClubSite | null>(null);
   const [selectedCaptains, setSelectedCaptains] = useState<string[]>([]);
   const [showClubInfoModal, setShowClubInfoModal] = useState(false);
@@ -58,8 +59,6 @@ export default function SponsorDashboard() {
     description: '',
     meetingInfo: '',
     category: '',
-    activityTypes: [] as string[],
-
     contactEmail: '',
     captains: [] as string[]
   });
@@ -349,7 +348,6 @@ export default function SponsorDashboard() {
       description: club.description || '',
       meetingInfo: club.meetingInfo || '',
       category: club.category || '',
-      activityTypes: club.activityTypes || [],
       contactEmail: club.jamboreeMeetingInfo?.email || '',
       captains: existingCaptains
     });
@@ -414,8 +412,6 @@ export default function SponsorDashboard() {
         description: clubInfoForm.description,
         meetingInfo: clubInfoForm.meetingInfo,
         category: clubInfoForm.category,
-        activityTypes: clubInfoForm.activityTypes,
-
         'jamboreeMeetingInfo.email': clubInfoForm.contactEmail,
         captainEmails: clubInfoForm.captains,
         'jamboreeMeetingInfo.captains': captainDisplayNames.join(', '),
@@ -555,6 +551,11 @@ export default function SponsorDashboard() {
 
   const filteredClubs = sponsoredClubs.filter(club =>
     club.clubName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredAvailableClubs = availableClubs.filter(club =>
+    club.clubName.toLowerCase().includes(discoverSearchQuery.toLowerCase()) ||
+    (club.category && club.category.toLowerCase().includes(discoverSearchQuery.toLowerCase()))
   );
 
   const filteredStudents = allStudents.filter(student =>
@@ -833,37 +834,58 @@ export default function SponsorDashboard() {
       {showDiscoverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="bg-white rounded-xl max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-8 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                    <div>
+            {/* Fixed Header with X Button */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
                   <h2 className="text-2xl font-bold text-gray-900">Discover Clubs</h2>
                   <p className="text-gray-600 mt-1">
                     Find clubs that need sponsorship and guidance
                   </p>
-                    </div>
+                </div>
                 <button
-                  onClick={() => setShowDiscoverModal(false)}
+                  onClick={() => {
+                    setShowDiscoverModal(false);
+                    setDiscoverSearchQuery('');
+                  }}
                   className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                   <XCircleIcon className="h-6 w-6" />
                 </button>
-                    </div>
-                    </div>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search clubs by name or category..."
+                  value={discoverSearchQuery}
+                  onChange={(e) => setDiscoverSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#38BFA1] focus:border-[#38BFA1] bg-white shadow-sm"
+                />
+              </div>
+            </div>
             
-            <div className="p-8">
-              {availableClubs.length === 0 ? (
+            <div className="p-6">
+              {filteredAvailableClubs.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
                     <SparklesIcon className="h-16 w-16" />
-                    </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No clubs available</h3>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {availableClubs.length === 0 ? 'No clubs available' : 'No clubs found'}
+                  </h3>
                   <p className="text-gray-500">
-                    All clubs are currently assigned to sponsors.
+                    {availableClubs.length === 0 
+                      ? 'All clubs are currently assigned to sponsors.'
+                      : 'Try adjusting your search terms.'
+                    }
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {availableClubs.map((club) => (
+                  {filteredAvailableClubs.map((club) => (
                     <div key={club.id} className="border border-gray-200 rounded-lg p-6 hover:border-[#38BFA1] transition-colors">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
@@ -1107,36 +1129,6 @@ export default function SponsorDashboard() {
                 </select>
                           </div>
 
-                          <div>
-                <label className="block text-gray-700 font-medium mb-2 text-sm">
-                  Activity Types
-                </label>
-                <div className="space-y-2">
-                  {['Competitive', 'Leadership', 'Tryout', 'Public Speaking', 'Performance', 'Casual', 'Academic'].map((type) => (
-                    <label key={type} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={clubInfoForm.activityTypes.includes(type)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setClubInfoForm(prev => ({ 
-                              ...prev, 
-                              activityTypes: [...prev.activityTypes, type] 
-                            }));
-                          } else {
-                            setClubInfoForm(prev => ({ 
-                              ...prev, 
-                              activityTypes: prev.activityTypes.filter(t => t !== type) 
-                            }));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-[#38BFA1] focus:ring-[#38BFA1]"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">{type}</span>
-                    </label>
-                  ))}
-                          </div>
-              </div>
 
                           <div>
                 <label className="block text-gray-700 font-medium mb-2 text-sm">
