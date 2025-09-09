@@ -1302,11 +1302,39 @@ export default function SponsorDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="bg-white rounded-xl max-w-4xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Club Members</h2>
-              <p className="text-gray-600 mt-1 text-sm">
-                Manage members for {selectedClubForMembers.clubName}
-              </p>
-                          </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Club Members</h2>
+                  <p className="text-gray-600 mt-1 text-sm">
+                    Manage members for {selectedClubForMembers.clubName}
+                  </p>
+                </div>
+                {clubMembers.length > 0 && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const emails = clubMembers.map(member => member.email).join(', ');
+                        navigator.clipboard.writeText(emails);
+                        toast.success('Emails copied to clipboard!');
+                      }}
+                      className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                    >
+                      Copy Emails
+                    </button>
+                    <button
+                      onClick={() => {
+                        const names = clubMembers.map(member => member.name).join(', ');
+                        navigator.clipboard.writeText(names);
+                        toast.success('Names copied to clipboard!');
+                      }}
+                      className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                    >
+                      Copy Names
+                    </button>
+                  </div>
+                )}
+              </div>
+                        </div>
             
             <div className="p-6">
               {clubMembers.length === 0 ? (
