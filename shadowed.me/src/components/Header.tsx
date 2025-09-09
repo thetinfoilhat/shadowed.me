@@ -317,6 +317,14 @@ export default function Header() {
                   Clubs
                 </Link>
               </li>
+              <li>
+                <Link 
+                  href="/calendar"
+                  className="text-black hover:text-[#38BFA1] font-medium transition-colors"
+                >
+                  Calendar
+                </Link>
+              </li>
               {/* <li>
                 <Link 
                   href="/school-clubs"
@@ -540,6 +548,15 @@ export default function Header() {
                   onClick={() => setIsOpen(false)}
                 >
                   Clubs
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/calendar"
+                  className="block py-2 text-base text-black hover:text-[#38BFA1] font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Calendar
                 </Link>
               </li>
               {/* <li>

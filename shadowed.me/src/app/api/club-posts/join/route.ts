@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { postId, participant } = body;
 
+    console.log('Join request received:', { postId, participant });
+
     if (!postId || !participant || !participant.email || !participant.name) {
+      console.error('Missing required fields:', { postId, participant });
       return NextResponse.json({ 
         error: 'Post ID, participant email, and name are required' 
       }, { status: 400 });
