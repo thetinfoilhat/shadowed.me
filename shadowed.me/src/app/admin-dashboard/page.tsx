@@ -68,6 +68,15 @@ export default function AdminDashboard() {
   const [clubCaptains, setClubCaptains] = useState<string[]>([]);
   const [sponsorSearchQuery, setSponsorSearchQuery] = useState('');
   const [captainSearchQuery, setCaptainSearchQuery] = useState('');
+  
+  // Add Club modal state
+  const [showAddClubModal, setShowAddClubModal] = useState(false);
+  const [newClubName, setNewClubName] = useState('');
+  const [newClubCategory, setNewClubCategory] = useState('Miscellaneous');
+  const [newClubDescription, setNewClubDescription] = useState('');
+  const [newClubMeetingTimes, setNewClubMeetingTimes] = useState('');
+  const [newClubContactInfo, setNewClubContactInfo] = useState('');
+  const [newClubRoomNumber, setNewClubRoomNumber] = useState('');
 
   // Fetch data
   const fetchUsers = useCallback(async () => {
@@ -430,6 +439,90 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAddClub = async () => {
+    if (!newClubName.trim()) {
+      toast.error('Please enter a club name');
+      return;
+    }
+
+    try {
+      // Create a slug from the club name
+      const slug = newClubName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Check if club already exists
+      const existingClub = clubs.find(club => club.slug === slug);
+      if (existingClub) {
+        toast.error('A club with this name already exists');
+        return;
+      }
+
+      // Import Firebase functions
+      const { addDoc, collection } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      // Create clubSites entry (for sponsor dashboard and website functionality)
+      const clubSiteData = {
+        clubName: newClubName.trim(),
+        slug: slug,
+        category: newClubCategory,
+        description: newClubDescription,
+        meetingInfo: newClubMeetingTimes,
+        jamboreeMeetingInfo: {
+          email: newClubContactInfo
+        },
+        captainEmails: [],
+        sponsorEmails: [],
+        activityTypes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await addDoc(collection(db, 'clubSites'), clubSiteData);
+
+      // Create clubs entry (for club listings)
+      const clubListingData = {
+        name: newClubName.trim(),
+        slug: slug,
+        description: newClubDescription || `To provide opportunities for students interested in ${newClubCategory.toLowerCase()}.`,
+        mission: `To provide opportunities for students interested in ${newClubCategory.toLowerCase()}.`,
+        meetingTimes: newClubMeetingTimes || 'Schedule TBD',
+        contactInfo: newClubContactInfo || '',
+        category: newClubCategory,
+        attributes: ['Open Membership', 'Year-round'],
+        bgColor: '#38BFA1',
+        bgGradient: 'linear-gradient(135deg, #38BFA1, #38BFA1dd)',
+        status: 'approved',
+        captain: '',
+        sponsorEmail: '',
+        createdAt: new Date(),
+        created: true,
+        roomNumber: newClubRoomNumber || ''
+      };
+
+      await addDoc(collection(db, 'clubs'), clubListingData);
+
+      toast.success('Club created successfully!');
+      
+      // Reset form and close modal
+      setNewClubName('');
+      setNewClubCategory('Miscellaneous');
+      setNewClubDescription('');
+      setNewClubMeetingTimes('');
+      setNewClubContactInfo('');
+      setNewClubRoomNumber('');
+      setShowAddClubModal(false);
+      
+      // Refresh data
+      fetchClubs();
+    } catch (error) {
+      console.error('Error creating club:', error);
+      toast.error('Failed to create club');
+    }
+  };
+
   // Helper functions
   const getSponsorInfo = (club: ClubListing): string => {
     const sponsors: string[] = [];
@@ -664,7 +757,10 @@ export default function AdminDashboard() {
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Club Management</h2>
-                      <button className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                      <button 
+                        onClick={() => setShowAddClubModal(true)}
+                        className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
                         <PlusIcon className="h-4 w-4" />
                         Add Club
                       </button>
@@ -976,6 +1072,137 @@ export default function AdminDashboard() {
               setSelectedClubForPosts(null);
             }}
           />
+        )}
+
+        {/* Add Club Modal */}
+        {showAddClubModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Add New Club</h2>
+                <p className="text-gray-600 mt-1 text-sm">
+                  Create a new club that will appear in all dashboards
+                </p>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Club Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newClubName}
+                    onChange={(e) => setNewClubName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter club name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Category
+                  </label>
+                  <select
+                    value={newClubCategory}
+                    onChange={(e) => setNewClubCategory(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="STEM">STEM</option>
+                    <option value="Humanities">Humanities</option>
+                    <option value="Business">Business</option>
+                    <option value="Music, Arts, & Performing Arts">Music, Arts, & Performing Arts</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Language & Culture">Language & Culture</option>
+                    <option value="Medical">Medical</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Community Service & Leadership">Community Service & Leadership</option>
+                    <option value="Miscellaneous">Miscellaneous</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Description
+                  </label>
+                  <textarea
+                    value={newClubDescription}
+                    onChange={(e) => setNewClubDescription(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    placeholder="Enter club description"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Meeting Times
+                  </label>
+                  <input
+                    type="text"
+                    value={newClubMeetingTimes}
+                    onChange={(e) => setNewClubMeetingTimes(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Mondays 3:30-5:00 PM"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newClubContactInfo}
+                    onChange={(e) => setNewClubContactInfo(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter contact email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2 text-sm">
+                    Room Number
+                  </label>
+                  <input
+                    type="text"
+                    value={newClubRoomNumber}
+                    onChange={(e) => setNewClubRoomNumber(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Room 201"
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddClubModal(false);
+                    setNewClubName('');
+                    setNewClubCategory('Miscellaneous');
+                    setNewClubDescription('');
+                    setNewClubMeetingTimes('');
+                    setNewClubContactInfo('');
+                    setNewClubRoomNumber('');
+                  }}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleAddClub}
+                  disabled={!newClubName.trim()}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    newClubName.trim()
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Add Club
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </AdminOnly>

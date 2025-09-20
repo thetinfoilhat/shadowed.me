@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, getDocs, doc, updateDoc, arrayRemove, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClubSite, MeetingOpportunity } from '@/types/club';
-import { formatDateForInput } from '@/utils/dateUtils';
+import { formatDateForInput, doesEventMatchDate } from '@/utils/dateUtils';
 
 // Personal Event Interface
 interface PersonalEvent {
@@ -639,15 +639,11 @@ export default function StudentDashboard() {
     // No need to fetch available opportunities here
     
     const dayPersonalEvents = personalEvents.filter(event => {
-      const eventDate = new Date(event.date + 'T00:00:00');
-      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      return eventDate.getTime() === compareDate.getTime();
+      return doesEventMatchDate(event.date, date);
     });
     
     const dayJoinedClubEvents = joinedClubEvents.filter(event => {
-      const eventDate = new Date(event.date + 'T00:00:00');
-      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      return eventDate.getTime() === compareDate.getTime();
+      return doesEventMatchDate(event.date, date);
     });
     
     setSelectedDayEvents({
@@ -665,15 +661,19 @@ export default function StudentDashboard() {
     
     // Get all available meetings for this day
     const dayAllMeetings = meetings.filter(meeting => {
-      const meetingDate = new Date(meeting.startDate + 'T00:00:00');
-      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      // Parse meeting date as local date at noon to avoid timezone issues
+      const [year, month, day] = meeting.startDate.split('-').map(Number);
+      const meetingDate = new Date(year, month - 1, day, 12, 0, 0);
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
       return meetingDate.getTime() === compareDate.getTime() && meeting.status === 'active';
     });
     
     // Get all available club opportunities for this day
     const dayClubOpportunities = allClubOpportunities.filter(opportunity => {
-      const opportunityDate = new Date(opportunity.date + 'T00:00:00');
-      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      // Parse opportunity date as local date at noon to avoid timezone issues
+      const [year, month, day] = opportunity.date.split('-').map(Number);
+      const opportunityDate = new Date(year, month - 1, day, 12, 0, 0);
+      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
       return opportunityDate.getTime() === compareDate.getTime();
     });
     
@@ -1086,23 +1086,29 @@ export default function StudentDashboard() {
                   
                   // Get joined meetings for this day
                   const dayJoinedMeetings = meetings.filter(meeting => {
-                    const meetingDate = new Date(meeting.startDate + 'T00:00:00');
-                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    // Parse meeting date as local date at noon to avoid timezone issues
+                    const [year, month, day] = meeting.startDate.split('-').map(Number);
+                    const meetingDate = new Date(year, month - 1, day, 12, 0, 0);
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
                     return meetingDate.getTime() === compareDate.getTime() && 
                            meeting.participants?.some(p => p.email === user?.email);
                   });
                   
                   // Get personal events for this day
                   const dayPersonalEvents = personalEvents.filter(event => {
-                    const eventDate = new Date(event.date + 'T00:00:00');
-                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    // Parse event date as local date at noon to avoid timezone issues
+                    const [year, month, day] = event.date.split('-').map(Number);
+                    const eventDate = new Date(year, month - 1, day, 12, 0, 0);
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
                     return eventDate.getTime() === compareDate.getTime();
                   });
                   
                   // Get joined club events for this day
                   const dayJoinedClubEvents = joinedClubEvents.filter(event => {
-                    const eventDate = new Date(event.date + 'T00:00:00');
-                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    // Parse event date as local date at noon to avoid timezone issues
+                    const [year, month, day] = event.date.split('-').map(Number);
+                    const eventDate = new Date(year, month - 1, day, 12, 0, 0);
+                    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
                     return eventDate.getTime() === compareDate.getTime();
                   });
                   
@@ -1258,8 +1264,10 @@ export default function StudentDashboard() {
                     
                     // Get all opportunities for this date from all clubs
                     const dayOpportunities = allClubOpportunities.filter(opportunity => {
-                      const opportunityDate = new Date(opportunity.date + 'T00:00:00');
-                      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      // Parse opportunity date as local date at noon to avoid timezone issues
+                      const [year, month, day] = opportunity.date.split('-').map(Number);
+                      const opportunityDate = new Date(year, month - 1, day, 12, 0, 0);
+                      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
                       return opportunityDate.getTime() === compareDate.getTime();
                     });
                     

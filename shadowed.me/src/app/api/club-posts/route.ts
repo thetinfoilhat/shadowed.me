@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { parseDateStringAsLocal } from '@/utils/dateUtils';
 
 interface ClubPost {
   id?: string;
@@ -42,7 +43,10 @@ function generateRecurringDates(
   count: number = 12
 ): string[] {
   const dates: string[] = [];
-  const start = new Date(startDate + 'T00:00:00');
+  
+  // Parse date as local date at noon to avoid timezone issues
+  const start = parseDateStringAsLocal(startDate);
+  
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   
   // Convert day names to day numbers (0 = Sunday, 1 = Monday, etc.)
@@ -53,35 +57,89 @@ function generateRecurringDates(
     targetDays.push(start.getDay());
   }
   
-  let currentDate = new Date(start);
   let generatedCount = 0;
   
-  // Generate dates for the next 6 months (approximately 24-26 weeks)
+  // Generate dates for the next 6 months
   const endDate = new Date(start);
   endDate.setMonth(endDate.getMonth() + 6);
   
-  while (currentDate <= endDate && generatedCount < count) {
-    const dayOfWeek = currentDate.getDay();
+  if (pattern === 'weekly') {
+    // For weekly: generate every week on the specified days
+    let currentWeekStart = new Date(start);
+    // Move to the start of the week (Sunday)
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
     
-    if (targetDays.includes(dayOfWeek)) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      dates.push(dateStr);
-      generatedCount++;
-      console.log(`Added date: ${dateStr} (${pattern} pattern, day ${dayOfWeek})`);
+    while (currentWeekStart <= endDate && generatedCount < count) {
+      // Check each target day in this week
+      for (const targetDay of targetDays) {
+        const eventDate = new Date(currentWeekStart);
+        eventDate.setDate(currentWeekStart.getDate() + targetDay);
+        
+        // Only add if the date is on or after the start date and within limits
+        if (eventDate >= start && eventDate <= endDate && generatedCount < count) {
+          const dateStr = eventDate.getFullYear() + '-' + 
+                         String(eventDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(eventDate.getDate()).padStart(2, '0');
+          dates.push(dateStr);
+          generatedCount++;
+          console.log(`Added weekly date: ${dateStr} (day ${targetDay})`);
+        }
+      }
+      // Move to next week
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     }
+  } else if (pattern === 'biweekly') {
+    // For biweekly: generate every other week on the specified days
+    let currentWeekStart = new Date(start);
+    // Move to the start of the week (Sunday)
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
     
-    // Move to next occurrence based on pattern
-    if (pattern === 'weekly') {
-      currentDate.setDate(currentDate.getDate() + 7);
-    } else if (pattern === 'biweekly') {
-      currentDate.setDate(currentDate.getDate() + 14);
-    } else if (pattern === 'monthly') {
-      // For monthly, add 1 month to the current date
-      // This handles month boundaries correctly (e.g., Jan 31 -> Feb 28/29)
-      const beforeMonth = currentDate.getMonth();
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      const afterMonth = currentDate.getMonth();
-      console.log(`Monthly: ${beforeMonth} -> ${afterMonth}, date: ${currentDate.toISOString().split('T')[0]}`);
+    while (currentWeekStart <= endDate && generatedCount < count) {
+      // Check each target day in this week
+      for (const targetDay of targetDays) {
+        const eventDate = new Date(currentWeekStart);
+        eventDate.setDate(currentWeekStart.getDate() + targetDay);
+        
+        // Only add if the date is on or after the start date and within limits
+        if (eventDate >= start && eventDate <= endDate && generatedCount < count) {
+          const dateStr = eventDate.getFullYear() + '-' + 
+                         String(eventDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(eventDate.getDate()).padStart(2, '0');
+          dates.push(dateStr);
+          generatedCount++;
+          console.log(`Added biweekly date: ${dateStr} (day ${targetDay})`);
+        }
+      }
+      // Move to next biweekly occurrence (skip one week, then add one week = 14 days)
+      currentWeekStart.setDate(currentWeekStart.getDate() + 14);
+    }
+  } else if (pattern === 'monthly') {
+    // For monthly: generate on the same day of week in each month
+    let currentDate = new Date(start);
+    
+    while (currentDate <= endDate && generatedCount < count) {
+      const dayOfWeek = currentDate.getDay();
+      
+      if (targetDays.includes(dayOfWeek)) {
+        const dateStr = currentDate.getFullYear() + '-' + 
+                       String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(currentDate.getDate()).padStart(2, '0');
+        dates.push(dateStr);
+        generatedCount++;
+        console.log(`Added monthly date: ${dateStr} (day ${dayOfWeek})`);
+      }
+      
+      // Move to next month, same day
+      const nextMonth = new Date(currentDate);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      
+      // Handle month boundary edge cases (e.g., Jan 31 -> Feb 28)
+      if (nextMonth.getMonth() !== (currentDate.getMonth() + 1) % 12) {
+        // Day doesn't exist in next month, use last day of month
+        nextMonth.setDate(0);
+      }
+      
+      currentDate = nextMonth;
     }
   }
   

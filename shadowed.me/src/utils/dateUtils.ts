@@ -110,4 +110,25 @@ export const formatDateForComparison = (date: Date): string => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+// Helper function to safely parse a date string as a local date without timezone issues
+// Always creates dates at noon to avoid DST and timezone boundary problems
+export const parseDateStringAsLocal = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
+};
+
+// Helper function to compare two date strings for equality without timezone issues
+export const areDatesEqual = (dateStr1: string, dateStr2: string): boolean => {
+  const date1 = parseDateStringAsLocal(dateStr1);
+  const date2 = parseDateStringAsLocal(dateStr2);
+  return date1.getTime() === date2.getTime();
+};
+
+// Helper function to check if an event date matches a calendar date
+export const doesEventMatchDate = (eventDateStr: string, calendarDate: Date): boolean => {
+  const eventDate = parseDateStringAsLocal(eventDateStr);
+  const compareDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), calendarDate.getDate(), 12, 0, 0);
+  return eventDate.getTime() === compareDate.getTime();
 }; 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -462,6 +462,45 @@ export default function Jamboree() {
     return sorted;
   }, [clubWebsites, searchQuery, selectedCategory, selectedActivityType, sortBy]);
 
+  const fetchClubWebsites = useCallback(async () => {
+    try {
+      // Get all club websites
+      const websitesQuery = query(
+        collection(db, 'clubSites'),
+        orderBy('updatedAt', 'desc')
+      );
+      
+      const websitesSnapshot = await getDocs(websitesQuery);
+      const websites: ClubSite[] = [];
+
+      websitesSnapshot.forEach((doc) => {
+        const data = doc.data();
+        websites.push({
+          id: doc.id,
+          slug: data.slug,
+          clubName: data.clubName,
+          createdBy: data.createdBy,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          theme: data.theme || {
+            primaryColor: '#38BFA1',
+            textColor: '#000000',
+            font: 'Inter'
+          },
+          bannerImage: data.bannerImage,
+          slogan: data.slogan,
+          description: data.description,
+          meetingInfo: data.meetingInfo,
+          activityType: data.activityType
+        });
+      });
+
+      setClubWebsites(websites);
+    } catch (error) {
+      console.error('Error fetching club websites:', error);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
@@ -482,81 +521,12 @@ export default function Jamboree() {
       }
     };
 
-    const fetchClubWebsites = async () => {
-      try {
-        // Get all club websites
-        const websitesQuery = query(
-          collection(db, 'clubSites'),
-          orderBy('updatedAt', 'desc')
-        );
-        
-        const websitesSnapshot = await getDocs(websitesQuery);
-        const websites: ClubSite[] = [];
-
-        websitesSnapshot.forEach((doc) => {
-          const data = doc.data();
-          websites.push({
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-            updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt)
-          } as ClubSite);
-        });
-
-        // Sort websites: first by category, then by updated date
-        const sortedWebsites = websites.sort((a, b) => {
-          // Define category priority order (higher priority categories come first)
-          const categoryOrder = [
-            'STEM', 
-            'Business', 
-            'Academic',
-            'Music, Arts, & Performing Arts',
-            'Medical',
-            'Technology',
-            'Sports',
-            'Community Service & Leadership',
-            'Humanities',
-            'Language & Culture',
-            'Arts',
-            'Performing Arts',
-            'Community Service',
-            'Miscellaneous'
-          ];
-          
-          // Get position in priority list (if not found, put at end)
-          const getCategoryPriority = (category: string | undefined) => {
-            if (!category) return Number.MAX_SAFE_INTEGER; // Undefined categories go last
-            const index = categoryOrder.indexOf(category);
-            return index === -1 ? Number.MAX_SAFE_INTEGER - 1 : index;
-          };
-          
-          // Sort by category priority first
-          const aPriority = getCategoryPriority(a.category);
-          const bPriority = getCategoryPriority(b.category);
-          
-          // If priorities differ, sort by priority
-          if (aPriority !== bPriority) {
-            return aPriority - bPriority;
-          }
-          
-          // If same category, sort by update date (most recent first)
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-        });
-
-        setClubWebsites(sortedWebsites);
-      } catch (error) {
-        console.error('Error fetching club websites:', error);
-        toast.error('Failed to load club websites');
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchUserRole();
     fetchClubWebsites();
-  }, [user]);
+  }, [user, fetchClubWebsites]);
 
-  const handleCreateWebsite = () => {
+  const handleCreateWebsite = async () => {
     if (!user) {
       toast.error('You must be logged in to create a club website');
       return;
@@ -584,7 +554,60 @@ export default function Jamboree() {
         return;
       }
 
-      // Navigate to the new club website page with the slug and name
+      // Create both clubSites and clubs entries
+      const { addDoc, collection } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      // Create clubSites entry (for website functionality)
+      const clubSiteData = {
+        clubName: clubName.trim(),
+        slug: slug,
+        createdBy: user.email,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        theme: {
+          primaryColor: '#38BFA1',
+          textColor: '#000000',
+          font: 'Inter'
+        },
+        description: '',
+        meetingInfo: '',
+        status: 'active'
+      };
+
+      await addDoc(collection(db, 'clubSites'), clubSiteData);
+
+      // Create clubs entry (for club listings)
+      const clubListingData = {
+        name: clubName.trim(),
+        slug: slug,
+        description: '',
+        mission: `To provide opportunities for students interested in this club.`,
+        meetingTimes: '',
+        contactInfo: '',
+        category: 'Miscellaneous',
+        attributes: ['Open Membership', 'Year-round'],
+        bgColor: '#38BFA1',
+        bgGradient: 'linear-gradient(135deg, #38BFA1, #38BFA1dd)',
+        status: 'approved',
+        captain: '',
+        sponsorEmail: '',
+        createdAt: new Date(),
+        created: true,
+        roomNumber: ''
+      };
+
+      await addDoc(collection(db, 'clubs'), clubListingData);
+
+      toast.success('Club website created successfully!');
+      
+      // Close modal and refresh data
+      setShowCreateModal(false);
+      setClubName('');
+      setError(null);
+      fetchClubWebsites();
+
+      // Navigate to the new club website page
       router.push(`/${slug}?new=true&name=${encodeURIComponent(clubName)}`);
     } catch (error) {
       console.error('Error creating club website:', error);

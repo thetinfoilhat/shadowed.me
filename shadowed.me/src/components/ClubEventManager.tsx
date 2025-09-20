@@ -14,6 +14,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import { doesEventMatchDate } from '@/utils/dateUtils';
 
 interface ClubEvent {
   id: string;
@@ -275,10 +276,7 @@ export default function ClubEventManager({
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
-      // Create date objects in the same timezone to avoid timezone issues
-      const eventDate = new Date(event.date + 'T00:00:00');
-      const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      return eventDate.getTime() === compareDate.getTime();
+      return doesEventMatchDate(event.date, date);
     });
   };
 

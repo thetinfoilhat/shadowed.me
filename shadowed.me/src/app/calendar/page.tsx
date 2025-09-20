@@ -11,7 +11,7 @@ import {
   UserGroupIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { formatDateForComparison } from '@/utils/dateUtils';
+import { formatDateForComparison, doesEventMatchDate } from '@/utils/dateUtils';
 
 interface ClubEvent {
   id: string;
@@ -102,15 +102,16 @@ export default function MasterCalendar() {
   };
 
   const getEventsForDate = (date: Date) => {
-    const dateStr = formatDateForComparison(date);
-    return events.filter(event => event.date === dateStr && event.status === 'active');
+    return events.filter(event => doesEventMatchDate(event.date, date) && event.status === 'active');
   };
 
   const isEventInPast = (event: ClubEvent): boolean => {
     const now = new Date();
+    // Parse event date as local date to avoid timezone issues
+    const [year, month, day] = event.date.split('-').map(Number);
     const eventDateTime = event.startTime 
-      ? new Date(`${event.date}T${event.startTime}`)
-      : new Date(`${event.date}T23:59:59`);
+      ? new Date(year, month - 1, day, ...event.startTime.split(':').map(Number))
+      : new Date(year, month - 1, day, 23, 59, 59);
     return eventDateTime < now;
   };
 
